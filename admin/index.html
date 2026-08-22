@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Woodrick Homes | Product Admin</title>
+<style>
+:root{--bg:#0b0b0b;--panel:#151515;--gold:#d7b36a;--gold2:#f0c96b;--text:#f7f3ec;--muted:#b8b2a7;--line:#34312b}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}.wrap{width:min(900px,92%);margin:auto;padding:34px 0 70px}.brand{font-weight:800;letter-spacing:2px;margin-bottom:28px}.brand span{color:var(--gold)}h1{font-family:Georgia,serif;font-size:clamp(36px,6vw,58px);font-weight:500;margin:0 0 10px}.lead{color:var(--muted);line-height:1.6;margin-bottom:30px}.panel{background:var(--panel);border:1px solid var(--line);padding:24px;border-radius:14px}label{display:block;font-weight:700;margin:16px 0 8px;color:var(--gold)}input,select,textarea{width:100%;background:#0e0e0e;color:#fff;border:1px solid #3a3833;border-radius:9px;padding:13px;font:inherit}textarea{min-height:110px;resize:vertical}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.filebox{border:1px dashed #5a5140;border-radius:10px;padding:14px;margin-top:8px}.hint{font-size:13px;color:var(--muted);margin-top:6px}.btn{margin-top:22px;background:var(--gold);color:#111;border:0;border-radius:9px;padding:14px 20px;font-weight:800;cursor:pointer}.btn:hover{background:var(--gold2)}#status{margin-top:16px;line-height:1.5}.ok{color:#8bd39d}.err{color:#ff9b9b}.back{display:inline-block;margin-top:22px;color:var(--gold);text-decoration:none;font-weight:700}@media(max-width:700px){.grid{grid-template-columns:1fr}.panel{padding:18px}}
+</style>
+</head>
+<body><main class="wrap">
+<div class="brand">WOODRICK <span>HOMES</span> · ADMIN</div>
+<h1>Add Product</h1>
+<p class="lead">Add product details and upload photos, videos and PDF catalogues. Uploaded products will appear in the Product Media Library after Cloudflare storage is connected.</p>
+<form id="productForm" class="panel">
+<label for="password">Admin password</label><input id="password" name="password" type="password" autocomplete="current-password" required>
+<div class="grid"><div><label for="name">Product name</label><input id="name" name="name" required placeholder="e.g. Premium HDHMR Board"></div><div><label for="category">Category</label><select id="category" name="category" required><option value="Plywood">Plywood</option><option value="Laminates">Laminates</option><option value="Louvers">Louvers</option><option value="Acrylic Laminates">Acrylic Laminates</option><option value="Shuttering Plywood">Shuttering Plywood</option><option value="Doors">Doors</option><option value="HDHMR">HDHMR</option><option value="MDF">MDF</option><option value="WPC Board & Chaukhat">WPC Board & Chaukhat</option><option value="Tiles">Tiles</option><option value="Sanitary">Sanitary</option><option value="Bath Fittings">Bath Fittings</option><option value="Other">Other</option></select></div></div>
+<label for="description">Description</label><textarea id="description" name="description" placeholder="Brand, size, finish, application, features..."></textarea>
+<label>Product photos</label><div class="filebox"><input name="images" type="file" accept="image/jpeg,image/png,image/webp" multiple><div class="hint">JPG, PNG or WebP. Multiple photos allowed.</div></div>
+<label>Product video</label><div class="filebox"><input name="video" type="file" accept="video/mp4,video/webm,video/quicktime"><div class="hint">For large videos, a YouTube/Vimeo link is usually faster for visitors.</div></div>
+<label>PDF catalogue / brochure</label><div class="filebox"><input name="pdf" type="file" accept="application/pdf"><div class="hint">PDF brochure, specification or catalogue.</div></div>
+<label for="videoUrl">YouTube / Vimeo video link (optional)</label><input id="videoUrl" name="videoUrl" type="url" placeholder="https://...">
+<button class="btn" type="submit">UPLOAD PRODUCT</button><div id="status" aria-live="polite"></div>
+</form><a class="back" href="/products/">← View Product Library</a>
+</main>
+<script>
+const form=document.getElementById('productForm'),statusEl=document.getElementById('status');
+form.addEventListener('submit',async(e)=>{e.preventDefault();statusEl.className='';statusEl.textContent='Uploading...';const data=new FormData(form);const password=data.get('password');data.delete('password');try{const r=await fetch('/api/products',{method:'POST',headers:{'x-admin-password':password},body:data});const out=await r.json().catch(()=>({}));if(!r.ok)throw new Error(out.error||'Upload failed');statusEl.className='ok';statusEl.textContent='Product uploaded successfully.';form.reset();}catch(err){statusEl.className='err';statusEl.textContent=err.message+'. If Cloudflare R2 is not connected yet, complete the storage setup first.';}});
+</script></body></html>
