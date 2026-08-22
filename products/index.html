@@ -7,27 +7,22 @@
 <style>
 :root{--ink:#151515;--gold:#b78a3b;--gold2:#d7b36a;--cream:#f7f3ec;--muted:#6d6a65;--line:#e7e1d7}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--cream);color:var(--ink)}
-.wrap{width:min(1080px,92%);margin:auto}.top{background:#111;color:#fff;padding:20px 0}.brand{font-weight:800;letter-spacing:2px}.brand span{color:var(--gold2)}
-.hero{padding:70px 0 38px}.kicker{font-size:12px;text-transform:uppercase;letter-spacing:3px;color:var(--gold);font-weight:700}.hero h1{font-family:Georgia,serif;font-size:clamp(38px,6vw,64px);font-weight:500;margin:10px 0}.hero p{max-width:720px;color:var(--muted);font-size:17px;line-height:1.7}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;padding:20px 0 70px}.card{background:#fff;border:1px solid var(--line);padding:28px;min-height:230px;box-shadow:0 10px 30px rgba(0,0,0,.06)}.icon{font-size:34px}.card h2{font-family:Georgia,serif;font-weight:500;font-size:28px;margin:16px 0 8px}.card p{color:var(--muted);line-height:1.6;font-size:14px}.path{margin-top:18px;padding:10px 12px;background:#faf8f3;border-left:3px solid var(--gold);font-family:monospace;font-size:12px;word-break:break-all}.note{background:#111;color:#eee;padding:28px;margin-bottom:60px}.note strong{color:var(--gold2)}.note p{line-height:1.7;margin:8px 0}.back{display:inline-block;margin-top:18px;color:var(--gold2);font-weight:700;text-decoration:none}
-@media(max-width:760px){.grid{grid-template-columns:1fr}.hero{padding-top:48px}}
+.wrap{width:min(1120px,92%);margin:auto}.top{background:#0b0b0b;color:#fff;padding:20px 0}.brand{font-weight:800;letter-spacing:2px}.brand span{color:var(--gold2)}
+.hero{padding:70px 0 34px}.kicker{font-size:12px;text-transform:uppercase;letter-spacing:3px;color:var(--gold);font-weight:700}.hero h1{font-family:Georgia,serif;font-size:clamp(38px,6vw,64px);font-weight:500;margin:10px 0}.hero p{max-width:760px;color:var(--muted);font-size:17px;line-height:1.7}.actions{display:flex;gap:16px;flex-wrap:wrap;margin-top:18px}.link{color:var(--gold);font-weight:700;text-decoration:none}.admin{background:#111;color:var(--gold2);padding:11px 15px;border-radius:6px;text-decoration:none;font-weight:800}
+#state{padding:24px 0;color:var(--muted)}.products{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;padding:10px 0 70px}.card{background:#fff;border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.06);overflow:hidden}.thumb{aspect-ratio:4/3;background:#ebe7df;display:flex;align-items:center;justify-content:center;color:#8b857d}.thumb img{width:100%;height:100%;object-fit:cover}.body{padding:20px}.tag{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--gold);font-weight:800}.card h2{font-family:Georgia,serif;font-weight:500;font-size:27px;margin:9px 0}.card p{color:var(--muted);font-size:14px;line-height:1.6;min-height:46px}.media{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}.media a{display:inline-block;background:#111;color:#fff;text-decoration:none;padding:9px 12px;border-radius:5px;font-size:13px;font-weight:700}.empty{background:#fff;border:1px solid var(--line);padding:30px;margin-bottom:60px}.empty strong{color:var(--gold)}
+@media(max-width:900px){.products{grid-template-columns:repeat(2,1fr)}}@media(max-width:620px){.products{grid-template-columns:1fr}.hero{padding-top:48px}}
 </style>
 </head>
 <body>
 <div class="top"><div class="wrap"><div class="brand">WOODRICK <span>HOMES</span></div></div></div>
 <main class="wrap">
-<section class="hero">
-<div class="kicker">Product Upload Ready</div>
-<h1>Product Media Library</h1>
-<p>This area is ready for product photographs, brochures/catalogues in PDF format, and product videos. Files added to the folders below can be linked to product cards and enquiry pages on the Woodrick Homes website.</p>
-<a class="back" href="/">← Back to Woodrick Homes</a>
-</section>
-<section class="grid">
-<article class="card"><div class="icon">🖼️</div><h2>Images</h2><p>JPG, JPEG, PNG and WebP product photos can be stored here for use across product pages.</p><div class="path">products/images/</div></article>
-<article class="card"><div class="icon">📄</div><h2>PDF Catalogues</h2><p>Product brochures, specifications, catalogues and price-list PDFs can be stored here.</p><div class="path">products/pdfs/</div></article>
-<article class="card"><div class="icon">🎥</div><h2>Videos</h2><p>Short product videos can be stored here. For very large videos, external video hosting is usually better for website speed.</p><div class="path">products/videos/</div></article>
-</section>
-<section class="note"><strong>Upload-ready structure created.</strong><p>When you send product files, they can be placed in these folders and then connected to the relevant product section on the website.</p><p>For easier management later, we can also create separate folders for Plywood, Laminates, Tiles, Sanitary, Bath Fittings, Doors, MDF/HDHMR/WPC and other categories.</p></section>
+<section class="hero"><div class="kicker">Product Media Library</div><h1>Products & Catalogues</h1><p>Browse product photos, videos and PDF catalogues uploaded by Woodrick Homes.</p><div class="actions"><a class="link" href="/">← Back to Woodrick Homes</a><a class="admin" href="/admin/">ADMIN · ADD PRODUCT</a></div></section>
+<div id="state">Loading products…</div><section id="products" class="products" hidden></section>
 </main>
-</body>
-</html>
+<script>
+const state=document.getElementById('state'),grid=document.getElementById('products');
+function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+async function load(){try{const r=await fetch('/api/products');const data=await r.json();if(!r.ok)throw new Error(data.error||'Unable to load products');const items=data.products||[];if(!items.length){state.innerHTML='<div class="empty"><strong>No uploaded products yet.</strong><br>Use the Admin · Add Product button to add the first product after Cloudflare R2 storage is connected.</div>';return}state.hidden=true;grid.hidden=false;grid.innerHTML=items.map(p=>{const img=p.images&&p.images[0]?`<img src="${esc(p.images[0])}" alt="${esc(p.name)}">`:'Product image';const media=[p.pdf?`<a href="${esc(p.pdf)}" target="_blank" rel="noopener">PDF Catalogue</a>`:'',p.video?`<a href="${esc(p.video)}" target="_blank" rel="noopener">Watch Video</a>`:'',p.videoUrl?`<a href="${esc(p.videoUrl)}" target="_blank" rel="noopener">Video Link</a>`:''].join('');return `<article class="card"><div class="thumb">${img}</div><div class="body"><div class="tag">${esc(p.category)}</div><h2>${esc(p.name)}</h2><p>${esc(p.description||'Product details available from Woodrick Homes.')}</p><div class="media">${media}</div></div></article>`}).join('')}catch(e){state.innerHTML='<div class="empty"><strong>Product storage is not connected yet.</strong><br>'+esc(e.message)+'</div>'}}
+load();
+</script>
+</body></html>
