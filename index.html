@@ -290,6 +290,103 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
 </div></section>
 <style>
 .ws-upgrade{padding:80px 0;background:#f7f4ee}.ws-head{text-align:center;max-width:820px;margin:0 auto 35px}.ws-head .eyebrow{font-size:11px;letter-spacing:3px;font-weight:800;color:#a67b2f}.ws-head h2{font-family:Georgia,serif;font-size:clamp(38px,5vw,60px);margin:10px 0;color:#171717}.ws-head h2 span{color:#a67b2f}.ws-head p{color:#666;line-height:1.7}.ws-tabs{display:flex;justify-content:center;gap:12px;margin-bottom:30px;flex-wrap:wrap}.ws-tab{padding:13px 25px;border:1px solid #c9a75b;border-radius:999px;background:#fff;color:#7d5b1e;font-weight:800}.ws-tab.active{background:#171717;color:#e1bd68}.ws-panel{display:none}.ws-panel.active{display:block}.ws-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:15px}.ws-card{background:#fff;border:1px solid #e8dfcf;border-radius:10px;padding:22px;min-height:140px;box-shadow:0 8px 25px rgba(0,0,0,.06)}.ws-card .tag{display:block;margin-bottom:10px;color:#a67b2f;font-size:10px;font-weight:800;letter-spacing:1.5px}.ws-card h3{margin:0 0 7px;font-size:18px}.ws-card p{margin:0;color:#666;font-size:12px;line-height:1.55}.ws-service{background:#171717;color:#fff;border-radius:12px;padding:26px;min-height:180px;display:flex;flex-direction:column;justify-content:space-between}.ws-service h3{margin:0 0 8px;font-family:Georgia,serif;font-size:23px}.ws-service p{color:#bbb;font-size:13px;line-height:1.6;margin:0}.ws-service a,.ws-designer a{display:inline-block;margin-top:16px;color:#171717;background:#d8b461;padding:10px 15px;border-radius:4px;font-weight:800;font-size:11px;text-decoration:none}.ws-designer{margin-top:32px;background:linear-gradient(120deg,#111,#252019);border:1px solid rgba(216,180,97,.45);border-radius:14px;padding:32px;display:flex;align-items:center;justify-content:space-between;gap:20px}.ws-designer h3{color:#fff;font-family:Georgia,serif;font-size:30px;margin:0 0 7px}.ws-designer p{color:#bbb;margin:0}.ws-designer a{white-space:nowrap}@media(max-width:950px){.ws-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){.ws-grid{grid-template-columns:1fr}.ws-designer{flex-direction:column;align-items:flex-start}.ws-designer a{width:100%;text-align:center}}
+
+/* Premium black-and-gold opening view */
+.nav{
+  background:#050505;
+  color:#fff;
+  border-top:1px solid #f0c96b;
+  border-bottom:2px solid #f0c96b;
+  box-shadow:0 10px 32px rgba(0,0,0,.72),0 1px 0 rgba(240,201,107,.45);
+}
+.nav-inner{
+  background:#050505;
+  border:0;
+  border-left:1px solid rgba(240,201,107,.72);
+  border-right:1px solid rgba(240,201,107,.72);
+  border-radius:0;
+  box-shadow:none;
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+}
+.nav .logo{color:#fff;text-shadow:0 1px 10px rgba(0,0,0,.8)}
+.nav .logo-mark{
+  color:#f0c96b;
+  background:#050505;
+  border:2px solid #f0c96b;
+  box-shadow:inset 0 0 0 1px rgba(240,201,107,.22),0 0 14px rgba(240,201,107,.14);
+}
+.nav .logo span{color:#fff;font-weight:800}
+.nav .logo small{color:#f0c96b;font-weight:800}
+.nav .menu{background:transparent!important}
+.nav .menu a{
+  color:#f0c96b;
+  opacity:1;
+  font-weight:800;
+  text-shadow:0 1px 8px rgba(0,0,0,.95);
+}
+.nav .menu a:after{
+  height:2px;
+  bottom:-7px;
+  background:#f7d77f;
+}
+.nav .menu a:hover,
+.nav .menu a:focus-visible,
+.nav .menu a.active,
+.nav .menu a[aria-current="page"]{
+  color:#ffe39a;
+  outline-color:#ffe39a;
+}
+.nav .menu a:hover:after,
+.nav .menu a:focus-visible:after,
+.nav .menu a.active:after,
+.nav .menu a[aria-current="page"]:after{right:0}
+.nav .btn-gold{
+  background:#f0c96b;
+  color:#090806;
+  border:2px solid #ffe39a;
+  font-weight:800;
+  box-shadow:0 7px 22px rgba(240,201,107,.28);
+}
+.nav .btn-gold:hover,
+.nav .btn-gold:focus-visible{
+  background:#ffe39a;
+  color:#050505;
+  border-color:#fff0bd;
+}
+.hero{
+  color:#fff;
+  background:
+    linear-gradient(90deg,rgba(0,0,0,.96) 0%,rgba(0,0,0,.88) 34%,rgba(0,0,0,.58) 62%,rgba(0,0,0,.26) 100%),
+    url('https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=2200&q=90') center/cover;
+}
+.hero h1,.hero p{color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.78)}
+.hero .kicker,.hero h1 em{color:#f0c96b}
+@media(min-width:851px){
+  .nav-inner{width:min(1280px,98%);padding:12px 14px;gap:13px}
+  .nav .logo{flex:0 0 auto}
+  .nav .menu{
+    display:flex;
+    flex:1 1 auto;
+    justify-content:center;
+    gap:clamp(9px,1.12vw,18px);
+    font-size:clamp(9px,.74vw,11px);
+    letter-spacing:.055em;
+    white-space:nowrap;
+  }
+  .nav .btn{flex:0 0 auto;padding:11px 15px;font-size:11px}
+}
+@media(max-width:850px){
+  .nav-inner{background:#050505;border-left:0;border-right:0}
+  .mobile-menu{color:#f0c96b}
+  .nav .menu{background:#050505!important;border-top:1px solid #f0c96b;border-bottom:2px solid #f0c96b}
+  .nav .menu a{color:#f0c96b}
+  .hero{
+    background:
+      linear-gradient(90deg,rgba(0,0,0,.94) 0%,rgba(0,0,0,.79) 56%,rgba(0,0,0,.46) 100%),
+      url('https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=2200&q=90') 62% center/cover;
+  }
+}
 </style><section class="ws-upgrade" id="products-services"><div class="container">
 <div class="ws-head"><div class="eyebrow">WOODRICK HOMES</div><h2>Products <span>&amp;</span> Services</h2><p>Choose products for your project or connect with our design and renovation team for personalised solutions.</p></div>
 <div class="ws-tabs"><button class="ws-tab active" data-tab="ws-products">PRODUCTS</button><button class="ws-tab" data-tab="ws-services">SERVICES</button></div>
