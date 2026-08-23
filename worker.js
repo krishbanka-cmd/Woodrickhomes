@@ -135,17 +135,33 @@ async function handleUpload(request, env) {
 async function serveAssetWithProductAdminLink(request, env, url) {
   const response = await env.ASSETS.fetch(request);
   if (request.method !== 'GET') return response;
-  if (!(url.pathname === '/products' || url.pathname === '/products/' || url.pathname === '/products/index.html')) return response;
+
+  const isUploadEntryPage =
+    url.pathname === '/' ||
+    url.pathname === '/index.html' ||
+    url.pathname === '/products' ||
+    url.pathname === '/products/' ||
+    url.pathname === '/products/index.html';
+
+  if (!isUploadEntryPage) return response;
+
   const type = response.headers.get('content-type') || '';
   if (!type.includes('text/html')) return response;
 
   const html = await response.text();
   const uploadButton = `
 <a href="/admin-products/" aria-label="Upload product media" style="position:fixed;right:18px;bottom:92px;z-index:99999;background:#f0c96b;color:#111;border:2px solid #111;padding:13px 16px;font-family:Arial,sans-serif;font-size:12px;font-weight:900;letter-spacing:.04em;text-decoration:none;box-shadow:0 8px 24px rgba(0,0,0,.28)">UPLOAD PHOTO / PDF / VIDEO</a>`;
-  const nextHtml = html.includes('</body>') ? html.replace('</body>', uploadButton + '\n</body>') : html + uploadButton;
+  const nextHtml = html.includes('</body>')
+    ? html.replace('</body>', uploadButton + '\n</body>')
+    : html + uploadButton;
   const headers = new Headers(response.headers);
   headers.delete('content-length');
-  return new Response(nextHtml, { status: response.status, statusText: response.statusText, headers });
+  headers.set('cache-control', 'no-cache');
+  return new Response(nextHtml, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
 }
 
 export default {
