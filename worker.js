@@ -19,13 +19,7 @@ function json(data, status = 200) {
 }
 
 function slug(v = '') {
-  return v
-    .toLowerCase()
-    .trim()
-    .replace(/&/g, 'and')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 80) || 'item';
+  return v.toLowerCase().trim().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80) || 'item';
 }
 
 async function handleMedia(request, env) {
@@ -65,18 +59,47 @@ async function handleUpload(request, env) {
   return json({ok:true,key,category,title,type,url:`/api/media?key=${encodeURIComponent(key)}`},201);
 }
 
-async function serveAssetWithProductAdminLink(request, env, url) {
+async function serveAssetWithAppEnhancements(request, env, url) {
   const response = await env.ASSETS.fetch(request);
   if (request.method !== 'GET') return response;
+  const contentType = response.headers.get('content-type') || '';
+  if (!contentType.includes('text/html')) return response;
+
+  let html = await response.text();
+  const pwaHead = `
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0b0b0b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Woodrick Homes">
+<link rel="icon" href="/app-icon.svg" type="image/svg+xml">`;
+  if (!html.includes('rel="manifest"')) {
+    html = html.includes('</head>') ? html.replace('</head>', pwaHead + '\n</head>') : pwaHead + html;
+  }
+
+  const swRegistration = `
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/sw.js').catch(function () {});
+  });
+}
+</script>`;
+  if (!html.includes("navigator.serviceWorker.register('/sw.js')")) {
+    html = html.includes('</body>') ? html.replace('</body>', swRegistration + '\n</body>') : html + swRegistration;
+  }
+
   const isUploadEntryPage = url.pathname==='/' || url.pathname==='/index.html' || url.pathname==='/products' || url.pathname==='/products/' || url.pathname==='/products/index.html';
-  if (!isUploadEntryPage) return response;
-  const type=response.headers.get('content-type')||'';
-  if (!type.includes('text/html')) return response;
-  const html=await response.text();
-  const uploadButton=`\n<a href="/admin-products/" aria-label="Upload product media" style="position:fixed;left:18px;bottom:22px;right:auto;z-index:99999;background:#f0c96b;color:#111;border:2px solid #111;padding:13px 16px;font-family:Arial,sans-serif;font-size:12px;font-weight:900;letter-spacing:.04em;text-decoration:none;box-shadow:0 8px 24px rgba(0,0,0,.28)">UPLOAD PHOTO / PDF / VIDEO</a>`;
-  const nextHtml=html.includes('</body>')?html.replace('</body>',uploadButton+'\n</body>'):html+uploadButton;
-  const headers=new Headers(response.headers); headers.delete('content-length'); headers.set('cache-control','no-cache');
-  return new Response(nextHtml,{status:response.status,statusText:response.statusText,headers});
+  if (isUploadEntryPage && !html.includes('aria-label="Upload product media"')) {
+    const uploadButton=`\n<a href="/admin-products/" aria-label="Upload product media" style="position:fixed;left:18px;bottom:22px;right:auto;z-index:99999;background:#f0c96b;color:#111;border:2px solid #111;padding:13px 16px;font-family:Arial,sans-serif;font-size:12px;font-weight:900;letter-spacing:.04em;text-decoration:none;box-shadow:0 8px 24px rgba(0,0,0,.28)">UPLOAD PHOTO / PDF / VIDEO</a>`;
+    html = html.includes('</body>') ? html.replace('</body>', uploadButton + '\n</body>') : html + uploadButton;
+  }
+
+  const headers=new Headers(response.headers);
+  headers.delete('content-length');
+  headers.set('cache-control','no-cache');
+  return new Response(html,{status:response.status,statusText:response.statusText,headers});
 }
 
 export default {
@@ -85,6 +108,6 @@ export default {
     if (url.pathname==='/api/media' && request.method==='GET') return handleMedia(request,env);
     if (url.pathname==='/api/upload' && request.method==='POST') return handleUpload(request,env);
     if (url.pathname==='/api/upload' && request.method==='OPTIONS') return new Response(null,{status:204,headers:{allow:'POST, OPTIONS'}});
-    return serveAssetWithProductAdminLink(request,env,url);
+    return serveAssetWithAppEnhancements(request,env,url);
   }
 };
