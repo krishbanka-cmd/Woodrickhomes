@@ -60,7 +60,7 @@ async function handleUpload(request, env) {
     const type = String(form.get('type') || '').trim();
     const title = String(form.get('title') || '').trim();
 
-    if (!file || typeof file.stream !== 'function') return json({ error: 'Please select a file' }, 400);
+    if (!file || typeof file.arrayBuffer !== 'function') return json({ error: 'Please select a file' }, 400);
     if (!category || !title) return json({ error: 'Category and title are required' }, 400);
     if (!allowedTypes.has(file.type)) return json({ error: 'Unsupported file type' }, 415);
     if (file.size > maxBytes) return json({ error: 'File is too large. Maximum size is 100 MB.' }, 413);
@@ -75,7 +75,8 @@ async function handleUpload(request, env) {
       uploadedAt: new Date().toISOString()
     };
 
-    await env.PRODUCT_MEDIA.put(key, file.stream(), {
+    const body = await file.arrayBuffer();
+    await env.PRODUCT_MEDIA.put(key, body, {
       httpMetadata: { contentType: file.type || 'application/octet-stream' },
       customMetadata: meta
     });
