@@ -99,11 +99,6 @@ async function serveAssetWithAppEnhancements(request, env, url) {
   if (!html.includes('rel="manifest"')) html = html.includes('</head>') ? html.replace('</head>', pwaHead + '\n</head>') : pwaHead + html;
   const swRegistration = `\n<script>\nif ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js').catch(function () {}); }); }\n</script>`;
   if (!html.includes("navigator.serviceWorker.register('/sw.js')")) html = html.includes('</body>') ? html.replace('</body>', swRegistration + '\n</body>') : html + swRegistration;
-  const isUploadEntryPage = url.pathname==='/' || url.pathname==='/index.html' || url.pathname==='/products' || url.pathname==='/products/' || url.pathname==='/products/index.html';
-  if (isUploadEntryPage && !html.includes('aria-label="Upload product media"')) {
-    const uploadButton=`\n<a href="/admin-products/" aria-label="Upload product media" style="position:fixed;left:18px;bottom:22px;right:auto;z-index:99999;background:#f0c96b;color:#111;border:2px solid #111;padding:13px 16px;font-family:Arial,sans-serif;font-size:12px;font-weight:900;letter-spacing:.04em;text-decoration:none;box-shadow:0 8px 24px rgba(0,0,0,.28)">UPLOAD PHOTO / PDF / VIDEO</a>`;
-    html = html.includes('</body>') ? html.replace('</body>', uploadButton + '\n</body>') : html + uploadButton;
-  }
   const headers = new Headers(response.headers); headers.delete('content-length'); headers.set('cache-control','no-cache');
   return new Response(html,{status:response.status,statusText:response.statusText,headers});
 }
