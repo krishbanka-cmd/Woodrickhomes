@@ -36,7 +36,8 @@ async function handleMedia(request, env) {
       headers.set('cache-control', 'public, max-age=3600');
       return new Response(obj.body, { headers });
     }
-    const listed = await env.PRODUCT_MEDIA.list({ limit: 100 });
+
+    const listed = await env.PRODUCT_MEDIA.list({ limit: 100, include: ['customMetadata'] });
     const items = listed.objects
       .map((o) => ({ key:o.key,size:o.size,uploaded:o.uploaded,...(o.customMetadata||{}) }))
       .sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));
