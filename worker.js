@@ -1,119 +1,20 @@
-const allowedTypes = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'application/pdf',
-  'video/mp4',
-  'video/webm'
-]);
+const allowedTypes = new Set(['image/jpeg','image/png','image/webp','application/pdf','video/mp4','video/webm']);
 const maxBytes = 100 * 1024 * 1024;
+const enc = new TextEncoder();
 
-function json(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      'content-type': 'application/json; charset=utf-8',
-      'cache-control': 'no-store'
-    }
-  });
-}
+function json(data,status=200){return new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}})}
+function slug(v=''){return v.toLowerCase().trim().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,80)||'item'}
+function cookieValue(request,name){const raw=request.headers.get('cookie')||'';for(const part of raw.split(';')){const [k,...rest]=part.trim().split('=');if(k===name)return rest.join('=')}return''}
+async function sessionValue(secret){const key=await crypto.subtle.importKey('raw',enc.encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign']);const sig=await crypto.subtle.sign('HMAC',key,enc.encode('woodrick-admin-session-v1'));return Array.from(new Uint8Array(sig)).map(b=>b.toString(16).padStart(2,'0')).join('')}
+async function isAdmin(request,env){if(!env.ADMIN_UPLOAD_TOKEN)return false;return cookieValue(request,'woodrick_admin')===await sessionValue(env.ADMIN_UPLOAD_TOKEN)}
+async function authorized(request,env){const auth=request.headers.get('authorization')||'';return (!!env.ADMIN_UPLOAD_TOKEN&&auth===`Bearer ${env.ADMIN_UPLOAD_TOKEN}`)||await isAdmin(request,env)}
+function loginPage(error=''){return new Response(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Woodrick Homes Admin Login</title><style>body{margin:0;background:#080808;color:#fff;font-family:Arial,sans-serif;display:grid;place-items:center;min-height:100vh}.box{width:min(420px,90%);border:2px solid #f0c96b;background:#111;padding:30px;box-shadow:0 20px 60px #000}.brand{color:#f0c96b;font-weight:900;letter-spacing:2px;margin-bottom:18px}h1{font-family:Georgia,serif;font-weight:500;margin:0 0 10px;font-size:38px}p{color:#bbb;line-height:1.6}input{width:100%;box-sizing:border-box;padding:14px;margin:12px 0;border:1px solid #777;background:#fff;font-size:16px}button{width:100%;padding:14px;background:#f0c96b;border:0;font-weight:900;cursor:pointer}.err{color:#ffb0b0;margin-top:8px}</style></head><body><form class="box" method="post" action="/admin-login"><div class="brand">WOODRICK HOMES</div><h1>Admin Login</h1><p>Authorised staff only. Enter the admin access code to continue.</p><input type="password" name="password" autocomplete="current-password" required autofocus><button type="submit">LOGIN</button>${error?`<div class="err">${error}</div>`:''}</form></body></html>`,{status:error?401:200,headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store','x-robots-tag':'noindex, nofollow'}})}
+async function handleLogin(request,env){if(!env.ADMIN_UPLOAD_TOKEN)return loginPage('Admin login is not configured.');const form=await request.formData();const password=String(form.get('password')||'');if(password!==env.ADMIN_UPLOAD_TOKEN)return loginPage('Invalid admin access code.');const value=await sessionValue(env.ADMIN_UPLOAD_TOKEN);return new Response(null,{status:303,headers:{location:'/admin-products/','set-cookie':`woodrick_admin=${value}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=28800`,'cache-control':'no-store'}})}
+function handleLogout(){return new Response(null,{status:303,headers:{location:'/admin-products/','set-cookie':'woodrick_admin=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0','cache-control':'no-store'}})}
 
-function slug(v = '') {
-  return v.toLowerCase().trim().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80) || 'item';
-}
+async function handleMedia(request,env){if(!env.PRODUCT_MEDIA)return json({error:'PRODUCT_MEDIA R2 binding is missing'},500);try{const url=new URL(request.url),key=url.searchParams.get('key');if(key){const obj=await env.PRODUCT_MEDIA.get(key);if(!obj)return new Response('Not found',{status:404});const headers=new Headers();obj.writeHttpMetadata(headers);headers.set('etag',obj.httpEtag);headers.set('cache-control','public, max-age=3600');return new Response(obj.body,{headers})}const listed=await env.PRODUCT_MEDIA.list({limit:100,include:['customMetadata']});const items=listed.objects.map(o=>({key:o.key,size:o.size,uploaded:o.uploaded,...(o.customMetadata||{})})).sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));return json({items,truncated:listed.truncated})}catch(err){return json({error:`Media API error: ${err&&err.message?err.message:'Unknown error'}`},500)}}
+async function handleUpload(request,env){if(!env.PRODUCT_MEDIA)return json({error:'PRODUCT_MEDIA R2 binding is missing'},500);if(!await authorized(request,env))return json({error:'Admin login required'},401);try{const form=await request.formData(),file=form.get('file'),category=String(form.get('category')||'').trim(),type=String(form.get('type')||'').trim(),title=String(form.get('title')||'').trim();if(!file||typeof file.arrayBuffer!=='function')return json({error:'Please select a file'},400);if(!category||!title)return json({error:'Category and title are required'},400);if(!allowedTypes.has(file.type))return json({error:'Unsupported file type'},415);if(file.size>maxBytes)return json({error:'File is too large. Maximum size is 100 MB.'},413);const ext=(file.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,''),key=`${slug(category)}/${type}/${Date.now()}-${slug(title)}.${ext}`,meta={category,title,type,originalName:file.name,uploadedAt:new Date().toISOString()},body=await file.arrayBuffer();await env.PRODUCT_MEDIA.put(key,body,{httpMetadata:{contentType:file.type||'application/octet-stream'},customMetadata:meta});return json({ok:true,key,category,title,type,url:`/api/media?key=${encodeURIComponent(key)}`},201)}catch(err){return json({error:`Upload API error: ${err&&err.message?err.message:'Unknown error'}`},500)}}
+async function handleDelete(request,env){if(!env.PRODUCT_MEDIA)return json({error:'PRODUCT_MEDIA R2 binding is missing'},500);if(!await authorized(request,env))return json({error:'Admin login required'},401);try{const data=await request.json(),key=String(data&&data.key||'').trim();if(!key)return json({error:'Media key is required'},400);const existing=await env.PRODUCT_MEDIA.head(key);if(!existing)return json({error:'Media file not found'},404);await env.PRODUCT_MEDIA.delete(key);return json({ok:true,key})}catch(err){return json({error:`Delete API error: ${err&&err.message?err.message:'Unknown error'}`},500)}}
+async function serveAssetWithAppEnhancements(request,env,url){if(!env.ASSETS||typeof env.ASSETS.fetch!=='function')return json({error:'Static assets binding is unavailable'},500);const response=await env.ASSETS.fetch(request);if(request.method!=='GET')return response;const contentType=response.headers.get('content-type')||'';if(!contentType.includes('text/html'))return response;let html=await response.text();const pwaHead=`\n<link rel="manifest" href="/manifest.webmanifest">\n<meta name="theme-color" content="#0b0b0b">\n<meta name="mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n<meta name="apple-mobile-web-app-title" content="Woodrick Homes">\n<link rel="icon" href="/app-icon.svg" type="image/svg+xml">`;if(!html.includes('rel="manifest"'))html=html.includes('</head>')?html.replace('</head>',pwaHead+'\n</head>'):pwaHead+html;const swRegistration=`\n<script>if('serviceWorker'in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}</script>`;if(!html.includes("navigator.serviceWorker.register('/sw.js')"))html=html.includes('</body>')?html.replace('</body>',swRegistration+'\n</body>'):html+swRegistration;const headers=new Headers(response.headers);headers.delete('content-length');headers.set('cache-control','no-cache');if(url.pathname.startsWith('/admin-products'))headers.set('x-robots-tag','noindex, nofollow');return new Response(html,{status:response.status,statusText:response.statusText,headers})}
 
-async function handleMedia(request, env) {
-  if (!env.PRODUCT_MEDIA) return json({ error: 'PRODUCT_MEDIA R2 binding is missing' }, 500);
-  try {
-    const url = new URL(request.url);
-    const key = url.searchParams.get('key');
-    if (key) {
-      const obj = await env.PRODUCT_MEDIA.get(key);
-      if (!obj) return new Response('Not found', { status: 404 });
-      const headers = new Headers();
-      obj.writeHttpMetadata(headers);
-      headers.set('etag', obj.httpEtag);
-      headers.set('cache-control', 'public, max-age=3600');
-      return new Response(obj.body, { headers });
-    }
-    const listed = await env.PRODUCT_MEDIA.list({ limit: 100, include: ['customMetadata'] });
-    const items = listed.objects.map((o) => ({ key:o.key,size:o.size,uploaded:o.uploaded,...(o.customMetadata||{}) })).sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));
-    return json({ items, truncated: listed.truncated });
-  } catch (err) {
-    return json({ error: `Media API error: ${err && err.message ? err.message : 'Unknown error'}` }, 500);
-  }
-}
-
-async function handleUpload(request, env) {
-  if (!env.PRODUCT_MEDIA) return json({ error: 'PRODUCT_MEDIA R2 binding is missing' }, 500);
-  if (!env.ADMIN_UPLOAD_TOKEN) return json({ error: 'ADMIN_UPLOAD_TOKEN secret is missing' }, 500);
-  const auth = request.headers.get('authorization') || '';
-  if (auth !== `Bearer ${env.ADMIN_UPLOAD_TOKEN}`) return json({ error: 'Invalid admin access code' }, 401);
-  try {
-    const form = await request.formData();
-    const file = form.get('file');
-    const category = String(form.get('category') || '').trim();
-    const type = String(form.get('type') || '').trim();
-    const title = String(form.get('title') || '').trim();
-    if (!file || typeof file.arrayBuffer !== 'function') return json({ error: 'Please select a file' }, 400);
-    if (!category || !title) return json({ error: 'Category and title are required' }, 400);
-    if (!allowedTypes.has(file.type)) return json({ error: 'Unsupported file type' }, 415);
-    if (file.size > maxBytes) return json({ error: 'File is too large. Maximum size is 100 MB.' }, 413);
-    const ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '');
-    const key = `${slug(category)}/${type}/${Date.now()}-${slug(title)}.${ext}`;
-    const meta = { category,title,type,originalName:file.name,uploadedAt:new Date().toISOString() };
-    const body = await file.arrayBuffer();
-    await env.PRODUCT_MEDIA.put(key, body, { httpMetadata:{contentType:file.type||'application/octet-stream'}, customMetadata:meta });
-    return json({ ok:true,key,category,title,type,url:`/api/media?key=${encodeURIComponent(key)}` }, 201);
-  } catch (err) {
-    return json({ error: `Upload API error: ${err && err.message ? err.message : 'Unknown error'}` }, 500);
-  }
-}
-
-async function handleDelete(request, env) {
-  if (!env.PRODUCT_MEDIA) return json({ error: 'PRODUCT_MEDIA R2 binding is missing' }, 500);
-  if (!env.ADMIN_UPLOAD_TOKEN) return json({ error: 'ADMIN_UPLOAD_TOKEN secret is missing' }, 500);
-  const auth = request.headers.get('authorization') || '';
-  if (auth !== `Bearer ${env.ADMIN_UPLOAD_TOKEN}`) return json({ error: 'Invalid admin access code' }, 401);
-  try {
-    const data = await request.json();
-    const key = String(data && data.key || '').trim();
-    if (!key) return json({ error: 'Media key is required' }, 400);
-    const existing = await env.PRODUCT_MEDIA.head(key);
-    if (!existing) return json({ error: 'Media file not found' }, 404);
-    await env.PRODUCT_MEDIA.delete(key);
-    return json({ ok:true,key });
-  } catch (err) {
-    return json({ error: `Delete API error: ${err && err.message ? err.message : 'Unknown error'}` }, 500);
-  }
-}
-
-async function serveAssetWithAppEnhancements(request, env, url) {
-  if (!env.ASSETS || typeof env.ASSETS.fetch !== 'function') return json({ error: 'Static assets binding is unavailable' }, 500);
-  const response = await env.ASSETS.fetch(request);
-  if (request.method !== 'GET') return response;
-  const contentType = response.headers.get('content-type') || '';
-  if (!contentType.includes('text/html')) return response;
-  let html = await response.text();
-  const pwaHead = `\n<link rel="manifest" href="/manifest.webmanifest">\n<meta name="theme-color" content="#0b0b0b">\n<meta name="mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n<meta name="apple-mobile-web-app-title" content="Woodrick Homes">\n<link rel="icon" href="/app-icon.svg" type="image/svg+xml">`;
-  if (!html.includes('rel="manifest"')) html = html.includes('</head>') ? html.replace('</head>', pwaHead + '\n</head>') : pwaHead + html;
-  const swRegistration = `\n<script>\nif ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js').catch(function () {}); }); }\n</script>`;
-  if (!html.includes("navigator.serviceWorker.register('/sw.js')")) html = html.includes('</body>') ? html.replace('</body>', swRegistration + '\n</body>') : html + swRegistration;
-  const headers = new Headers(response.headers); headers.delete('content-length'); headers.set('cache-control','no-cache');
-  return new Response(html,{status:response.status,statusText:response.statusText,headers});
-}
-
-export default {
-  async fetch(request, env) {
-    try {
-      const url = new URL(request.url);
-      if (url.pathname === '/api/media' && request.method === 'GET') return handleMedia(request, env);
-      if (url.pathname === '/api/upload' && request.method === 'POST') return handleUpload(request, env);
-      if (url.pathname === '/api/delete' && request.method === 'POST') return handleDelete(request, env);
-      if ((url.pathname === '/api/upload' || url.pathname === '/api/delete') && request.method === 'OPTIONS') return new Response(null,{status:204,headers:{allow:'POST, OPTIONS'}});
-      return serveAssetWithAppEnhancements(request, env, url);
-    } catch (err) {
-      return json({ error:`Worker error: ${err && err.message ? err.message : 'Unknown error'}` },500);
-    }
-  }
-};
+export default{async fetch(request,env){try{const url=new URL(request.url);if(url.pathname==='/admin-login'&&request.method==='POST')return handleLogin(request,env);if(url.pathname==='/admin-logout')return handleLogout();if(url.pathname.startsWith('/admin-products')&&!await isAdmin(request,env))return loginPage();if(url.pathname==='/api/media'&&request.method==='GET')return handleMedia(request,env);if(url.pathname==='/api/upload'&&request.method==='POST')return handleUpload(request,env);if(url.pathname==='/api/delete'&&request.method==='POST')return handleDelete(request,env);if((url.pathname==='/api/upload'||url.pathname==='/api/delete')&&request.method==='OPTIONS')return new Response(null,{status:204,headers:{allow:'POST, OPTIONS'}});return serveAssetWithAppEnhancements(request,env,url)}catch(err){return json({error:`Worker error: ${err&&err.message?err.message:'Unknown error'}`},500)}}};
