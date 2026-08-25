@@ -27,58 +27,54 @@ jobs:
           s = p.read_text(encoding='utf-8')
           endpoint = os.environ['ENQUIRY_ENDPOINT']
 
-          old_form = '''<form class="form" onsubmit="submitForm(event)"><div class="form-grid"><input placeholder="Your Name" required=""/><input placeholder="Mobile Number" required="" type="tel"/><input placeholder="City"/><select>'''
-          new_form = '''<form class="form" onsubmit="submitForm(event)"><div class="form-grid"><input name="name" placeholder="Your Name" required=""/><input name="mobile" placeholder="Mobile Number" required="" type="tel"/><input name="email" placeholder="Email Address" type="email"/><input name="city" placeholder="City"/><select name="requirement">'''
+          old_form = '<form class="form" onsubmit="submitForm(event)"><div class="form-grid"><input placeholder="Your Name" required=""/><input placeholder="Mobile Number" required="" type="tel"/><input placeholder="City"/><select>'
+          new_form = '<form class="form" onsubmit="submitForm(event)"><div class="form-grid"><input name="name" placeholder="Your Name" required=""/><input name="mobile" placeholder="Mobile Number" required="" type="tel"/><input name="email" placeholder="Email Address" type="email"/><input name="city" placeholder="City"/><select name="requirement">'
           if old_form not in s:
               raise SystemExit('Expected enquiry form opening not found; refusing unsafe edit')
           s = s.replace(old_form, new_form, 1)
 
-          old_tail = '''</select><textarea class="full" placeholder="Tell us about your requirement"></textarea></div><button class="btn btn-gold" type="submit">SEND ENQUIRY ON WHATSAPP</button><div style="font-size:11px;color:#777;margin-top:10px">Your enquiry details will open in WhatsApp to 9415324839.</div></form>'''
-          new_tail = '''</select><textarea class="full" name="message" placeholder="Tell us about your requirement"></textarea></div><button class="btn btn-gold" type="submit">SEND ENQUIRY</button><div style="font-size:11px;color:#777;margin-top:10px">Your enquiry is saved securely and WhatsApp will open for quick follow-up.</div></form>'''
+          old_tail = '</select><textarea class="full" placeholder="Tell us about your requirement"></textarea></div><button class="btn btn-gold" type="submit">SEND ENQUIRY ON WHATSAPP</button><div style="font-size:11px;color:#777;margin-top:10px">Your enquiry details will open in WhatsApp to 9415324839.</div></form>'
+          new_tail = '</select><textarea class="full" name="message" placeholder="Tell us about your requirement"></textarea></div><button class="btn btn-gold" type="submit">SEND ENQUIRY</button><div style="font-size:11px;color:#777;margin-top:10px">Your enquiry is saved securely and WhatsApp will open for quick follow-up.</div></form>'
           if old_tail not in s:
               raise SystemExit('Expected enquiry form ending not found; refusing unsafe edit')
           s = s.replace(old_tail, new_tail, 1)
 
           start = s.find('function submitForm(e){')
-          end_marker = '\n}\n</script>'
-          end = s.find(end_marker, start)
+          end = s.find('\n}\n</script>', start)
           if start < 0 or end < 0:
               raise SystemExit('submitForm function not found; refusing unsafe edit')
 
-          new_js = f'''function submitForm(e){{
+          new_js = """function submitForm(e){
  e.preventDefault();
  const form=e.target;
- const name=form.querySelector('[name="name"]').value.trim();
- const mobile=form.querySelector('[name="mobile"]').value.trim();
- const email=form.querySelector('[name="email"]').value.trim();
- const city=form.querySelector('[name="city"]').value.trim();
- const requirement=form.querySelector('[name="requirement"]').value;
- const message=form.querySelector('[name="message"]').value.trim();
- const payload={{name,mobile,email,city,requirement,message,source:'woodrickhomes.com'}};
- fetch('{endpoint}',{{
+ const name=form.querySelector('[name=\"name\"]').value.trim();
+ const mobile=form.querySelector('[name=\"mobile\"]').value.trim();
+ const email=form.querySelector('[name=\"email\"]').value.trim();
+ const city=form.querySelector('[name=\"city\"]').value.trim();
+ const requirement=form.querySelector('[name=\"requirement\"]').value;
+ const message=form.querySelector('[name=\"message\"]').value.trim();
+ const payload={name:name,mobile:mobile,email:email,city:city,requirement:requirement,message:message,source:'woodrickhomes.com'};
+ fetch('ENDPOINT_HERE',{
    method:'POST',
    mode:'no-cors',
-   headers:{{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'}},
+   headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
    body:new URLSearchParams(payload).toString()
- }}).catch(function(err){{console.error('Enquiry save error',err)}});
- const text =
- `*New Website Enquiry – Woodrick Homes*%0A%0A`+
- `*Name:* ${{encodeURIComponent(name)}}%0A`+
- `*Mobile:* ${{encodeURIComponent(mobile)}}%0A`+
- `*Email:* ${{encodeURIComponent(email || 'Not provided')}}%0A`+
- `*City:* ${{encodeURIComponent(city)}}%0A`+
- `*Requirement:* ${{encodeURIComponent(requirement)}}%0A`+
- `*Message:* ${{encodeURIComponent(message || 'Not provided')}}`;
- window.open(`https://wa.me/919415324839?text=${{text}}`,'_blank');
+ }).catch(function(err){console.error('Enquiry save error',err)});
+ const text='*New Website Enquiry – Woodrick Homes*%0A%0A'+
+ '*Name:* '+encodeURIComponent(name)+'%0A'+
+ '*Mobile:* '+encodeURIComponent(mobile)+'%0A'+
+ '*Email:* '+encodeURIComponent(email || 'Not provided')+'%0A'+
+ '*City:* '+encodeURIComponent(city)+'%0A'+
+ '*Requirement:* '+encodeURIComponent(requirement)+'%0A'+
+ '*Message:* '+encodeURIComponent(message || 'Not provided');
+ window.open('https://wa.me/919415324839?text='+text,'_blank');
  const toast=document.getElementById('toast');
- if(toast){{toast.textContent='Thank you! Your enquiry has been submitted.';toast.classList.add('show');setTimeout(function(){{toast.classList.remove('show')}},3500)}}
+ if(toast){toast.textContent='Thank you! Your enquiry has been submitted.';toast.classList.add('show');setTimeout(function(){toast.classList.remove('show')},3500)}
  form.reset();
-}}'''
+}""".replace('ENDPOINT_HERE', endpoint)
+
           s = s[:start] + new_js + s[end+2:]
-
-          old_toast = 'Thank you! Your enquiry form is ready for connection to your WhatsApp/email backend.'
-          s = s.replace(old_toast, 'Thank you! Your enquiry has been submitted.', 1)
-
+          s = s.replace('Thank you! Your enquiry form is ready for connection to your WhatsApp/email backend.','Thank you! Your enquiry has been submitted.',1)
           p.write_text(s, encoding='utf-8')
           print('Enquiry form patched successfully')
           PY
