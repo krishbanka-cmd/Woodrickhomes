@@ -1,0 +1,43 @@
+name: Fix enquiry save reliability
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-enquiry-save.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch enquiry submission
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text()
+          old = " fetch('https://script.google.com/macros/s/AKfycbyaPA-H-vCttmE-mMWp4Bo_kPRdi2PoXl-7NLrPfCfOQ-3_HCREslXF8MvZSlT7qYrIVw/exec',{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:new URLSearchParams(payload).toString()}).catch(function(err){console.error('Enquiry save error',err)});"
+          new = """ const endpoint='https://script.google.com/macros/s/AKfycbyaPA-H-vCttmE-mMWp4Bo_kPRdi2PoXl-7NLrPfCfOQ-3_HCREslXF8MvZSlT7qYrIVw/exec';
+ let sink=document.getElementById('woodrickEnquirySink');
+ if(!sink){sink=document.createElement('iframe');sink.id='woodrickEnquirySink';sink.name='woodrickEnquirySink';sink.style.display='none';document.body.appendChild(sink)}
+ const postForm=document.createElement('form');
+ postForm.method='POST';postForm.action=endpoint;postForm.target='woodrickEnquirySink';postForm.style.display='none';
+ Object.keys(payload).forEach(function(key){const input=document.createElement('input');input.type='hidden';input.name=key;input.value=payload[key] || '';postForm.appendChild(input)});
+ document.body.appendChild(postForm);postForm.submit();setTimeout(function(){postForm.remove()},5000);"""
+          if old not in s:
+              raise SystemExit('Expected enquiry fetch line not found; no changes made')
+          p.write_text(s.replace(old, new, 1))
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'Make enquiry Google Sheet save reliable'
+          git push
