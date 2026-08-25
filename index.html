@@ -592,11 +592,11 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
 <section class="testimonials"><div class="container"><div class="section-head"><div class="kicker">What Our Customers Say</div><h2>Trusted By Customers</h2></div>
 <div class="testimonial-grid"><div class="quote"><div class="stars">★★★★★</div><p>Excellent product range and very helpful guidance. Highly recommended.</p><strong>— Customer Review</strong></div><div class="quote"><div class="stars">★★★★★</div><p>Great collection of laminates and plywood. Quality is genuinely top-notch.</p><strong>— Customer Review</strong></div><div class="quote"><div class="stars">★★★★★</div><p>Professional team and smooth service. Very happy with the experience.</p><strong>— Customer Review</strong></div></div></div></section>
 <section class="contact" id="contact"><div class="container contact-grid"><div class="contact-copy"><div class="kicker">Get Free Consultation</div><h2>Planning Your Next Project?</h2><p>Tell us what you are building or renovating. Our team will help you find the right materials and solutions.</p><div class="contact-list"><div>📞 <b>Call:</b> 9415324839 / 7618840000</div><div>💬 <b>WhatsApp:</b> <a href="https://wa.me/919415324839?text=Hello%20Woodrick%20Homes%2C%20I%20am%20interested%20in%20your%20products%20and%20would%20like%20more%20details." rel="noopener" target="_blank">Chat with us</a></div><div>✉ <b>Email:</b> <a href="mailto:woodrickhomes@gmail.com">woodrickhomes@gmail.com</a></div><div>📍 <b>Location:</b> A30, Transport Nagar, Gorakhpur, Uttar Pradesh – 273016</div></div></div>
-<form class="form" onsubmit="submitForm(event)"><div class="form-grid"><input placeholder="Your Name" required=""/><input placeholder="Mobile Number" required="" type="tel"/><input placeholder="City"/><select><option selected="selected" value="">Requirement</option><option>Cement</option><option>Building Solutions</option><option>550D Grade Steel</option><option>uPVC Doors &amp; Windows</option><option>Paints</option><option>Wall Putty</option><option>Tiles</option><option>Sanitary &amp; Bath Fittings</option><option>Lighting</option><option>Plywood</option><option>HDHMR / MDF / WPC Boards</option><option>Laminates &amp; Decorative Surfaces</option><option>Furniture &amp; Kitchen Hardware</option><option>Furniture &amp; Storage</option><option>Modular Kitchen</option><option>Interior / Renovation Services</option><option>Other Requirement</option></select><textarea class="full" placeholder="Tell us about your requirement"></textarea></div><button class="btn btn-gold" type="submit">SEND ENQUIRY ON WHATSAPP</button><div style="font-size:11px;color:#777;margin-top:10px">Your enquiry details will open in WhatsApp to 9415324839.</div></form></div></section>
+<form class="form" onsubmit="submitForm(event)"><div class="form-grid"><input name="name" placeholder="Your Name" required=""/><input name="mobile" placeholder="Mobile Number" required="" type="tel"/><input name="email" placeholder="Email Address" type="email"/><input name="city" placeholder="City"/><select name="requirement"><option selected="selected" value="">Requirement</option><option>Cement</option><option>Building Solutions</option><option>550D Grade Steel</option><option>uPVC Doors &amp; Windows</option><option>Paints</option><option>Wall Putty</option><option>Tiles</option><option>Sanitary &amp; Bath Fittings</option><option>Lighting</option><option>Plywood</option><option>HDHMR / MDF / WPC Boards</option><option>Laminates &amp; Decorative Surfaces</option><option>Furniture &amp; Kitchen Hardware</option><option>Furniture &amp; Storage</option><option>Modular Kitchen</option><option>Interior / Renovation Services</option><option>Other Requirement</option></select><textarea class="full" name="message" placeholder="Tell us about your requirement"></textarea></div><button class="btn btn-gold" type="submit">SEND ENQUIRY</button><div style="font-size:11px;color:#777;margin-top:10px">Your enquiry is saved securely and WhatsApp will open for quick follow-up.</div></form></div></section>
 </main>
 <footer class="footer"><div class="container footer-grid"><div><a class="logo" href="#"><div class="logo-mark">W</div><div><span>WOODRICK</span><small>HOMES</small></div></a><p style="margin-top:15px">Premium Building Materials &amp; Interior Solutions.</p></div><div><h3>QUICK LINKS</h3><a href="#home">Home</a><a href="#about">About Us</a><a href="#products-services">Products</a><a href="#brands">Brands</a></div><div><h3>COMPANY</h3><a href="#projects">Projects</a><a href="#contact">Contact</a><a href="#">Privacy Policy</a><a href="#">Terms &amp; Conditions</a></div><div><h3>CONTACT</h3><p>Phone: 9415324839 / 7618840000</p><p>Email: <a href="mailto:woodrickhomes@gmail.com">woodrickhomes@gmail.com</a></p><p>Address: A30, Transport Nagar, Gorakhpur, Uttar Pradesh – 273016</p></div></div><div class="container copyright">© 2026 Woodrick Homes. All Rights Reserved.</div></footer>
 <div class="float-actions"><a class="whatsapp" href="https://wa.me/919415324839?text=Hello%20Woodrick%20Homes%2C%20I%20am%20interested%20in%20your%20products%20and%20would%20like%20more%20details." rel="noopener" target="_blank">💬 WhatsApp Enquiry</a><a class="call" href="tel:+917618840000">📞 Call Now</a></div>
-<div class="toast" id="toast">Thank you! Your enquiry form is ready for connection to your WhatsApp/email backend.</div>
+<div class="toast" id="toast">Thank you! Your enquiry has been submitted.</div>
 <script>
 function toggleMenu(){
  const menu=document.querySelector('.menu');
@@ -607,19 +607,18 @@ function toggleMenu(){
 function submitForm(e){
  e.preventDefault();
  const form=e.target;
- const name=form.querySelector('input[placeholder="Your Name"]').value.trim();
- const mobile=form.querySelector('input[placeholder="Mobile Number"]').value.trim();
- const city=form.querySelector('input[placeholder="City"]').value.trim();
- const requirement=form.querySelector('select').value;
- const message=form.querySelector('textarea').value.trim();
- const text =
- `*New Website Enquiry – Woodrick Homes*%0A%0A`+
- `*Name:* ${encodeURIComponent(name)}%0A`+
- `*Mobile:* ${encodeURIComponent(mobile)}%0A`+
- `*City:* ${encodeURIComponent(city)}%0A`+
- `*Requirement:* ${encodeURIComponent(requirement)}%0A`+
- `*Message:* ${encodeURIComponent(message || 'Not provided')}`;
- window.open(`https://wa.me/919415324839?text=${text}`,'_blank');
+ const name=form.querySelector('[name="name"]').value.trim();
+ const mobile=form.querySelector('[name="mobile"]').value.trim();
+ const email=form.querySelector('[name="email"]').value.trim();
+ const city=form.querySelector('[name="city"]').value.trim();
+ const requirement=form.querySelector('[name="requirement"]').value;
+ const message=form.querySelector('[name="message"]').value.trim();
+ const payload={name:name,mobile:mobile,email:email,city:city,requirement:requirement,message:message,source:'woodrickhomes.com'};
+ fetch('https://script.google.com/macros/s/AKfycbyaPA-H-vCttmE-mMWp4Bo_kPRdi2PoXI-7NLrPfCfOQ-3_HCREsIXF8MvZSIT7qyrlVw/exec',{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:new URLSearchParams(payload).toString()}).catch(function(err){console.error('Enquiry save error',err)});
+ const text='*New Website Enquiry – Woodrick Homes*%0A%0A'+'*Name:* '+encodeURIComponent(name)+'%0A'+'*Mobile:* '+encodeURIComponent(mobile)+'%0A'+'*Email:* '+encodeURIComponent(email || 'Not provided')+'%0A'+'*City:* '+encodeURIComponent(city)+'%0A'+'*Requirement:* '+encodeURIComponent(requirement)+'%0A'+'*Message:* '+encodeURIComponent(message || 'Not provided');
+ window.open('https://wa.me/919415324839?text='+text,'_blank');
+ const toast=document.getElementById('toast');
+ if(toast){toast.textContent='Thank you! Your enquiry has been submitted.';toast.classList.add('show');setTimeout(function(){toast.classList.remove('show')},3500)}
  form.reset();
 }
 </script>
