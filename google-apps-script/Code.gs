@@ -1,3 +1,4 @@
+const SPREADSHEET_ID = '1ljE1Ho0RUCHSvAoRqmvPp1p-8T_W_cZV1HfsHv5_A7k';
 const SHEET_NAME = 'Website Enquiries';
 const NOTIFICATION_EMAIL = 'woodrickhomes@gmail.com';
 const SEND_EMAIL_NOTIFICATION = true;
@@ -48,7 +49,7 @@ function parseRequest_(e) {
 }
 
 function getSheet_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   let sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) sheet = ss.insertSheet(SHEET_NAME);
   return sheet;
