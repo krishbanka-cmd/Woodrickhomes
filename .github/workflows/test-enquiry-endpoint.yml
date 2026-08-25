@@ -1,0 +1,22 @@
+name: Test enquiry endpoint
+
+on:
+  push:
+    paths:
+      - '.github/workflows/test-enquiry-endpoint.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Submit test enquiry
+        run: |
+          curl -fsS -X POST 'https://script.google.com/macros/s/AKfycbyaPA-H-vCttmE-mMWp4Bo_kPRdi2PoXI-7NLrPfCfOQ-3_HCREsIXF8MvZSIT7qyrlVw/exec' \
+            -H 'Content-Type: application/x-www-form-urlencoded' \
+            --data-urlencode 'name=Woodrick Test' \
+            --data-urlencode 'mobile=9999999999' \
+            --data-urlencode 'email=test@woodrickhomes.com' \
+            --data-urlencode 'city=Gorakhpur' \
+            --data-urlencode 'requirement=Integration Test' \
+            --data-urlencode 'message=Website enquiry integration test' \
+            --data-urlencode 'source=woodrickhomes.com-test'
