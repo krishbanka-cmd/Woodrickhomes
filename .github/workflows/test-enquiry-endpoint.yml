@@ -11,12 +11,12 @@ jobs:
     steps:
       - name: Submit test enquiry
         run: |
-          curl -fsS -X POST 'https://script.google.com/macros/s/AKfycbyaPA-H-vCttmE-mMWp4Bo_kPRdi2PoXI-7NLrPfCfOQ-3_HCREsIXF8MvZSIT7qyrlVw/exec' \
+          curl -fsS -L -X POST 'https://script.google.com/macros/s/AKfycbyaPA-H-vCttmE-mMWp4Bo_kPRdi2PoXl-7NLrPfCfOQ-3_HCREslXF8MvZSlT7qYrIVw/exec' \
             -H 'Content-Type: application/x-www-form-urlencoded' \
-            --data-urlencode 'name=Woodrick Test' \
+            --data-urlencode 'name=Woodrick Endpoint Test' \
             --data-urlencode 'mobile=9999999999' \
             --data-urlencode 'email=test@woodrickhomes.com' \
             --data-urlencode 'city=Gorakhpur' \
             --data-urlencode 'requirement=Integration Test' \
-            --data-urlencode 'message=Website enquiry integration test' \
+            --data-urlencode 'message=Corrected endpoint verification' \
             --data-urlencode 'source=woodrickhomes.com-test'
