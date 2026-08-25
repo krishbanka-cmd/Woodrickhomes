@@ -614,7 +614,7 @@ function submitForm(e){
  const requirement=form.querySelector('[name="requirement"]').value;
  const message=form.querySelector('[name="message"]').value.trim();
  const payload={name:name,mobile:mobile,email:email,city:city,requirement:requirement,message:message,source:'woodrickhomes.com'};
- fetch('https://script.google.com/macros/s/AKfycbyaPA-H-vCttmE-mMWp4Bo_kPRdi2PoXI-7NLrPfCfOQ-3_HCREsIXF8MvZSIT7qyrlVw/exec',{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:new URLSearchParams(payload).toString()}).catch(function(err){console.error('Enquiry save error',err)});
+ fetch('https://script.google.com/macros/s/AKfycbyaPA-H-vCttmE-mMWp4Bo_kPRdi2PoXl-7NLrPfCfOQ-3_HCREslXF8MvZSlT7qYrIVw/exec',{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:new URLSearchParams(payload).toString()}).catch(function(err){console.error('Enquiry save error',err)});
  const text='*New Website Enquiry – Woodrick Homes*%0A%0A'+'*Name:* '+encodeURIComponent(name)+'%0A'+'*Mobile:* '+encodeURIComponent(mobile)+'%0A'+'*Email:* '+encodeURIComponent(email || 'Not provided')+'%0A'+'*City:* '+encodeURIComponent(city)+'%0A'+'*Requirement:* '+encodeURIComponent(requirement)+'%0A'+'*Message:* '+encodeURIComponent(message || 'Not provided');
  window.open('https://wa.me/919415324839?text='+text,'_blank');
  const toast=document.getElementById('toast');
