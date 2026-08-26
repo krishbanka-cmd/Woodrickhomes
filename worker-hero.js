@@ -2,30 +2,25 @@ import base from './worker.js';
 
 const HERO_CSS = `
 <style id="woodrick-dark-material-hero-2026">
-.topbar{background:#11100e!important;color:#f2d18a!important;border-bottom:1px solid #2a251f!important}
-.nav{background:#161512!important;color:#fff!important;border-bottom:1px solid #2c261d!important;box-shadow:0 10px 30px rgba(0,0,0,.28)!important}
-.nav-inner{background:#161512!important;border:0!important}
-.nav .logo,.nav .logo span{color:#fff!important}.nav .logo small{color:#d7b36a!important}.nav .logo-mark{color:#f0c96b!important;border:2px solid #c99636!important;background:#17130d!important}
-.nav .menu a{color:#f4efe8!important;text-shadow:none!important}.nav .menu a:hover,.nav .menu a:focus-visible,.nav .menu a.active{color:#f0c96b!important}
-.nav .btn-gold{background:#c88f25!important;color:#fff!important;border-color:#c88f25!important}
-.mobile-menu{color:#f0c96b!important}
-.hero{min-height:790px!important;color:#fff!important;background:linear-gradient(90deg,rgba(10,9,8,.95) 0%,rgba(16,14,11,.88) 35%,rgba(18,15,12,.52) 58%,rgba(18,15,12,.24) 100%),url('https://images.unsplash.com/photo-1723257890897-e8f748161c34?auto=format&fit=crop&fm=jpg&q=88&w=2400') center/cover!important;overflow:hidden!important}
-.hero:after{content:""!important;position:absolute!important;inset:0!important;background:linear-gradient(180deg,rgba(0,0,0,.02) 55%,rgba(6,5,4,.58) 100%)!important;pointer-events:none!important}
+.topbar{background:#0b0b0a!important;color:#e8c46d!important;border-bottom:1px solid #3a2c13!important}
+.nav{background:rgba(12,12,11,.96)!important;color:#f0c96b!important;border-bottom:1px solid #6d5120!important;box-shadow:0 10px 30px rgba(0,0,0,.24)!important}
+.nav-inner{background:transparent!important;border:0!important}
+.nav .logo,.nav .logo span{color:#fff!important}.nav .logo small{color:#d7b36a!important}.nav .logo-mark{color:#f0c96b!important;border:2px solid #d5a33c!important;background:#15120c!important}
+.nav .menu a{color:#e7bd5c!important;text-shadow:none!important;font-weight:800!important}.nav .menu a:hover,.nav .menu a:focus-visible,.nav .menu a.active,.nav .menu a[aria-current="page"]{color:#ffd978!important}
+.nav .btn-gold{background:#c99228!important;color:#fff!important;border-color:#d7aa4a!important}.mobile-menu{color:#f0c96b!important}
+.hero{min-height:790px!important;color:#fff!important;background:linear-gradient(90deg,rgba(8,8,7,.84) 0%,rgba(12,11,9,.67) 35%,rgba(18,15,12,.28) 62%,rgba(18,15,12,.08) 100%),url('https://images.unsplash.com/photo-1723257890897-e8f748161c34?auto=format&fit=crop&fm=jpg&q=92&w=2400') center/cover!important;overflow:hidden!important}
+.hero:after{content:""!important;position:absolute!important;inset:0!important;background:linear-gradient(180deg,rgba(0,0,0,0) 55%,rgba(6,5,4,.30) 100%)!important;pointer-events:none!important}
 .hero-content{padding-top:220px!important;max-width:670px!important;position:relative!important;z-index:2!important}
-.hero .kicker{display:inline-flex!important;color:#f0c96b!important;background:rgba(16,13,9,.78)!important;border:1px solid #b8862e!important;padding:10px 14px!important;border-radius:3px!important;letter-spacing:1.7px!important;font-size:11px!important}
-.hero h1{color:#fff!important;text-shadow:0 2px 12px rgba(0,0,0,.3)!important;font-size:clamp(50px,5.6vw,72px)!important;line-height:1.02!important;max-width:660px!important}
-.hero h1 em{color:#d7a542!important}
-.hero p{color:#eee7de!important;text-shadow:none!important;max-width:560px!important;font-size:16px!important;line-height:1.75!important}
-.hero-actions{gap:10px!important;align-items:center!important}
-.hero .btn{padding:13px 17px!important;font-size:11px!important;letter-spacing:.35px!important}
-.hero .btn-gold{background:#c88f25!important;color:#fff!important;border-color:#c88f25!important}
-.hero .btn-outline{background:rgba(13,11,9,.70)!important;color:#f4e7c7!important;border-color:#b8893b!important;backdrop-filter:blur(4px)!important}
-.hero .btn-outline:hover{background:#c88f25!important;color:#fff!important}
-.hero .trust{color:#e0d5c8!important}.hero .trust span::before{color:#e3ac43!important}
-.hero-material-tags{position:absolute;right:5%;bottom:120px;z-index:3;display:flex;gap:8px;flex-wrap:wrap;max-width:46%;justify-content:flex-end;pointer-events:none}
-.hero-material-tags span{background:rgba(13,12,10,.88);border:1px solid rgba(215,179,106,.35);color:#fff;padding:7px 10px;border-radius:3px;font-size:10px;font-weight:800;letter-spacing:.35px;box-shadow:0 5px 18px rgba(0,0,0,.22)}
-@media(max-width:850px){.nav-inner{background:#161512!important}.nav .menu{background:#161512!important}.hero{min-height:760px!important;background:linear-gradient(90deg,rgba(10,9,8,.94) 0%,rgba(13,11,9,.82) 58%,rgba(18,15,12,.40) 100%),url('https://images.unsplash.com/photo-1723257890897-e8f748161c34?auto=format&fit=crop&fm=jpg&q=85&w=1600') 62% center/cover!important}.hero-content{padding-top:195px!important;max-width:590px!important}.hero h1{font-size:50px!important}.hero-material-tags{display:none!important}}
-@media(max-width:520px){.hero{min-height:720px!important;background:linear-gradient(90deg,rgba(10,9,8,.95) 0%,rgba(12,10,8,.85) 72%,rgba(18,15,12,.48) 100%),url('https://images.unsplash.com/photo-1723257890897-e8f748161c34?auto=format&fit=crop&fm=jpg&q=84&w=1200') 68% center/cover!important}.hero-content{padding-top:175px!important}.hero h1{font-size:41px!important}.hero p{font-size:14px!important}.hero .btn{padding:12px 13px!important;font-size:10px!important}}
+.hero .kicker{display:inline-flex!important;color:#f4ca68!important;background:rgba(12,10,7,.58)!important;border:1px solid #c79432!important;padding:9px 13px!important;border-radius:3px!important;letter-spacing:1.7px!important;font-size:11px!important}
+.hero h1{color:#fff!important;text-shadow:0 2px 12px rgba(0,0,0,.28)!important;font-size:clamp(48px,5.3vw,69px)!important;line-height:1.03!important;max-width:660px!important}.hero h1 em{color:#e0aa42!important}
+.hero p{color:#f1ece4!important;max-width:560px!important;font-size:15px!important;line-height:1.75!important;text-shadow:0 1px 4px rgba(0,0,0,.28)!important}
+.hero-actions{gap:10px!important;align-items:center!important}.hero .btn{padding:13px 17px!important;font-size:11px!important;letter-spacing:.35px!important}
+.hero .btn-gold{background:linear-gradient(135deg,#d7a43b,#b77c18)!important;color:#fff!important;border-color:#e3b95c!important;box-shadow:0 8px 24px rgba(180,120,20,.22)!important}
+.hero .btn-outline{background:rgba(12,11,9,.55)!important;color:#f7e6b6!important;border-color:#c99738!important;backdrop-filter:blur(4px)!important}.hero .btn-outline:hover{background:#c88f25!important;color:#fff!important}
+.hero .trust{color:#eadfce!important}.hero .trust span::before{color:#e3ac43!important}
+.hero-material-tags{position:absolute;right:5%;bottom:120px;z-index:3;display:flex;gap:8px;flex-wrap:wrap;max-width:46%;justify-content:flex-end;pointer-events:none}.hero-material-tags span{background:rgba(13,12,10,.78);border:1px solid rgba(224,170,66,.48);color:#f8e9c2;padding:7px 10px;border-radius:3px;font-size:10px;font-weight:800;letter-spacing:.35px;box-shadow:0 5px 18px rgba(0,0,0,.18)}
+@media(max-width:850px){.nav-inner{background:transparent!important}.nav .menu{background:#11100e!important}.hero{min-height:760px!important;background:linear-gradient(90deg,rgba(8,8,7,.88) 0%,rgba(12,10,8,.70) 58%,rgba(18,15,12,.22) 100%),url('https://images.unsplash.com/photo-1723257890897-e8f748161c34?auto=format&fit=crop&fm=jpg&q=90&w=1600') 62% center/cover!important}.hero-content{padding-top:195px!important;max-width:590px!important}.hero h1{font-size:48px!important}.hero-material-tags{display:none!important}}
+@media(max-width:520px){.hero{min-height:720px!important;background:linear-gradient(90deg,rgba(8,8,7,.90) 0%,rgba(12,10,8,.73) 72%,rgba(18,15,12,.30) 100%),url('https://images.unsplash.com/photo-1723257890897-e8f748161c34?auto=format&fit=crop&fm=jpg&q=88&w=1200') 68% center/cover!important}.hero-content{padding-top:175px!important}.hero h1{font-size:40px!important}.hero p{font-size:14px!important}.hero .btn{padding:12px 13px!important;font-size:10px!important}}
 </style>`;
 
 const HERO_JS = `
@@ -34,16 +29,10 @@ window.addEventListener('DOMContentLoaded',function(){
   var hero=document.querySelector('.hero'); if(!hero) return;
   var kicker=hero.querySelector('.kicker'); if(kicker) kicker.textContent='PREMIUM BUILDING MATERIALS & INTERIOR SOLUTIONS';
   var h1=hero.querySelector('h1'); if(h1) h1.innerHTML='Crafted Materials.<br><em>Exceptional Spaces.</em>';
-  var p=hero.querySelector('p'); if(p) p.textContent='A curated destination for premium building materials, surfaces and interior solutions — chosen to make every home feel considered, refined and enduring.';
+  var p=hero.querySelector('p'); if(p) p.textContent='Explore premium building materials and interior solutions that bring quality, style and durability to every space.';
   var actions=hero.querySelector('.hero-actions');
-  if(actions){
-    actions.innerHTML='<a class="btn btn-gold" href="/products/">EXPLORE PRODUCTS</a><a class="btn btn-outline" href="#catalogue">VIEW CATALOGUE</a><a class="btn btn-outline" href="#modular">EXPLORE MODULAR KITCHEN →</a>';
-  }
-  if(!hero.querySelector('.hero-material-tags')){
-    var tags=document.createElement('div'); tags.className='hero-material-tags';
-    tags.innerHTML='<span>LOUVERS</span><span>PLYWOOD SAMPLES</span><span>ACRYLIC SHEETS</span><span>TILES</span><span>SANITARY & FAUCETS</span>';
-    hero.appendChild(tags);
-  }
+  if(actions){actions.innerHTML='<a class="btn btn-gold" href="/products/">EXPLORE PRODUCTS</a><a class="btn btn-outline" href="#catalogue">VIEW CATALOGUE</a><a class="btn btn-outline" href="#modular">EXPLORE MODULAR KITCHEN →</a>';}
+  if(!hero.querySelector('.hero-material-tags')){var tags=document.createElement('div');tags.className='hero-material-tags';tags.innerHTML='<span>PLYWOOD</span><span>LOUVERS</span><span>ACRYLIC</span><span>TILES</span><span>SANITARY</span>';hero.appendChild(tags);}
 });
 </script>`;
 
