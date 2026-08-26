@@ -1,5 +1,5 @@
 name = "woodrickhomes"
-main = "worker.js"
+main = "worker-hero.js"
 compatibility_date = "2026-08-23"
 
 [assets]
