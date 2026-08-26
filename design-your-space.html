@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Design Your Space | Woodrick Homes</title>
+<style>
+:root{--bg:#0b0b0b;--gold:#f0c96b;--cream:#f7f3ec;--ink:#171717;--muted:#6d6a65;--line:#ddd2bc}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--cream);color:var(--ink)}.top{background:#050505;color:#fff;border-bottom:2px solid var(--gold);padding:18px 5%}.top a{color:var(--gold);text-decoration:none;font-weight:800}.wrap{width:min(1100px,92%);margin:auto;padding:55px 0}.hero{background:linear-gradient(135deg,#0b0b0b,#241e15);color:#fff;padding:48px;border-radius:14px}.eyebrow{color:var(--gold);font-size:12px;letter-spacing:3px;font-weight:800}.hero h1{font-family:Georgia,serif;font-size:clamp(38px,6vw,66px);margin:12px 0}.hero p{color:#d7d0c5;max-width:760px;line-height:1.7}.choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:28px 0}.choice{background:#fff;border:1px solid var(--line);padding:24px;border-radius:10px}.choice h3{font-family:Georgia,serif;font-size:25px;margin:0 0 8px}.choice p{color:var(--muted);line-height:1.6}.choice input{margin-right:8px}.form{background:#fff;border:1px solid var(--line);padding:28px;border-radius:12px}.form h2{font-family:Georgia,serif;margin-top:0}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.full{grid-column:1/-1}input,select,textarea{width:100%;padding:14px;border:1px solid #d8d0c3;background:#fff;font:inherit}textarea{min-height:105px;resize:vertical}.measure{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.check-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px;background:#faf8f3;border:1px solid #eee}.check-grid label{font-size:13px}.note{font-size:12px;color:#6d6a65;line-height:1.6}.btn{border:0;background:var(--gold);color:#080808;font-weight:900;padding:15px 22px;cursor:pointer;margin-top:18px}.preview{margin-top:28px;background:#111;color:#fff;padding:24px;border-radius:10px}.preview strong{color:var(--gold)}@media(max-width:700px){.choice-grid,.grid,.measure{grid-template-columns:1fr}.check-grid{grid-template-columns:1fr 1fr}.full{grid-column:auto}.hero{padding:30px 22px}}
+</style>
+</head>
+<body>
+<div class="top"><a href="index.html#products-services">← WOODRICK HOMES · SERVICES</a></div>
+<main class="wrap">
+<section class="hero">
+<div class="eyebrow">DESIGN YOUR SPACE · 3D LAYOUT & ESTIMATE</div>
+<h1>See Your Room Before You Build It.</h1>
+<p>Share your room dimensions, photos and requirements. Choose your own reference design or let Woodrick Homes recommend the layout, furniture, material and colour combination. We will use the selected design direction to prepare a conceptual furniture layout and 3D design proposal.</p>
+</section>
+
+<section class="choice-grid">
+<label class="choice"><input type="radio" name="designMode" value="Woodrick Recommended Design" checked><strong>WOODRICK RECOMMENDED DESIGN</strong><h3>Let Woodrick Design for Me</h3><p>We suggest the furniture layout, storage, finishes and colour combination based on your room size and requirement.</p></label>
+<label class="choice"><input type="radio" name="designMode" value="Customer Choice Design"><strong>MY CHOICE / REFERENCE</strong><h3>Use My Choice</h3><p>Select a Woodrick catalogue/PDF design or share your own design reference and we adapt it to your room dimensions.</p></label>
+</section>
+
+<form class="form" id="spaceForm">
+<h2>Tell Us About Your Space</h2>
+<div class="grid">
+<input name="name" placeholder="Your Name" required>
+<input name="mobile" placeholder="Mobile Number" type="tel" required>
+<select name="roomType" required><option value="">Select Room / Space</option><option>Bedroom</option><option>Living Room</option><option>Modular Kitchen</option><option>Kids Room</option><option>Home Office</option><option>Dining Area</option><option>Wardrobe / Dressing</option><option>Other</option></select>
+<select name="budget"><option value="">Budget Preference</option><option>Value</option><option>Premium</option><option>Luxury</option><option>Let Woodrick Suggest</option></select>
+<div class="full"><strong>Room Size</strong><div class="measure"><input name="length" placeholder="Length (ft)" required><input name="width" placeholder="Width (ft)" required><input name="height" placeholder="Height (ft)"></div></div>
+<textarea class="full" name="openings" placeholder="Door & window positions / sizes, balcony, columns or other fixed points"></textarea>
+<div class="full"><strong>Furniture / Requirements</strong><div class="check-grid"><label><input type="checkbox" value="Bed"> Bed</label><label><input type="checkbox" value="Wardrobe"> Wardrobe</label><label><input type="checkbox" value="TV Unit"> TV Unit</label><label><input type="checkbox" value="Study"> Study</label><label><input type="checkbox" value="Dresser"> Dresser</label><label><input type="checkbox" value="Sofa / Seating"> Sofa / Seating</label><label><input type="checkbox" value="Storage"> Extra Storage</label><label><input type="checkbox" value="Kitchen"> Kitchen Cabinets</label><label><input type="checkbox" value="Other"> Other</label></div></div>
+<input class="full" name="catalogueRef" placeholder="Woodrick PDF / Catalogue design name or reference number (optional)">
+<textarea class="full" name="style" placeholder="Preferred colours, laminate, wood tone, style or any special requirement"></textarea>
+<label class="full">Room photos / reference images <input name="photos" type="file" accept="image/*,.pdf" multiple></label>
+<p class="full note">The first output is a conceptual 3D design and layout based on the information shared. Final production drawings and dimensions should be confirmed after site measurement.</p>
+<button class="btn" type="submit">SUBMIT FOR 3D DESIGN →</button>
+</div>
+</form>
+<div class="preview"><strong>What happens next:</strong> Woodrick reviews the dimensions and selected design direction → prepares the proposed furniture layout and colour/material concept → shares the conceptual 3D view → final estimate and site measurement can follow.</div>
+</main>
+<script>
+document.getElementById('spaceForm').addEventListener('submit',function(e){e.preventDefault();const f=e.target;const mode=document.querySelector('input[name="designMode"]:checked').value;const req=[...document.querySelectorAll('.check-grid input:checked')].map(x=>x.value).join(', ')||'To be discussed';const text='*Design Your Space – Woodrick Homes*%0A%0A*Name:* '+encodeURIComponent(f.name.value)+'%0A*Mobile:* '+encodeURIComponent(f.mobile.value)+'%0A*Design Mode:* '+encodeURIComponent(mode)+'%0A*Space:* '+encodeURIComponent(f.roomType.value)+'%0A*Room Size:* '+encodeURIComponent(f.length.value+' ft × '+f.width.value+' ft × '+(f.height.value||'height not provided'))+'%0A*Furniture:* '+encodeURIComponent(req)+'%0A*Catalogue Ref:* '+encodeURIComponent(f.catalogueRef.value||'Not provided')+'%0A*Style / Colours:* '+encodeURIComponent(f.style.value||'Let Woodrick suggest')+'%0A*Openings:* '+encodeURIComponent(f.openings.value||'To be confirmed')+'%0A%0A*Request:* Conceptual furniture layout + 3D design + estimate.';window.open('https://wa.me/919415324839?text='+text,'_blank');});
+</script>
+</body>
+</html>
