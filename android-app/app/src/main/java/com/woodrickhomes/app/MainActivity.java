@@ -62,12 +62,24 @@ public class MainActivity extends Activity {
     private boolean handleUrl(Uri uri) {
         String scheme = uri.getScheme() == null ? "" : uri.getScheme();
         String host = uri.getHost() == null ? "" : uri.getHost();
-        boolean internal = host.equals("www.woodrickhomes.com") || host.equals("woodrickhomes.com");
-        if ((scheme.equals("http") || scheme.equals("https")) && internal) return false;
-        if (scheme.equals("tel") || scheme.equals("mailto") || host.contains("wa.me") || host.contains("whatsapp.com") || scheme.equals("http") || scheme.equals("https")) {
+
+        // Keep normal web pages and product media inside the app so WebView
+        // maintains a real back stack. This prevents Back from exiting the app
+        // after opening a product, catalogue, photo or video.
+        if (scheme.equals("http") || scheme.equals("https")) {
+            if (host.contains("wa.me") || host.contains("whatsapp.com")) {
+                try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); } catch (ActivityNotFoundException ignored) {}
+                return true;
+            }
+            return false;
+        }
+
+        // Phone and email actions should still open their native apps.
+        if (scheme.equals("tel") || scheme.equals("mailto")) {
             try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); } catch (ActivityNotFoundException ignored) {}
             return true;
         }
+
         return false;
     }
 
@@ -88,7 +100,10 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) webView.goBack();
-        else super.onBackPressed();
+        if (webView != null && webView.canGoBack()) {
+            webView.goBack();
+        } else {
+            super.onBackPressed();
+        }
     }
 }
