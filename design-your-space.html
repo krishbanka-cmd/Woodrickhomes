@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Design Your Space | Woodrick Homes</title>
 <style>
-:root{--bg:#0b0b0b;--gold:#f0c96b;--cream:#f7f3ec;--ink:#171717;--muted:#6d6a65;--line:#ddd2bc}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--cream);color:var(--ink)}.top{background:#050505;color:#fff;border-bottom:2px solid var(--gold);padding:18px 5%}.top a{color:var(--gold);text-decoration:none;font-weight:800}.wrap{width:min(1100px,92%);margin:auto;padding:55px 0}.hero{background:linear-gradient(135deg,#0b0b0b,#241e15);color:#fff;padding:48px;border-radius:14px}.eyebrow{color:var(--gold);font-size:12px;letter-spacing:3px;font-weight:800}.hero h1{font-family:Georgia,serif;font-size:clamp(38px,6vw,66px);margin:12px 0}.hero p{color:#d7d0c5;max-width:760px;line-height:1.7}.choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:28px 0}.choice{background:#fff;border:1px solid var(--line);padding:24px;border-radius:10px}.choice h3{font-family:Georgia,serif;font-size:25px;margin:0 0 8px}.choice p{color:var(--muted);line-height:1.6}.choice input{margin-right:8px}.form{background:#fff;border:1px solid var(--line);padding:28px;border-radius:12px}.form h2{font-family:Georgia,serif;margin-top:0}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.full{grid-column:1/-1}input,select,textarea{width:100%;padding:14px;border:1px solid #d8d0c3;background:#fff;font:inherit}textarea{min-height:105px;resize:vertical}.measure{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.check-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px;background:#faf8f3;border:1px solid #eee}.check-grid label{font-size:13px}.note{font-size:12px;color:#6d6a65;line-height:1.6}.btn{border:0;background:var(--gold);color:#080808;font-weight:900;padding:15px 22px;cursor:pointer;margin-top:18px}.preview{margin-top:28px;background:#111;color:#fff;padding:24px;border-radius:10px}.preview strong{color:var(--gold)}@media(max-width:700px){.choice-grid,.grid,.measure{grid-template-columns:1fr}.check-grid{grid-template-columns:1fr 1fr}.full{grid-column:auto}.hero{padding:30px 22px}}
+:root{--bg:#0b0b0b;--gold:#f0c96b;--cream:#f7f3ec;--ink:#171717;--muted:#6d6a65;--line:#ddd2bc}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--cream);color:var(--ink)}.top{background:#050505;color:#fff;border-bottom:2px solid var(--gold);padding:18px 5%}.top a{color:var(--gold);text-decoration:none;font-weight:800}.wrap{width:min(1100px,92%);margin:auto;padding:55px 0}.hero{background:linear-gradient(135deg,#0b0b0b,#241e15);color:#fff;padding:48px;border-radius:14px}.eyebrow{color:var(--gold);font-size:12px;letter-spacing:3px;font-weight:800}.hero h1{font-family:Georgia,serif;font-size:clamp(38px,6vw,66px);margin:12px 0}.hero p{color:#d7d0c5;max-width:760px;line-height:1.7}.choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:28px 0}.choice{background:#fff;border:1px solid var(--line);padding:24px;border-radius:10px}.choice h3{font-family:Georgia,serif;font-size:25px;margin:0 0 8px}.choice p{color:var(--muted);line-height:1.6}.choice input{margin-right:8px}.form{background:#fff;border:1px solid var(--line);padding:28px;border-radius:12px}.form h2{font-family:Georgia,serif;margin-top:0}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.full{grid-column:1/-1}input,select,textarea{width:100%;padding:14px;border:1px solid #d8d0c3;background:#fff;font:inherit}textarea{min-height:105px;resize:vertical}.measure{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.check-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px;background:#faf8f3;border:1px solid #eee}.check-grid label{font-size:13px}.note{font-size:12px;color:#6d6a65;line-height:1.6}.btn{border:0;background:var(--gold);color:#080808;font-weight:900;padding:15px 22px;cursor:pointer;margin-top:18px}.btn:disabled{opacity:.6;cursor:wait}.preview{margin-top:28px;background:#111;color:#fff;padding:24px;border-radius:10px}.preview strong{color:var(--gold)}.submit-status{display:none;margin-top:14px;padding:13px 14px;background:#f5efe2;border-left:3px solid #b78a3b;font-size:13px;line-height:1.55}.submit-status.show{display:block}.submit-status.error{background:#fff0f0;border-left-color:#b84040;color:#7b1e1e}@media(max-width:700px){.choice-grid,.grid,.measure{grid-template-columns:1fr}.check-grid{grid-template-columns:1fr 1fr}.full{grid-column:auto}.hero{padding:30px 22px}}
 </style>
 </head>
 <body>
@@ -34,15 +34,48 @@
 <div class="full"><strong>Furniture / Requirements</strong><div class="check-grid"><label><input type="checkbox" value="Bed"> Bed</label><label><input type="checkbox" value="Wardrobe"> Wardrobe</label><label><input type="checkbox" value="TV Unit"> TV Unit</label><label><input type="checkbox" value="Study"> Study</label><label><input type="checkbox" value="Dresser"> Dresser</label><label><input type="checkbox" value="Sofa / Seating"> Sofa / Seating</label><label><input type="checkbox" value="Storage"> Extra Storage</label><label><input type="checkbox" value="Kitchen"> Kitchen Cabinets</label><label><input type="checkbox" value="Other"> Other</label></div></div>
 <input class="full" name="catalogueRef" placeholder="Woodrick PDF / Catalogue design name or reference number (optional)">
 <textarea class="full" name="style" placeholder="Preferred colours, laminate, wood tone, style or any special requirement"></textarea>
-<label class="full">Room photos / reference images <input name="photos" type="file" accept="image/*,.pdf" multiple></label>
+<label class="full">Room photos / reference images <input name="photos" type="file" accept="image/*,.pdf" multiple><span class="note"> Selected file names will be recorded with your enquiry. Please attach the actual images/PDF in WhatsApp when it opens after submission.</span></label>
 <p class="full note">The first output is a conceptual 3D design and layout based on the information shared. Final production drawings and dimensions should be confirmed after site measurement.</p>
-<button class="btn" type="submit">SUBMIT FOR 3D DESIGN →</button>
+<button class="btn" id="submitBtn" type="submit">SUBMIT FOR 3D DESIGN →</button>
+<div class="submit-status full" id="submitStatus"></div>
 </div>
 </form>
 <div class="preview"><strong>What happens next:</strong> Woodrick reviews the dimensions and selected design direction → prepares the proposed furniture layout and colour/material concept → shares the conceptual 3D view → final estimate and site measurement can follow.</div>
 </main>
 <script>
-document.getElementById('spaceForm').addEventListener('submit',function(e){e.preventDefault();const f=e.target;const mode=document.querySelector('input[name="designMode"]:checked').value;const req=[...document.querySelectorAll('.check-grid input:checked')].map(x=>x.value).join(', ')||'To be discussed';const text='*Design Your Space – Woodrick Homes*%0A%0A*Name:* '+encodeURIComponent(f.name.value)+'%0A*Mobile:* '+encodeURIComponent(f.mobile.value)+'%0A*Design Mode:* '+encodeURIComponent(mode)+'%0A*Space:* '+encodeURIComponent(f.roomType.value)+'%0A*Room Size:* '+encodeURIComponent(f.length.value+' ft × '+f.width.value+' ft × '+(f.height.value||'height not provided'))+'%0A*Furniture:* '+encodeURIComponent(req)+'%0A*Catalogue Ref:* '+encodeURIComponent(f.catalogueRef.value||'Not provided')+'%0A*Style / Colours:* '+encodeURIComponent(f.style.value||'Let Woodrick suggest')+'%0A*Openings:* '+encodeURIComponent(f.openings.value||'To be confirmed')+'%0A%0A*Request:* Conceptual furniture layout + 3D design + estimate.';window.open('https://wa.me/919415324839?text='+text,'_blank');});
+const ENQUIRY_ENDPOINT='https://script.google.com/macros/s/AKfycbyaPA-H-vCttmE-mMWp4Bo_kPRdi2PoXl-7NLrPfCfOQ-3_HCREslXF8MvZSlT7qYrIVw/exec';
+const form=document.getElementById('spaceForm'),submitBtn=document.getElementById('submitBtn'),submitStatus=document.getElementById('submitStatus');
+function showStatus(message,error=false){submitStatus.textContent=message;submitStatus.className='submit-status full show'+(error?' error':'')}
+form.addEventListener('submit',function(e){
+ e.preventDefault();
+ const f=e.target;
+ const mode=document.querySelector('input[name="designMode"]:checked').value;
+ const req=[...document.querySelectorAll('.check-grid input:checked')].map(x=>x.value).join(', ')||'To be discussed';
+ const files=[...f.photos.files].map(x=>x.name).join(', ')||'No files selected';
+ const roomSize=f.length.value+' ft × '+f.width.value+' ft × '+(f.height.value||'height not provided');
+ const details=[
+  'Design Mode: '+mode,
+  'Space: '+f.roomType.value,
+  'Budget: '+(f.budget.value||'Not specified'),
+  'Room Size: '+roomSize,
+  'Furniture: '+req,
+  'Catalogue Ref: '+(f.catalogueRef.value||'Not provided'),
+  'Style / Colours: '+(f.style.value||'Let Woodrick suggest'),
+  'Door / Window / Fixed Points: '+(f.openings.value||'To be confirmed'),
+  'Selected Files: '+files,
+  'Request: Conceptual furniture layout + 3D design + estimate.'
+ ].join('\n');
+ const payload={name:f.name.value.trim(),mobile:f.mobile.value.trim(),email:'',city:'',requirement:'Design Your Space – 3D Layout & Estimate',message:details,source:'woodrickhomes.com/design-your-space'};
+ submitBtn.disabled=true;submitBtn.textContent='SAVING ENQUIRY…';showStatus('Saving your 3D design request…');
+ fetch(ENQUIRY_ENDPOINT,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:new URLSearchParams(payload).toString()})
+  .then(function(){showStatus('Request saved. WhatsApp is opening so you can send the details and attach your room photos/reference files.');})
+  .catch(function(){showStatus('WhatsApp will open with your details. If the sheet save did not complete, our team can still receive the request on WhatsApp.',true);})
+  .finally(function(){
+   const text='*Design Your Space – Woodrick Homes*%0A%0A*Name:* '+encodeURIComponent(payload.name)+'%0A*Mobile:* '+encodeURIComponent(payload.mobile)+'%0A*Design Mode:* '+encodeURIComponent(mode)+'%0A*Space:* '+encodeURIComponent(f.roomType.value)+'%0A*Budget:* '+encodeURIComponent(f.budget.value||'Not specified')+'%0A*Room Size:* '+encodeURIComponent(roomSize)+'%0A*Furniture:* '+encodeURIComponent(req)+'%0A*Catalogue Ref:* '+encodeURIComponent(f.catalogueRef.value||'Not provided')+'%0A*Style / Colours:* '+encodeURIComponent(f.style.value||'Let Woodrick suggest')+'%0A*Openings:* '+encodeURIComponent(f.openings.value||'To be confirmed')+'%0A*Selected Files:* '+encodeURIComponent(files)+'%0A%0A*Request:* Conceptual furniture layout + 3D design + estimate.%0A%0APlease attach the selected room photos/reference files in this WhatsApp chat.';
+   window.open('https://wa.me/919415324839?text='+text,'_blank');
+   submitBtn.disabled=false;submitBtn.textContent='SUBMIT FOR 3D DESIGN →';
+  });
+});
 </script>
 </body>
 </html>
