@@ -26,12 +26,11 @@ const HERO_CSS = `
 #products-services #ws-products .ws-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:14px!important}
 #products-services #ws-products .ws-card{position:relative!important;min-height:245px!important;padding:19px 18px 16px!important;border:1px solid #e6dccb!important;border-radius:4px!important;background:linear-gradient(180deg,#fff 0%,#fffdf9 100%)!important;box-shadow:0 9px 24px rgba(46,35,18,.07)!important;overflow:hidden!important;transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease!important}
 #products-services #ws-products .ws-card:hover{transform:translateY(-4px)!important;box-shadow:0 18px 38px rgba(46,35,18,.11)!important;border-color:#cda95d!important}
-#products-services #ws-products .ws-card .tag{position:relative!important;z-index:2!important;display:block!important;margin:0 0 7px!important;color:#a87929!important;font-size:9px!important;font-weight:800!important;letter-spacing:1.4px!important;text-transform:uppercase!important}
+#products-services #ws-products .ws-card .tag{position:relative!important;z-index:2!important;display:block!important;margin:0 0 7px!important;color:#a87929!important;font-size:9px!important;font-weight:800!important;letter-spacing:1.4px!important;text-transform:uppercase!important;padding-left:21px!important}
 #products-services #ws-products .ws-card h3{position:relative!important;z-index:2!important;max-width:58%!important;margin:0 0 9px!important;font-family:Georgia,'Times New Roman',serif!important;font-size:20px!important;line-height:1.08!important;color:#171512!important;font-weight:500!important}
 #products-services #ws-products .ws-card p{position:relative!important;z-index:2!important;max-width:55%!important;margin:0!important;color:#5f5a52!important;font-size:11px!important;line-height:1.55!important}
-#products-services #ws-products .ws-product-img{position:absolute!important;right:-4px!important;bottom:-3px!important;width:47%!important;height:67%!important;object-fit:cover!important;object-position:center!important;border-radius:2px 0 0 0!important;filter:saturate(.82) contrast(.98)!important;mix-blend-mode:multiply!important}
+#products-services #ws-products .ws-product-img{position:absolute!important;right:8px!important;bottom:8px!important;width:46%!important;height:62%!important;object-fit:contain!important;object-position:center!important;border-radius:2px!important;filter:saturate(.96) contrast(1.02)!important;background:#fff!important}
 #products-services #ws-products .ws-card:before{content:'✧'!important;position:absolute!important;left:17px!important;top:15px!important;color:#c49235!important;font-size:15px!important;opacity:.9!important;transform:translateY(-2px)!important}
-#products-services #ws-products .ws-card .tag{padding-left:21px!important}
 #products-services .ws-tabs{max-width:520px!important;margin-bottom:28px!important}
 #products-services .ws-tab{border-radius:3px!important}
 #products-services .ws-tab.active{background:#171717!important;color:#e1bd68!important;border-color:#171717!important}
@@ -62,31 +61,28 @@ window.addEventListener('DOMContentLoaded',function(){
   if(productPanel){
     var cards=Array.from(productPanel.querySelectorAll('.ws-card'));
     var imgs=[
-      'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=700&q=82',
+      'https://www.ultratechcement.com/content/ultratechcement/in/ta/home/for-homebuilders/products/_jcr_content/root/container/container/container_267731970__2023425555/teaser.coreimg.png/1707274353185/cement-card.png',
       'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=700&q=82',
-      'https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&w=700&q=82',
-      'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=700&q=82',
-      'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=700&q=82',
-      'https://images.unsplash.com/photo-1562259929-b4e1fd3aef09?auto=format&fit=crop&w=700&q=82',
-      'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=700&q=82',
-      'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=700&q=82',
-      'https://images.unsplash.com/photo-1524484485831-a92ffc0de03f?auto=format&fit=crop&w=700&q=82',
-      'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=700&q=82',
+      'https://assets.bldnxt.in/catalog/product/cache/1/image/a77c1558d860704591e3027d1ebed402/v/t/vtch000008_nonb000008_5ae682f2215ad.jpg',
       'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=700&q=82',
-      'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=700&q=82',
-      'https://images.unsplash.com/photo-1556912173-3bb406ef7e77?auto=format&fit=crop&w=700&q=82',
-      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=700&q=82',
+      'https://www.pngkey.com/png/detail/137-1377356_white-paint-can-png-illustration.png',
+      'https://seller.materialworld.pk/public/storage/products/WallPuttyOld1.jpg',
+      'https://98eda87788a287f6d084.cdn6.editmysite.com/uploads/b/98eda87788a287f6d0840d09cd1bee28c3a25ecfec22000db28f2dee86413fc2/2025-09-25_15-38-37_1758829147.png?optimize=medium&width=2400',
+      'https://mahgoubceramic.storage.googleapis.com/wp-content/uploads/2025/8/mahgoub-Toilet-and-basin-set-Roca-siza-white.jpg',
+      'https://images.unsplash.com/photo-1524484485831-a92ffc0de03f?auto=format&fit=crop&w=700&q=82',
+      'https://s.alicdn.com/%40sc04/kf/H4575e8defa7d4f1c85ab4e5045f75efaK/Different-Size-Available-3x7-4x8-6x8-5x9-5x8-Plywood.jpg',
+      'https://img.waimaoniu.net/2566/2566-202109021542458992.jpg',
+      'https://s.alicdn.com/%40sc04/kf/H45cf4937e66442cc89a56ff3ae5e7735Y/12mm-Hpl-Panel-6-mm-Hpl-Hpl-18mm-Thickness.jpg',
+      'https://cortecarosi.com/cdn/shop/products/36505007_4b8c39a1-46f2-4ee3-a395-efd272abbda4.png?v=1684618980&width=3840',
+      'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=700&q=82',
       'https://images.unsplash.com/photo-1556912167-f556f1f39fdf?auto=format&fit=crop&w=700&q=82'
     ];
     cards.forEach(function(card,i){
-      if(!card.querySelector('.ws-product-img')){
-        var im=document.createElement('img');
-        im.className='ws-product-img';
-        im.src=imgs[i%imgs.length];
-        im.alt=(card.querySelector('h3')?card.querySelector('h3').textContent:'Woodrick product');
-        im.loading='lazy';
-        card.appendChild(im);
-      }
+      var im=card.querySelector('.ws-product-img');
+      if(!im){im=document.createElement('img');im.className='ws-product-img';card.appendChild(im);}
+      im.src=imgs[i%imgs.length];
+      im.alt=(card.querySelector('h3')?card.querySelector('h3').textContent:'Woodrick product');
+      im.loading='lazy';
     });
     if(!productPanel.querySelector('.ws-product-benefits')){
       var benefits=document.createElement('div');
