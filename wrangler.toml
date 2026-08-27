@@ -3,9 +3,6 @@ main = "worker-ai.js"
 compatibility_date = "2026-08-23"
 keep_vars = true
 
-[secrets]
-required = ["OPENAI_API_KEY", "ADMIN_UPLOAD_TOKEN"]
-
 [assets]
 directory = "."
 binding = "ASSETS"
