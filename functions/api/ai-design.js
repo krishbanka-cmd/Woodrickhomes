@@ -18,6 +18,7 @@ export async function onRequestPost({request,env}){
     if(!env.OPENAI_API_KEY) return json({ok:false,code:'AI_NOT_CONFIGURED',error:'AI image generation is not configured yet.'},503);
 
     const incoming=await request.formData();
+    const designMode=clean(incoming.get('designMode'),80)||'Improve My Current Design';
     const roomType=clean(incoming.get('roomType'),80)||'room';
     const length=clean(incoming.get('length'),20);
     const width=clean(incoming.get('width'),20);
@@ -28,7 +29,23 @@ export async function onRequestPost({request,env}){
     const furniture=clean(incoming.get('furniture'),500)||'appropriate furniture for the room type';
     const reference=clean(incoming.get('reference'),300)||'Woodrick recommended design direction';
     const concept=clean(incoming.get('concept'),900);
+    const preserve=clean(incoming.get('preserve'),700)||'all fixed architecture and any existing elements that are practical to retain';
+    const change=clean(incoming.get('change'),700)||'furniture, storage, lighting, finishes and decor as appropriate';
     const roomPhoto=incoming.get('image');
+
+    const isImprove=/improve|current/i.test(designMode);
+    const modeInstructions=isImprove?`
+MODE: IMPROVE MY CURRENT DESIGN.
+This is a renovation/modernisation of the customer's EXISTING room. The final image must remain immediately recognisable as the same room.
+- Retain these elements unless physically impossible: ${preserve}.
+- Change/improve only these areas or closely related interior elements: ${change}.
+- Keep existing useful furniture in approximately the same location when the customer has not asked to replace or move it.
+- Creativity is allowed in finishes, joinery, lighting, storage and furniture styling, NOT in the room shell or architecture.`:`
+MODE: DESIGNS BY WOODRICK.
+Create a complete Woodrick Homes design concept for the customer's ACTUAL room.
+- Keep the real room shell, dimensions, camera viewpoint, doors, windows, columns and fixed services unchanged.
+- Woodrick may creatively redesign furniture layout, cabinetry, storage, lighting, finishes, colours and decor to make the best use of the room.
+- Use the customer's requirements, budget and reference direction as constraints, but provide a distinctive premium Woodrick design solution.`;
 
     const prompt=`EDIT THE UPLOADED ROOM PHOTO. This is an interior redesign of the exact photographed ${roomType}, not a new or invented room.
 
@@ -37,7 +54,7 @@ ARCHITECTURE LOCK — highest priority:
 - Keep every visible wall, corner, ceiling line, floor boundary, door, window, balcony opening, beam, column and fixed architectural element in the SAME position, size and orientation.
 - Do not move, resize, add or remove doors or windows.
 - Do not invent another room, another viewpoint, extra walls, extra openings or a different floor plan.
-- Preserve the original shell of the room first; redesign only the interiors, finishes, furniture, storage, lighting and decor.
+${modeInstructions}
 
 ROOM DATA:
 Room dimensions: ${length||'?'} ft x ${width||'?'} ft${height?` x ${height} ft`:''}.
@@ -49,7 +66,7 @@ Reference direction: ${reference}.
 ${concept?`Space-planning concept: ${concept}.`:''}
 
 DESIGN GOAL:
-Create a photorealistic Woodrick Homes redesign that looks like a professionally renovated version of THIS SAME ROOM. Use believable scale, practical circulation, buildable cabinetry/furniture, realistic joinery, natural lighting and premium materials. Respect clearances around doors and windows. Do not add people, text, labels, logos, watermarks or impossible construction. The final image should be immediately recognisable as the customer's original room after renovation.`;
+Create a photorealistic Woodrick Homes redesign with believable scale, practical circulation, buildable cabinetry/furniture, realistic joinery, natural lighting and premium materials. Respect clearances around doors and windows. Do not add people, text, labels, logos, watermarks or impossible construction.`;
 
     if(!(roomPhoto instanceof File) || roomPhoto.size<=0){
       return json({ok:false,code:'PHOTO_REQUIRED',error:'Please upload a room photo before generating the photorealistic design.'},400);
@@ -89,7 +106,7 @@ Create a photorealistic Woodrick Homes redesign that looks like a professionally
     const image=result?.data?.[0]?.b64_json;
     if(!image) return json({ok:false,code:'NO_IMAGE_RETURNED',error:'AI completed the request but did not return an image. Please try again.'},502);
 
-    return json({ok:true,image:`data:image/jpeg;base64,${image}`,model:'gpt-image-1',inputFidelity:'high',previewQuality:'low'});
+    return json({ok:true,image:`data:image/jpeg;base64,${image}`,model:'gpt-image-1',inputFidelity:'high',previewQuality:'low',designMode});
   }catch(err){
     console.error('AI design endpoint error',err?.name||'',err?.message||String(err));
     return json({ok:false,code:'AI_ENDPOINT_ERROR',error:'Unexpected AI design server error. Please try again with a smaller JPG/PNG room photo.'},500);
@@ -97,5 +114,5 @@ Create a photorealistic Woodrick Homes redesign that looks like a professionally
 }
 
 export async function onRequestGet({env}){
-  return json({ok:true,configured:Boolean(env.OPENAI_API_KEY),feature:'Woodrick AI Room Design',model:'gpt-image-1',inputFidelity:'high'});
+  return json({ok:true,configured:Boolean(env.OPENAI_API_KEY),feature:'Woodrick AI Room Design',model:'gpt-image-1',inputFidelity:'high',modes:['Improve My Current Design','Designs by Woodrick']});
 }
