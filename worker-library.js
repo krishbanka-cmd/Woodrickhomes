@@ -44,6 +44,11 @@ async function handleLibraryUpload(request,env,form){
 
 function mediaItem(o){return {key:o.key,size:o.size,uploaded:o.uploaded,url:`/api/media?key=${encodeURIComponent(o.key)}`,...(o.customMetadata||{})};}
 function isLegacyLibraryItem(item){return item.key.startsWith('library/')||item.library==='1'||item.type==='original-pdf'||item.type==='jpg-page';}
+function legacyPageNumber(item){
+  const text=`${item.key||''} ${item.originalName||''}`.toLowerCase();
+  const match=text.match(/(?:page[-_ ]?)(\d+)(?:\D|$)/);
+  return match?String(Number(match[1])):String(item.page||'').trim();
+}
 function normalizeLegacyLibraryItem(item){
   if(item.key.startsWith('library/'))return item;
   const key=String(item.key||'').toLowerCase();
@@ -51,10 +56,23 @@ function normalizeLegacyLibraryItem(item){
   const title=String(item.title||'').toLowerCase();
   const ristal1mm=key.includes('ristal1mm')||original.includes('ristal1mm')||title.includes('ristal1mm');
   if(ristal1mm){
-    return {...item,brand:'Ristal',category:'Laminate',catalogue:'Ristal 1mm',title:item.title||'Ristal 1mm',legacyCatalogueIdentified:'1'};
+    return {...item,brand:'Ristal',category:'Laminate',catalogue:'Ristal 1mm',title:item.title||'Ristal 1mm',page:item.type==='jpg-page'?legacyPageNumber(item):item.page,legacyCatalogueIdentified:'1'};
   }
   if(!String(item.brand||'').trim())return {...item,brand:'Unknown Brand',legacyBrandMissing:'1'};
   return item;
+}
+function dedupeLegacyRistal(items){
+  const sorted=[...items].sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));
+  const seen=new Set(),out=[];
+  for(const item of sorted){
+    if(item.legacyCatalogueIdentified==='1'){
+      const slot=item.type==='jpg-page'?`jpg:${legacyPageNumber(item)}`:item.type==='original-pdf'?'pdf:original':`other:${item.key}`;
+      if(seen.has(slot))continue;
+      seen.add(slot);
+    }
+    out.push(item);
+  }
+  return out;
 }
 
 async function handleMedia(request,env){
@@ -76,8 +94,8 @@ async function handleMedia(request,env){
       const byKey=new Map();
       for(const o of modern.objects)byKey.set(o.key,mediaItem(o));
       for(const o of all.objects){let item=mediaItem(o);if(isLegacyLibraryItem(item)){item=normalizeLegacyLibraryItem(item);byKey.set(item.key,item);}}
-      const items=[...byKey.values()].sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));
-      return json({items,truncated:false,cursor:null,legacyCompatible:true});
+      const items=dedupeLegacyRistal([...byKey.values()]);
+      return json({items,truncated:false,cursor:null,legacyCompatible:true,legacyDuplicatesHidden:true});
     }
     const listed=await env.PRODUCT_MEDIA.list({limit:500,prefix,cursor,include:['customMetadata','httpMetadata']});
     const items=listed.objects.map(mediaItem).sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));
