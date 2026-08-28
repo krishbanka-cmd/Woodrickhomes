@@ -9,9 +9,29 @@ function providerMessage(status,code,message=''){
   if(c.includes('insufficient_quota')||m.includes('quota')||m.includes('billing')) return 'OpenAI API credit or billing is not available for this request. Please check the API billing balance and try again.';
   if(c.includes('verification')||m.includes('verify')) return 'OpenAI requires account or organization verification before image generation can be used. Please complete verification in OpenAI Platform and try again.';
   if(c.includes('invalid_api_key')||status===401) return 'The OpenAI API key is not being accepted. Please replace OPENAI_API_KEY in Cloudflare with a valid active key.';
-  if(status===429||c.includes('rate_limit')) return 'The AI image service is temporarily rate-limited. Please wait a minute and try again.';
-  if(status===400) return 'The AI image service rejected this image request. Please try a clear JPG or PNG room photo.';
-  return 'The AI design service could not complete this request. Please try again.';
+  if(status===429||c.includes('rate_limit')) return 'The AI service is temporarily rate-limited. Please wait a minute and try again.';
+  if(status===400) return 'The AI service rejected this request. Please try again.';
+  return 'The AI service could not complete this request. Please try again.';
+}
+
+async function handleVoiceTranscribe(request,env){
+  try{
+    if(!env.OPENAI_API_KEY) return json({ok:false,error:'Voice AI is not configured yet.'},503);
+    if(request.method!=='POST') return json({ok:false,error:'Method not allowed'},405);
+    const incoming=await request.formData();
+    const audio=incoming.get('audio');
+    if(!audio||typeof audio.arrayBuffer!=='function'||!audio.size) return json({ok:false,error:'No voice recording received.'},400);
+    if(audio.size>20*1024*1024) return json({ok:false,error:'Voice recording is too large. Please keep it under one minute and try again.'},413);
+    const fd=new FormData();
+    fd.append('model','gpt-transcribe');
+    fd.append('file',audio,audio.name||'woodrick-voice.m4a');
+    fd.append('prompt','Woodrick Homes interior design request. The speaker may use Hindi, English or Hinglish and may say room dimensions in feet, door/window sizes, Design No., SKU, plywood, laminate, walnut, beige, wardrobe, TV unit, modular kitchen and furniture requirements. Preserve numbers and SKU codes accurately.');
+    const r=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{Authorization:`Bearer ${env.OPENAI_API_KEY}`},body:fd});
+    const raw=await r.text();let d={};try{d=raw?JSON.parse(raw):{};}catch(_){return json({ok:false,error:'Voice service returned an unreadable response.'},502);}
+    if(!r.ok){const code=d?.error?.code||d?.error?.type||'';return json({ok:false,error:providerMessage(r.status,code,d?.error?.message||'')},502);}
+    const text=clean(d.text,4000);if(!text)return json({ok:false,error:'Woodrick could not hear clear speech. Please try again closer to the microphone.'},422);
+    return json({ok:true,text,model:'gpt-transcribe'});
+  }catch(err){return json({ok:false,error:`Voice server error: ${err&&err.message?err.message:'Unknown error'}`},500);}
 }
 
 async function handleAiDesign(request,env){
@@ -54,4 +74,5 @@ const VOICE_WIDGET=`
 
 const DESIGN_PREFILL=`<script id="hey-woodrick-prefill">(function(){if(!location.pathname.endsWith('/design-your-space.html'))return;var p=new URLSearchParams(location.search);if(p.get('voice')!=='1')return;function set(name,key){var el=document.querySelector('[name="'+name+'"]');var v=p.get(key||name);if(el&&v)el.value=v;}set('roomType');set('length');set('width');set('height');set('openings');set('style');set('change');var ref=p.get('reference');if(ref){var ch=document.querySelector('[name="change"]');if(ch&&!ch.value.includes(ref))ch.value=(ch.value?ch.value+'\\n':'')+'Preferred Design No. / SKU: '+ref;}var form=document.getElementById('spaceForm');if(form){var note=document.createElement('div');note.className='voice-arrival';note.textContent='🎙 Hey Woodrick has filled the details it understood. Please verify dimensions, Design/SKU and openings, then add your room photo.';form.insertBefore(note,form.firstChild);form.scrollIntoView({behavior:'smooth',block:'start'});}})();<\/script>`;
 async function withVoiceUi(response,url){const type=response.headers.get('content-type')||'';if(!response.ok||!type.includes('text/html'))return response;let html=await response.text();if(url.pathname!=='/voice-design-assistant.html'&&!html.includes('hey-woodrick-global-style'))html=html.replace(/<\/body>/i,VOICE_WIDGET+'\n</body>');if(url.pathname.endsWith('/design-your-space.html')&&!html.includes('hey-woodrick-prefill'))html=html.replace(/<\/body>/i,DESIGN_PREFILL+'\n</body>');const headers=new Headers(response.headers);headers.delete('content-length');headers.set('cache-control','no-cache');return new Response(html,{status:response.status,statusText:response.statusText,headers});}
-export default{async fetch(request,env,ctx){const url=new URL(request.url);if(url.pathname==='/api/ai-design')return handleAiDesign(request,env);const response=await base.fetch(request,env,ctx);return withVoiceUi(response,url);}};
+
+export default{async fetch(request,env,ctx){const url=new URL(request.url);if(url.pathname==='/api/voice-transcribe')return handleVoiceTranscribe(request,env);if(url.pathname==='/api/ai-design')return handleAiDesign(request,env);const response=await base.fetch(request,env,ctx);return withVoiceUi(response,url);}};
