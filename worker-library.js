@@ -45,9 +45,15 @@ async function handleLibraryUpload(request,env,form){
 function mediaItem(o){return {key:o.key,size:o.size,uploaded:o.uploaded,url:`/api/media?key=${encodeURIComponent(o.key)}`,...(o.customMetadata||{})};}
 function isLegacyLibraryItem(item){return item.key.startsWith('library/')||item.library==='1'||item.type==='original-pdf'||item.type==='jpg-page';}
 function normalizeLegacyLibraryItem(item){
-  if(!item.key.startsWith('library/')&&!String(item.brand||'').trim()){
-    return {...item,brand:'Unknown Brand',legacyBrandMissing:'1'};
+  if(item.key.startsWith('library/'))return item;
+  const key=String(item.key||'').toLowerCase();
+  const original=String(item.originalName||'').toLowerCase();
+  const title=String(item.title||'').toLowerCase();
+  const ristal1mm=key.includes('ristal1mm')||original.includes('ristal1mm')||title.includes('ristal1mm');
+  if(ristal1mm){
+    return {...item,brand:'Ristal',category:'Laminate',catalogue:'Ristal 1mm',title:item.title||'Ristal 1mm',legacyCatalogueIdentified:'1'};
   }
+  if(!String(item.brand||'').trim())return {...item,brand:'Unknown Brand',legacyBrandMissing:'1'};
   return item;
 }
 
