@@ -15,15 +15,27 @@ export async function onRequestPost({request,env}){
   const category=String(form.get('category')||'').trim();
   const type=String(form.get('type')||'').trim();
   const title=String(form.get('title')||'').trim();
+  const isLibrary=String(form.get('library')||'')==='1';
+  const brand=String(form.get('brand')||'Woodrick').trim();
+  const catalogue=String(form.get('catalogue')||title).trim();
+  const page=String(form.get('page')||'').trim();
   if(!file||typeof file.arrayBuffer!=='function') return json({error:'Please select a file'},400);
   if(!category||!title) return json({error:'Category and title are required'},400);
   if(!allowedTypes.has(file.type)) return json({error:'Unsupported file type'},415);
   if(file.size>maxBytes) return json({error:'File is too large. Maximum size is 100 MB.'},413);
   const ext=(file.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'');
-  const key=`${slug(category)}/${type}/${Date.now()}-${slug(title)}.${ext}`;
-  const meta={category,title,type,originalName:file.name,uploadedAt:new Date().toISOString()};
+  let key;
+  if(isLibrary){
+    const root=`library/${slug(brand)}/${slug(category)}/${slug(catalogue)}`;
+    if(type==='original-pdf') key=`${root}/original/${slug(catalogue)}.pdf`;
+    else if(type==='jpg-page') key=`${root}/jpg/page-${String(page||'1').padStart(3,'0')}.jpg`;
+    else key=`${root}/${slug(type||'file')}/${Date.now()}-${slug(title)}.${ext}`;
+  } else {
+    key=`${slug(category)}/${type}/${Date.now()}-${slug(title)}.${ext}`;
+  }
+  const meta={category,title,type,brand,catalogue,page,library:isLibrary?'1':'0',originalName:file.name,uploadedAt:new Date().toISOString()};
   await env.PRODUCT_MEDIA.put(key,await file.arrayBuffer(),{httpMetadata:{contentType:file.type},customMetadata:meta});
-  return json({ok:true,key,category,title,type,url:`/api/media?key=${encodeURIComponent(key)}`},201);
+  return json({ok:true,key,category,title,type,brand,catalogue,page,url:`/api/media?key=${encodeURIComponent(key)}`},201);
 }
 
 export async function onRequestOptions(){return new Response(null,{status:204,headers:{'allow':'POST, OPTIONS'}})}
