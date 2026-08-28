@@ -11,6 +11,15 @@ function pdfViewer(key,obj){
   return new Response(body,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}});
 }
 
+function freshResponse(response){
+  const headers=new Headers(response.headers);
+  headers.set('cache-control','no-store, no-cache, must-revalidate, max-age=0');
+  headers.set('pragma','no-cache');
+  headers.set('expires','0');
+  headers.set('x-woodrick-voice-version','2026-08-28-v5');
+  return new Response(response.body,{status:response.status,statusText:response.statusText,headers});
+}
+
 export default {
   async fetch(request,env,ctx){
     const url=new URL(request.url);
@@ -28,6 +37,8 @@ export default {
         }
       }
     }
-    return base.fetch(request,env,ctx);
+    const response=await base.fetch(request,env,ctx);
+    if(request.method==='GET'&&(url.pathname==='/voice-design-assistant.html'||url.pathname==='/voice-design-assistant'))return freshResponse(response);
+    return response;
   }
 };
