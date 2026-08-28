@@ -6,6 +6,7 @@ const maxBytes = 100 * 1024 * 1024;
 function json(data,status=200){return new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}});}
 function slug(v=''){return String(v||'').toLowerCase().trim().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,80)||'item';}
 function bearerAuthorized(request,env){const auth=request.headers.get('authorization')||'';return !!env.ADMIN_UPLOAD_TOKEN&&auth===`Bearer ${env.ADMIN_UPLOAD_TOKEN}`;}
+function htmlEsc(v=''){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
 async function deleteLibrary(keys,env){
   const safeKeys=[...new Set((Array.isArray(keys)?keys:[]).filter(k=>typeof k==='string'&&k.startsWith('library/')))];
@@ -44,35 +45,44 @@ async function handleLibraryUpload(request,env,form){
 
 function mediaItem(o){return {key:o.key,size:o.size,uploaded:o.uploaded,url:`/api/media?key=${encodeURIComponent(o.key)}`,...(o.customMetadata||{})};}
 function isLegacyLibraryItem(item){return item.key.startsWith('library/')||item.library==='1'||item.type==='original-pdf'||item.type==='jpg-page';}
-function legacyPageNumber(item){
-  const text=`${item.key||''} ${item.originalName||''}`.toLowerCase();
-  const match=text.match(/(?:page[-_ ]?)(\d+)(?:\D|$)/);
-  return match?String(Number(match[1])):String(item.page||'').trim();
-}
+function legacyPageNumber(item){const text=`${item.key||''} ${item.originalName||''}`.toLowerCase();const match=text.match(/(?:page[-_ ]?)(\d+)(?:\D|$)/);return match?String(Number(match[1])):String(item.page||'').trim();}
 function normalizeLegacyLibraryItem(item){
   if(item.key.startsWith('library/'))return item;
-  const key=String(item.key||'').toLowerCase();
-  const original=String(item.originalName||'').toLowerCase();
-  const title=String(item.title||'').toLowerCase();
+  const key=String(item.key||'').toLowerCase(),original=String(item.originalName||'').toLowerCase(),title=String(item.title||'').toLowerCase();
   const ristal1mm=key.includes('ristal1mm')||original.includes('ristal1mm')||title.includes('ristal1mm');
-  if(ristal1mm){
-    return {...item,brand:'Ristal',category:'Laminate',catalogue:'Ristal 1mm',title:item.title||'Ristal 1mm',page:item.type==='jpg-page'?legacyPageNumber(item):item.page,legacyCatalogueIdentified:'1'};
-  }
+  if(ristal1mm)return {...item,brand:'Ristal',category:'Laminate',catalogue:'Ristal 1mm',title:item.title||'Ristal 1mm',page:item.type==='jpg-page'?legacyPageNumber(item):item.page,legacyCatalogueIdentified:'1'};
   if(!String(item.brand||'').trim())return {...item,brand:'Unknown Brand',legacyBrandMissing:'1'};
   return item;
 }
 function dedupeLegacyRistal(items){
-  const sorted=[...items].sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));
-  const seen=new Set(),out=[];
+  const sorted=[...items].sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded))),seen=new Set(),out=[];
   for(const item of sorted){
     if(item.legacyCatalogueIdentified==='1'){
       const slot=item.type==='jpg-page'?`jpg:${legacyPageNumber(item)}`:item.type==='original-pdf'?'pdf:original':`other:${item.key}`;
-      if(seen.has(slot))continue;
-      seen.add(slot);
+      if(seen.has(slot))continue;seen.add(slot);
     }
     out.push(item);
   }
   return out;
+}
+
+async function imageViewer(key,obj,env){
+  const contentType=(obj.httpMetadata&&obj.httpMetadata.contentType)||'';
+  if(!contentType.startsWith('image/'))return null;
+  const slash=key.lastIndexOf('/');
+  const prefix=slash>=0?key.slice(0,slash+1):'';
+  const listed=await env.PRODUCT_MEDIA.list({limit:500,prefix,include:['customMetadata','httpMetadata']});
+  const pages=listed.objects.filter(o=>String((o.httpMetadata&&o.httpMetadata.contentType)||'').startsWith('image/')).sort((a,b)=>Number((a.customMetadata&&a.customMetadata.page)||legacyPageNumber({key:a.key}))-Number((b.customMetadata&&b.customMetadata.page)||legacyPageNumber({key:b.key})));
+  let index=pages.findIndex(o=>o.key===key);if(index<0)index=0;
+  const prev=index>0?pages[index-1]:null,next=index<pages.length-1?pages[index+1]:null;
+  const meta=obj.customMetadata||{};
+  const title=meta.catalogue||meta.title||'Catalogue';
+  const current=Number(meta.page||legacyPageNumber({key}))||index+1;
+  const link=k=>`/api/media?key=${encodeURIComponent(k)}`;
+  const raw=`${link(key)}&raw=1`;
+  const navButton=(label,item,extra='')=>item?`<a class="nav ${extra}" href="${link(item.key)}">${label}</a>`:`<span class="nav disabled">${label}</span>`;
+  const body=`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${htmlEsc(title)} | Woodrick Homes</title><style>*{box-sizing:border-box}body{margin:0;background:#090909;color:#fff;font-family:Arial,sans-serif}.top{position:sticky;top:0;z-index:5;background:#050505;border-bottom:2px solid #f0c96b;padding:12px 16px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}.back,.nav{display:inline-flex;align-items:center;justify-content:center;padding:11px 15px;border:1px solid #f0c96b;color:#f0c96b;text-decoration:none;font-weight:900;font-size:12px}.nav.next{background:#f0c96b;color:#111}.disabled{opacity:.35;pointer-events:none}.title{font-family:Georgia,serif;font-size:18px;text-align:center;flex:1}.stage{min-height:calc(100vh - 72px);display:flex;align-items:center;justify-content:center;padding:18px}.stage img{max-width:100%;max-height:calc(100vh - 110px);object-fit:contain;background:#fff}.counter{font-size:12px;color:#ccc;white-space:nowrap}@media(max-width:620px){.top{justify-content:center}.title{order:-1;flex-basis:100%}.stage{padding:8px}.stage img{max-height:calc(100vh - 150px)}}</style></head><body><div class="top"><a class="back" href="/products/#media">← BACK</a>${navButton('← PREVIOUS',prev)}<div class="title">${htmlEsc(title)} <span class="counter">Page ${current} of ${pages.length}</span></div>${navButton('NEXT →',next,'next')}</div><div class="stage"><img src="${raw}" alt="${htmlEsc(title)} page ${current}"></div></body></html>`;
+  return new Response(body,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}});
 }
 
 async function handleMedia(request,env){
@@ -81,25 +91,22 @@ async function handleMedia(request,env){
     const url=new URL(request.url),key=url.searchParams.get('key');
     if(key){
       const obj=await env.PRODUCT_MEDIA.get(key);if(!obj)return new Response('Not found',{status:404});
+      const wantsDocument=(request.headers.get('sec-fetch-dest')||'').toLowerCase()==='document';
+      if(wantsDocument&&url.searchParams.get('raw')!=='1'&&url.searchParams.get('download')!=='1'){
+        const viewer=await imageViewer(key,obj,env);if(viewer)return viewer;
+      }
       const headers=new Headers();obj.writeHttpMetadata(headers);headers.set('etag',obj.httpEtag);headers.set('cache-control','public, max-age=3600');
       if(url.searchParams.get('download')==='1'){const name=(obj.customMetadata&&obj.customMetadata.originalName)||key.split('/').pop()||'download';headers.set('content-disposition',`attachment; filename="${String(name).replace(/"/g,'')}"`);}
       return new Response(obj.body,{headers});
     }
     const prefix=url.searchParams.get('prefix')||'',cursor=url.searchParams.get('cursor')||undefined;
     if(prefix==='library/'){
-      const [modern,all]=await Promise.all([
-        env.PRODUCT_MEDIA.list({limit:500,prefix:'library/',include:['customMetadata','httpMetadata']}),
-        env.PRODUCT_MEDIA.list({limit:500,include:['customMetadata','httpMetadata']})
-      ]);
-      const byKey=new Map();
-      for(const o of modern.objects)byKey.set(o.key,mediaItem(o));
-      for(const o of all.objects){let item=mediaItem(o);if(isLegacyLibraryItem(item)){item=normalizeLegacyLibraryItem(item);byKey.set(item.key,item);}}
-      const items=dedupeLegacyRistal([...byKey.values()]);
-      return json({items,truncated:false,cursor:null,legacyCompatible:true,legacyDuplicatesHidden:true});
+      const [modern,all]=await Promise.all([env.PRODUCT_MEDIA.list({limit:500,prefix:'library/',include:['customMetadata','httpMetadata']}),env.PRODUCT_MEDIA.list({limit:500,include:['customMetadata','httpMetadata']})]);
+      const byKey=new Map();for(const o of modern.objects)byKey.set(o.key,mediaItem(o));for(const o of all.objects){let item=mediaItem(o);if(isLegacyLibraryItem(item)){item=normalizeLegacyLibraryItem(item);byKey.set(item.key,item);}}
+      const items=dedupeLegacyRistal([...byKey.values()]);return json({items,truncated:false,cursor:null,legacyCompatible:true,legacyDuplicatesHidden:true});
     }
     const listed=await env.PRODUCT_MEDIA.list({limit:500,prefix,cursor,include:['customMetadata','httpMetadata']});
-    const items=listed.objects.map(mediaItem).sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));
-    return json({items,truncated:listed.truncated,cursor:listed.cursor||null});
+    const items=listed.objects.map(mediaItem).sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));return json({items,truncated:listed.truncated,cursor:listed.cursor||null});
   }catch(err){return json({error:`Media API error: ${err&&err.message?err.message:'Unknown error'}`},500);}
 }
 
@@ -112,16 +119,13 @@ export default {async fetch(request,env,ctx){
       if(!env.PRODUCT_MEDIA)return json({error:'PRODUCT_MEDIA R2 binding is missing'},500);
       if(!bearerAuthorized(request,env))return json({error:'Invalid admin access code'},401);
       let body;try{body=await request.json();}catch{return json({error:'Invalid request'},400);}
-      if(body?.action!=='delete-library')return json({error:'Unsupported action'},400);
-      return deleteLibrary(body.keys,env);
+      if(body?.action!=='delete-library')return json({error:'Unsupported action'},400);return deleteLibrary(body.keys,env);
     }
     if(contentType.includes('multipart/form-data')||contentType.includes('application/x-www-form-urlencoded')){
       let form;try{form=await request.clone().formData();}catch{return base.fetch(request,env,ctx);}
       if(String(form.get('action')||'')==='delete-library'){
         if(!bearerAuthorized(request,env))return json({error:'Invalid admin access code'},401);
-        let keys=[];const raw=String(form.get('keys')||'').trim();
-        if(raw){try{const parsed=JSON.parse(raw);if(Array.isArray(parsed))keys=parsed;}catch{return json({error:'Invalid delete keys'},400);}}
-        return deleteLibrary(keys,env);
+        let keys=[];const raw=String(form.get('keys')||'').trim();if(raw){try{const parsed=JSON.parse(raw);if(Array.isArray(parsed))keys=parsed;}catch{return json({error:'Invalid delete keys'},400);}}return deleteLibrary(keys,env);
       }
       if(String(form.get('library')||'')==='1')return handleLibraryUpload(request,env,form);
     }
