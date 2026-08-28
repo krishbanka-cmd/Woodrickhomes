@@ -11,6 +11,23 @@ function pdfViewer(key,obj){
   return new Response(body,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}});
 }
 
+async function enhanceVoiceAssistant(response,url){
+  if(requestMethodSafe(response)===false)return response;
+  if(url.pathname!=='/voice-design-assistant.html'&&url.pathname!=='/voice-design-assistant')return response;
+  const type=response.headers.get('content-type')||'';
+  if(!type.includes('text/html'))return response;
+  let html=await response.text();
+  if(!html.includes('id="resetVoice"')){
+    html=html.replace('<div class="actions"><button class="btn secondary" id="speakBack" type="button">', '<div class="actions"><button class="btn secondary" id="resetVoice" type="button">↻ START AGAIN / REFRESH</button><button class="btn secondary" id="speakBack" type="button">');
+    const resetScript=`<script>window.addEventListener('DOMContentLoaded',function(){var b=document.getElementById('resetVoice');if(!b)return;b.addEventListener('click',function(){var hasData=['heard','room','sku','length','width','height','style','openings','requirements'].some(function(id){var e=document.getElementById(id);if(!e)return false;var v=('value'in e?e.value:e.textContent)||'';return v&&v!=='Select'&&!/^Example:/i.test(v)&&v!=='Listening…';});if(!hasData||confirm('Start again? Current voice details will be cleared.'))location.reload();});});</script>`;
+    html=html.includes('</body>')?html.replace('</body>',resetScript+'</body>'):html+resetScript;
+  }
+  const headers=new Headers(response.headers);headers.delete('content-length');headers.set('cache-control','no-store');
+  return new Response(html,{status:response.status,statusText:response.statusText,headers});
+}
+
+function requestMethodSafe(){return true;}
+
 export default {async fetch(request,env,ctx){
   const url=new URL(request.url);
   if(url.pathname==='/api/media'&&request.method==='GET'){
@@ -27,5 +44,7 @@ export default {async fetch(request,env,ctx){
       }
     }
   }
-  return base.fetch(request,env,ctx);
+  const response=await base.fetch(request,env,ctx);
+  if(request.method==='GET')return enhanceVoiceAssistant(response,url);
+  return response;
 }};
