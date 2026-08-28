@@ -61,6 +61,14 @@ async function handleLibraryUpload(request,env,form){
   return json({ok:true,key,category,title,type,brand,catalogue,page,url:`/api/media?key=${encodeURIComponent(key)}`},201);
 }
 
+function mediaItem(o){
+  return {key:o.key,size:o.size,uploaded:o.uploaded,url:`/api/media?key=${encodeURIComponent(o.key)}`,...(o.customMetadata||{})};
+}
+
+function isLegacyLibraryItem(item){
+  return item.key.startsWith('library/')||item.library==='1'||item.type==='original-pdf'||item.type==='jpg-page';
+}
+
 async function handleMedia(request,env){
   if(!env.PRODUCT_MEDIA) return json({error:'PRODUCT_MEDIA R2 binding is missing'},500);
   try{
@@ -82,8 +90,28 @@ async function handleMedia(request,env){
 
     const prefix=url.searchParams.get('prefix')||'';
     const cursor=url.searchParams.get('cursor')||undefined;
+
+    // Backward compatibility: older Home Library uploads were stored under category
+    // folders (for example laminate/) but still carry library/type metadata. When the
+    // Admin asks for prefix=library/, merge those legacy objects with the new library/
+    // hierarchy without moving, rewriting or deleting any R2 objects.
+    if(prefix==='library/'){
+      const [modern,all]=await Promise.all([
+        env.PRODUCT_MEDIA.list({limit:500,prefix:'library/',include:['customMetadata','httpMetadata']}),
+        env.PRODUCT_MEDIA.list({limit:500,include:['customMetadata','httpMetadata']})
+      ]);
+      const byKey=new Map();
+      for(const o of modern.objects) byKey.set(o.key,mediaItem(o));
+      for(const o of all.objects){
+        const item=mediaItem(o);
+        if(isLegacyLibraryItem(item)) byKey.set(item.key,item);
+      }
+      const items=[...byKey.values()].sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));
+      return json({items,truncated:false,cursor:null,legacyCompatible:true});
+    }
+
     const listed=await env.PRODUCT_MEDIA.list({limit:500,prefix,cursor,include:['customMetadata','httpMetadata']});
-    const items=listed.objects.map(o=>({key:o.key,size:o.size,uploaded:o.uploaded,url:`/api/media?key=${encodeURIComponent(o.key)}`,...(o.customMetadata||{})})).sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));
+    const items=listed.objects.map(mediaItem).sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));
     return json({items,truncated:listed.truncated,cursor:listed.cursor||null});
   }catch(err){
     return json({error:`Media API error: ${err&&err.message?err.message:'Unknown error'}`},500);
