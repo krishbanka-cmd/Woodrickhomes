@@ -78,8 +78,8 @@ async function imageViewer(key,obj,env){
   const meta=obj.customMetadata||{};
   const title=meta.catalogue||meta.title||'Catalogue';
   const current=Number(meta.page||legacyPageNumber({key}))||index+1;
-  const link=k=>`/api/media?key=${encodeURIComponent(k)}`;
-  const raw=`${link(key)}&raw=1`;
+  const link=k=>`/api/media?viewer=1&key=${encodeURIComponent(k)}`;
+  const raw=`/api/media?raw=1&key=${encodeURIComponent(key)}`;
   const navButton=(label,item,extra='')=>item?`<a class="nav ${extra}" href="${link(item.key)}">${label}</a>`:`<span class="nav disabled">${label}</span>`;
   const body=`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${htmlEsc(title)} | Woodrick Homes</title><style>*{box-sizing:border-box}body{margin:0;background:#090909;color:#fff;font-family:Arial,sans-serif}.top{position:sticky;top:0;z-index:5;background:#050505;border-bottom:2px solid #f0c96b;padding:12px 16px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}.back,.nav{display:inline-flex;align-items:center;justify-content:center;padding:11px 15px;border:1px solid #f0c96b;color:#f0c96b;text-decoration:none;font-weight:900;font-size:12px}.nav.next{background:#f0c96b;color:#111}.disabled{opacity:.35;pointer-events:none}.title{font-family:Georgia,serif;font-size:18px;text-align:center;flex:1}.stage{min-height:calc(100vh - 72px);display:flex;align-items:center;justify-content:center;padding:18px}.stage img{max-width:100%;max-height:calc(100vh - 110px);object-fit:contain;background:#fff}.counter{font-size:12px;color:#ccc;white-space:nowrap}@media(max-width:620px){.top{justify-content:center}.title{order:-1;flex-basis:100%}.stage{padding:8px}.stage img{max-height:calc(100vh - 150px)}}</style></head><body><div class="top"><a class="back" href="/products/#media">← BACK</a>${navButton('← PREVIOUS',prev)}<div class="title">${htmlEsc(title)} <span class="counter">Page ${current} of ${pages.length}</span></div>${navButton('NEXT →',next,'next')}</div><div class="stage"><img src="${raw}" alt="${htmlEsc(title)} page ${current}"></div></body></html>`;
   return new Response(body,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}});
@@ -91,7 +91,10 @@ async function handleMedia(request,env){
     const url=new URL(request.url),key=url.searchParams.get('key');
     if(key){
       const obj=await env.PRODUCT_MEDIA.get(key);if(!obj)return new Response('Not found',{status:404});
-      const wantsDocument=(request.headers.get('sec-fetch-dest')||'').toLowerCase()==='document';
+      const fetchDest=(request.headers.get('sec-fetch-dest')||'').toLowerCase();
+      const fetchMode=(request.headers.get('sec-fetch-mode')||'').toLowerCase();
+      const accept=(request.headers.get('accept')||'').toLowerCase();
+      const wantsDocument=url.searchParams.get('viewer')==='1'||fetchDest==='document'||fetchMode==='navigate'||accept.includes('text/html');
       if(wantsDocument&&url.searchParams.get('raw')!=='1'&&url.searchParams.get('download')!=='1'){
         const viewer=await imageViewer(key,obj,env);if(viewer)return viewer;
       }
