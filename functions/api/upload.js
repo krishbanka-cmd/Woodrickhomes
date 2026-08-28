@@ -4,29 +4,44 @@ const maxBytes = 100 * 1024 * 1024;
 function json(data,status=200){return new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}})}
 function slug(v=''){return v.toLowerCase().trim().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,80)||'item'}
 
+async function deleteLibrary(keys,env){
+  const safeKeys=[...new Set((Array.isArray(keys)?keys:[]).filter(k=>typeof k==='string'&&k.startsWith('library/')))];
+  if(!safeKeys.length) return json({error:'No library files selected'},400);
+  if(safeKeys.length>500) return json({error:'Too many files in one delete request'},400);
+  let deleted=0;
+  try{
+    for(const key of safeKeys){await env.PRODUCT_MEDIA.delete(key);deleted++}
+  }catch(err){return json({error:'R2 delete failed',detail:String(err?.message||err),deleted},500)}
+  return json({ok:true,deleted});
+}
+
 export async function onRequestPost({request,env}){
   if(!env.PRODUCT_MEDIA) return json({error:'PRODUCT_MEDIA R2 binding is missing'},500);
   if(!env.ADMIN_UPLOAD_TOKEN) return json({error:'ADMIN_UPLOAD_TOKEN secret is missing'},500);
   const auth=request.headers.get('authorization')||'';
   if(auth!==`Bearer ${env.ADMIN_UPLOAD_TOKEN}`) return json({error:'Invalid admin access code'},401);
 
-  const contentType=request.headers.get('content-type')||'';
+  const contentType=(request.headers.get('content-type')||'').toLowerCase();
+
+  // Library delete can arrive as JSON. Normal product/library uploads remain FormData.
   if(contentType.includes('application/json')){
     let body;
     try{body=await request.json()}catch{return json({error:'Invalid request'},400)}
     if(body?.action!=='delete-library') return json({error:'Unsupported action'},400);
-    const keys=Array.isArray(body?.keys)?[...new Set(body.keys.filter(k=>typeof k==='string'&&k.startsWith('library/')))]:[];
-    if(!keys.length) return json({error:'No library files selected'},400);
-    if(keys.length>500) return json({error:'Too many files in one delete request'},400);
-    let deleted=0;
-    try{
-      for(const key of keys){await env.PRODUCT_MEDIA.delete(key);deleted++}
-    }catch(err){return json({error:'R2 delete failed',detail:String(err?.message||err),deleted},500)}
-    return json({ok:true,deleted});
+    return deleteLibrary(body.keys,env);
   }
 
   let form;
   try{form=await request.formData()}catch{return json({error:'Invalid upload form'},400)}
+
+  // Also accept delete as multipart/form-data for maximum browser/proxy compatibility.
+  if(String(form.get('action')||'')==='delete-library'){
+    let keys=[];
+    const raw=String(form.get('keys')||'').trim();
+    if(raw){try{const parsed=JSON.parse(raw);if(Array.isArray(parsed))keys=parsed}catch{return json({error:'Invalid delete keys'},400)}}
+    return deleteLibrary(keys,env);
+  }
+
   const file=form.get('file');
   const category=String(form.get('category')||'').trim();
   const type=String(form.get('type')||'').trim();
