@@ -1,3 +1,4 @@
+// Deployment trigger: safe library delete handler v2
 const allowedTypes = new Set(['image/jpeg','image/png','image/webp','application/pdf','video/mp4','video/webm']);
 const maxBytes = 100 * 1024 * 1024;
 
