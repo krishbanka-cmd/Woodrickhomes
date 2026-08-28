@@ -1,4 +1,4 @@
-import app from './worker-library.js';
+import app from './worker-pdf-viewer.js';
 
 const oldCatalogue='https://drive.google.com/drive/folders/1zf6WNeCcctv6Hm-zxAsyV6I1RVcqicj0';
 
