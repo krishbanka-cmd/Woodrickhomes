@@ -23,3 +23,17 @@ export async function onRequestGet({request,env}){
   const items=listed.objects.map(o=>({key:o.key,size:o.size,uploaded:o.uploaded,url:`/api/media?key=${encodeURIComponent(o.key)}`,...(o.customMetadata||{})})).sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));
   return json({items,truncated:listed.truncated,cursor:listed.cursor||null});
 }
+
+export async function onRequestDelete({request,env}){
+  if(!env.PRODUCT_MEDIA) return json({error:'PRODUCT_MEDIA R2 binding is missing'},500);
+  const expected=env.ADMIN_UPLOAD_TOKEN;
+  const auth=request.headers.get('authorization')||'';
+  if(!expected||auth!==`Bearer ${expected}`) return json({error:'Unauthorized'},401);
+  let body={};
+  try{body=await request.json()}catch{return json({error:'Invalid request'},400)}
+  const keys=Array.isArray(body.keys)?body.keys.filter(k=>typeof k==='string'&&k.startsWith('library/')):[];
+  if(!keys.length) return json({error:'No library files selected'},400);
+  if(keys.length>500) return json({error:'Too many files in one delete request'},400);
+  await env.PRODUCT_MEDIA.delete(keys);
+  return json({ok:true,deleted:keys.length});
+}
