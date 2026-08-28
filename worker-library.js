@@ -98,7 +98,9 @@ async function handleMedia(request,env){
       if(wantsDocument&&url.searchParams.get('raw')!=='1'&&url.searchParams.get('download')!=='1'){
         const viewer=await imageViewer(key,obj,env);if(viewer)return viewer;
       }
-      const headers=new Headers();obj.writeHttpMetadata(headers);headers.set('etag',obj.httpEtag);headers.set('cache-control','public, max-age=3600');
+      const headers=new Headers();obj.writeHttpMetadata(headers);headers.set('etag',obj.httpEtag);
+      const responseType=(obj.httpMetadata&&obj.httpMetadata.contentType)||'';
+      headers.set('cache-control',responseType.startsWith('image/')?'no-store':'public, max-age=3600');
       if(url.searchParams.get('download')==='1'){const name=(obj.customMetadata&&obj.customMetadata.originalName)||key.split('/').pop()||'download';headers.set('content-disposition',`attachment; filename="${String(name).replace(/"/g,'')}"`);}
       return new Response(obj.body,{headers});
     }
