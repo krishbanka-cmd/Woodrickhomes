@@ -7,7 +7,7 @@ function pdfViewer(key,obj){
   const title=meta.catalogue||meta.title||meta.originalName||'Catalogue';
   const raw=`/api/media?raw=1&key=${encodeURIComponent(key)}`;
   const download=`/api/media?download=1&key=${encodeURIComponent(key)}`;
-  const body=`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${htmlEsc(title)} | Woodrick Homes</title><style>*{box-sizing:border-box}html,body{margin:0;height:100%;background:#090909;color:#fff;font-family:Arial,sans-serif}.top{height:58px;background:#050505;border-bottom:2px solid #f0c96b;display:flex;align-items:center;gap:12px;padding:8px 14px;position:sticky;top:0;z-index:10}.back,.download{display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border:1px solid #f0c96b;color:#f0c96b;text-decoration:none;font-weight:900;font-size:12px;white-space:nowrap}.download{margin-left:auto;background:#f0c96b;color:#111}.title{font-family:Georgia,serif;font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.frame{width:100%;height:calc(100vh - 58px);border:0;background:#fff}@media(max-width:620px){.top{height:auto;min-height:58px;flex-wrap:wrap}.title{order:-1;flex-basis:100%;text-align:center}.frame{height:calc(100vh - 100px)}}</style></head><body><div class="top"><a class="back" href="/products/#media">← BACK</a><div class="title">${htmlEsc(title)}</div><a class="download" href="${download}">DOWNLOAD CATALOGUE</a></div><iframe class="frame" src="${raw}" title="${htmlEsc(title)} PDF"></iframe></body></html>`;
+  const body=`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${htmlEsc(title)} | Woodrick Homes</title><style>*{box-sizing:border-box}html,body{margin:0;height:100%;background:#090909;color:#fff;font-family:Arial,sans-serif}.top{height:58px;background:#050505;border-bottom:2px solid #f0c96b;display:flex;align-items:center;gap:12px;padding:8px 14px;position:sticky;top:0;z-index:10}.back,.download{display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border:1px solid #f0c96b;color:#f0c96b;text-decoration:none;font-weight:900;font-size:12px;white-space:nowrap}.download{margin-left:auto;background:#f0c96b;color:#111}.title{font-family:Georgia,serif;font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.frame{width:100%;height:calc(100vh - 58px);border:0;background:#fff}@media(max-width:620px){.top{height:auto;min-height:58px;flex-wrap:wrap}.title{order:-1;flex-basis:100%;text-align:center}.frame{height:calc(100vh - 100px)}}</style></head><body><div class="top"><a class="back" href="javascript:history.length>1?history.back():location.href='/'">← BACK</a><div class="title">${htmlEsc(title)}</div><a class="download" href="${download}">DOWNLOAD CATALOGUE</a></div><iframe class="frame" src="${raw}" title="${htmlEsc(title)} PDF"></iframe></body></html>`;
   return new Response(body,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}});
 }
 
@@ -16,8 +16,20 @@ function freshResponse(response){
   headers.set('cache-control','no-store, no-cache, must-revalidate, max-age=0');
   headers.set('pragma','no-cache');
   headers.set('expires','0');
-  headers.set('x-woodrick-voice-version','2026-08-28-v5');
+  headers.set('x-woodrick-voice-version','2026-08-28-v6');
   return new Response(response.body,{status:response.status,statusText:response.statusText,headers});
+}
+
+async function addBackButton(response,url){
+  const type=response.headers.get('content-type')||'';
+  if(!type.includes('text/html'))return response;
+  if(url.pathname.startsWith('/admin-products')||url.pathname.startsWith('/admin-login')||url.pathname.startsWith('/admin-logout'))return response;
+  let html=await response.text();
+  if(html.includes('id="woodrickGlobalBack"'))return response;
+  const widget=`<button id="woodrickGlobalBack" type="button" aria-label="Go back" onclick="if(history.length>1){history.back()}else{location.href='/'}" style="position:fixed;left:14px;top:78px;z-index:2147483646;width:44px;height:44px;border-radius:999px;border:2px solid #f0c96b;background:#080808;color:#f0c96b;font:900 22px/1 Arial;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.28);display:grid;place-items:center">←</button>`;
+  html=html.replace(/<body([^>]*)>/i,`<body$1>${widget}`);
+  const headers=new Headers(response.headers);headers.delete('content-length');headers.set('cache-control','no-store');
+  return new Response(html,{status:response.status,statusText:response.statusText,headers});
 }
 
 export default {
@@ -37,8 +49,9 @@ export default {
         }
       }
     }
-    const response=await base.fetch(request,env,ctx);
-    if(request.method==='GET'&&(url.pathname==='/voice-design-assistant.html'||url.pathname==='/voice-design-assistant'))return freshResponse(response);
+    let response=await base.fetch(request,env,ctx);
+    if(request.method==='GET'&&(url.pathname==='/voice-design-assistant.html'||url.pathname==='/voice-design-assistant'))response=freshResponse(response);
+    if(request.method==='GET')response=await addBackButton(response,url);
     return response;
   }
 };
