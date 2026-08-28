@@ -12,21 +12,35 @@ function pdfViewer(key,obj){
 }
 
 async function enhanceVoiceAssistant(response,url){
-  if(requestMethodSafe(response)===false)return response;
   if(url.pathname!=='/voice-design-assistant.html'&&url.pathname!=='/voice-design-assistant')return response;
   const type=response.headers.get('content-type')||'';
   if(!type.includes('text/html'))return response;
   let html=await response.text();
   if(!html.includes('id="resetVoice"')){
     html=html.replace('<div class="actions"><button class="btn secondary" id="speakBack" type="button">', '<div class="actions"><button class="btn secondary" id="resetVoice" type="button">↻ START AGAIN / REFRESH</button><button class="btn secondary" id="speakBack" type="button">');
-    const resetScript=`<script>window.addEventListener('DOMContentLoaded',function(){var b=document.getElementById('resetVoice');if(!b)return;b.addEventListener('click',function(){var hasData=['heard','room','sku','length','width','height','style','openings','requirements'].some(function(id){var e=document.getElementById(id);if(!e)return false;var v=('value'in e?e.value:e.textContent)||'';return v&&v!=='Select'&&!/^Example:/i.test(v)&&v!=='Listening…';});if(!hasData||confirm('Start again? Current voice details will be cleared.'))location.reload();});});</script>`;
+    const resetScript=`<script>window.addEventListener('DOMContentLoaded',function(){var b=document.getElementById('resetVoice');if(!b)return;b.addEventListener('click',function(){var hasData=['heard','room','sku','length','width','height','style','openings','requirements'].some(function(id){var e=document.getElementById(id);if(!e)return false;var v=('value'in e?e.value:e.textContent)||'';return v&&v!=='Select'&&!/^Example:/i.test(v)&&v!=='Listening…';});if(!hasData||confirm('Start again? Current voice details will be cleared.'))location.href='/voice-design-assistant.html';});});</script>`;
     html=html.includes('</body>')?html.replace('</body>',resetScript+'</body>'):html+resetScript;
+  }
+  if(!html.includes('woodrick-confirm-step-v1')){
+    const confirmScript=`<script id="woodrick-confirm-step-v1">window.addEventListener('DOMContentLoaded',function(){var b=document.getElementById('continueBtn');if(!b)return;var q=new URLSearchParams(location.search);['room','sku','length','width','height','style','openings','requirements'].forEach(function(id){var e=document.getElementById(id),key=id==='room'?'roomType':id==='sku'?'reference':id==='requirements'?'change':id;if(e&&q.get(key)&&(!e.value||e.value==='Select'))e.value=q.get(key);});b.onclick=null;b.addEventListener('click',function(){var room=document.getElementById('room').value.trim(),length=document.getElementById('length').value.trim(),width=document.getElementById('width').value.trim(),height=document.getElementById('height').value.trim();var bad=[];if(!room)bad.push('Room / Space');if(!length)bad.push('Length');if(!width)bad.push('Width');[['Length',length],['Width',width],['Height',height]].forEach(function(x){if(x[1]){var n=Number(x[1]);if(!isFinite(n)||n<=0||n>60)bad.push(x[0]+' looks incorrect');}});if(bad.length){if(typeof setStatus==='function')setStatus('Please correct before continuing: '+bad.join(', ')+'.','warn');else alert('Please correct: '+bad.join(', '));return;}var p=new URLSearchParams();[['roomType','room'],['length','length'],['width','width'],['height','height'],['openings','openings'],['style','style'],['reference','sku'],['change','requirements']].forEach(function(a){var e=document.getElementById(a[1]);if(e&&e.value.trim())p.set(a[0],e.value.trim());});p.set('voice','1');location.href='/design-requirements-confirmed.html?'+p.toString();});});</script>`;
+    html=html.includes('</body>')?html.replace('</body>',confirmScript+'</body>'):html+confirmScript;
   }
   const headers=new Headers(response.headers);headers.delete('content-length');headers.set('cache-control','no-store');
   return new Response(html,{status:response.status,statusText:response.statusText,headers});
 }
 
-function requestMethodSafe(){return true;}
+async function enhanceDesignPage(response,url){
+  if(url.pathname!=='/design-your-space.html'&&url.pathname!=='/design-your-space')return response;
+  const type=response.headers.get('content-type')||'';
+  if(!type.includes('text/html'))return response;
+  let html=await response.text();
+  if(!html.includes('woodrick-confirmed-prefill-v1')){
+    const script=`<script id="woodrick-confirmed-prefill-v1">window.addEventListener('DOMContentLoaded',function(){var q=new URLSearchParams(location.search);if(q.get('confirmed')!=='1')return;var form=document.getElementById('spaceForm');if(!form)return;var map={roomType:'roomType',length:'length',width:'width',height:'height',openings:'openings',style:'style',change:'change'};Object.keys(map).forEach(function(k){var e=form.elements[map[k]];if(e&&q.get(k))e.value=q.get(k);});var ref=q.get('reference');var mode=q.get('selectionMode')||'auto';var note=document.createElement('div');note.style.cssText='margin:0 0 20px;padding:14px 16px;background:#fff8e8;border-left:3px solid #c59a58;color:#5d472f;font-size:13px;line-height:1.55';note.innerHTML=mode==='manual'?'<b>SELECT MYSELF MODE</b><br>Your confirmed room details are filled below. Please choose a Woodrick catalogue/material reference yourself before generating the space plan.':'<b>AI AUTO SELECT MODE</b><br>Your confirmed room details are filled below. Woodrick will continue with its recommended material/design direction; you can still review or change the catalogue reference before generation.';form.insertBefore(note,form.firstChild.nextSibling);if(ref){var refNote=document.createElement('div');refNote.style.cssText='margin:8px 0 0;font-size:12px;color:#6b5a4d';refNote.textContent='Voice reference / SKU: '+ref;note.appendChild(refNote);}if(mode==='manual'){var cat=document.getElementById('catalogueRef');if(cat)setTimeout(function(){cat.scrollIntoView({behavior:'smooth',block:'center'});cat.style.outline='2px solid #c59a58';setTimeout(function(){cat.style.outline=''},2500)},500);}});</script>`;
+    html=html.includes('</body>')?html.replace('</body>',script+'</body>'):html+script;
+  }
+  const headers=new Headers(response.headers);headers.delete('content-length');headers.set('cache-control','no-store');
+  return new Response(html,{status:response.status,statusText:response.statusText,headers});
+}
 
 export default {async fetch(request,env,ctx){
   const url=new URL(request.url);
@@ -45,6 +59,10 @@ export default {async fetch(request,env,ctx){
     }
   }
   const response=await base.fetch(request,env,ctx);
-  if(request.method==='GET')return enhanceVoiceAssistant(response,url);
+  if(request.method==='GET'){
+    const voice=await enhanceVoiceAssistant(response,url);
+    if(voice!==response)return voice;
+    return enhanceDesignPage(response,url);
+  }
   return response;
 }};
