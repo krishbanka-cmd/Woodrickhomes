@@ -1,0 +1,14 @@
+import app from './worker-design-picker.js';
+
+async function enhance(response,url){
+  if(url.pathname!=='/voice-design-assistant.html'&&url.pathname!=='/voice-design-assistant')return response;
+  const type=response.headers.get('content-type')||'';if(!type.includes('text/html'))return response;
+  let html=await response.text();
+  if(html.includes('woodrick-moodboard-click-fix-v1'))return response;
+  const css=`<style id="woodrick-moodboard-click-fix-v1">#wwExactPicker .ww-picker-actions{position:sticky;bottom:0;z-index:10080;background:#fff;padding:10px 0 2px;pointer-events:auto!important}#wwUsePick{position:relative;z-index:10081;pointer-events:auto!important;touch-action:manipulation;cursor:pointer!important;min-height:48px}#wwUsePick:active{transform:translateY(1px)}</style>`;
+  const js=`<script id="woodrick-moodboard-click-fix-v1">window.addEventListener('DOMContentLoaded',function(){var busy=false;function status(t){var s=document.getElementById('wwStatus');if(s)s.textContent=t}function run(btn,ev){if(!btn||busy)return;if(ev){ev.preventDefault();ev.stopPropagation()}var fn=btn.onclick;if(typeof fn!=='function'){status('Mood Board action is still loading. Please try again in a moment.');return}busy=true;try{fn.call(btn,ev||new Event('click'));setTimeout(function(){var s=document.getElementById('wwStatus'),m=document.getElementById('wwExactPicker');if(s&&/added to Mood Board/i.test(s.textContent||'')&&m)m.classList.remove('open');busy=false},120)}catch(e){busy=false;status('Could not add the selected designs. Please try once more.')}}document.addEventListener('pointerup',function(e){var b=e.target&&e.target.closest?e.target.closest('#wwUsePick'):null;if(b)run(b,e)},true);document.addEventListener('touchend',function(e){var b=e.target&&e.target.closest?e.target.closest('#wwUsePick'):null;if(b)run(b,e)},true);document.addEventListener('keydown',function(e){if((e.key==='Enter'||e.key===' ')&&document.activeElement&&document.activeElement.id==='wwUsePick')run(document.activeElement,e)},true);var obs=new MutationObserver(function(){var b=document.getElementById('wwUsePick');if(b){b.setAttribute('role','button');b.setAttribute('aria-label','Add selected designs to Mood Board');b.style.pointerEvents='auto'}});obs.observe(document.documentElement,{childList:true,subtree:true});});</script>`;
+  html=html.replace('</head>',css+'</head>');html=html.includes('</body>')?html.replace('</body>',js+'</body>'):html+js;
+  const h=new Headers(response.headers);h.delete('content-length');h.set('cache-control','no-store, no-cache, must-revalidate, max-age=0');return new Response(html,{status:response.status,statusText:response.statusText,headers:h});
+}
+
+export default{async fetch(request,env,ctx){const url=new URL(request.url);let response=await app.fetch(request,env,ctx);if(request.method==='GET')response=await enhance(response,url);return response;}};
