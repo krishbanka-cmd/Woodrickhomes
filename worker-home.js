@@ -1,4 +1,4 @@
-import app from './worker-voice-fix.js';
+import app from './worker-greeting.js';
 
 const oldCatalogue='https://drive.google.com/drive/folders/1zf6WNeCcctv6Hm-zxAsyV6I1RVcqicj0';
 
