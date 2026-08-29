@@ -1,4 +1,4 @@
-import app from './worker-design-picker.js';
+import app from './worker-design-picker-click-fix.js';
 
 const GREETING='Woodrick Homes में आपका स्वागत है। Welcome to Woodrick Homes. Your one stop destination to build your dream home.';
 
