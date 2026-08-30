@@ -32,11 +32,12 @@ const libraryOcrEnhancement=`
     var m=v.match(/^WL(\d{2,4})$/);if(m)return 'WL-'+m[1];
     m=v.match(/^([A-Z]{2,6})(\d{2,5}[A-Z]?)$/);return m?m[1]+'-'+m[2]:'';
   }
-  function extract(text,woodline){
+  function extract(text,woodline,allowBare){
     var u=String(text||'').toUpperCase().replace(/[|]/g,'I');
     var out=[];
     var patterns=[/\bW\s*[L1I]\s*[-.:]?\s*\d{2,4}\b/g,/\bV\s*[L1I]\s*[-.:]?\s*\d{2,4}\b/g,/\bW\s*I\s*I\s*[-.:]?\s*\d{2,4}\b/g,/\bWL\s*[-.:]?\s*\d{2,4}\b/g];
     patterns.forEach(function(re){(u.match(re)||[]).forEach(function(x){var c=cleanCode(x);if(c)out.push(c)})});
+    if(woodline&&allowBare){(u.match(/\b1\d{2}\b/g)||[]).forEach(function(n){var x=parseInt(n,10);if(x>=100&&x<=299)out.push('WL-'+x)})}
     if(woodline&&out.length)return uniq(out).sort(function(a,b){return parseInt(a.replace(/\D/g,''),10)-parseInt(b.replace(/\D/g,''),10)}).slice(0,40);
     (u.match(/\b[A-Z]{2,6}\s*[-.:]?\s*\d{2,5}[A-Z]?\b/g)||[]).forEach(function(x){var c=cleanCode(x);if(!c||/^PAGE-/.test(c)||/^ISO-/.test(c))return;out.push(c)});
     return uniq(out).slice(0,40);
@@ -46,36 +47,41 @@ const libraryOcrEnhancement=`
   function show(out,codes,msg){if(codes&&codes.length){out.innerHTML=codes.map(function(c){return '<span class="sku-chip">'+c+'</span>'}).join('')}else{out.innerHTML='<span class="scan-state">'+msg+'</span>'}}
   function updatePageCard(page,codes){document.querySelectorAll('.page').forEach(function(card){var n=card.querySelector('.page-no');if(!n||n.textContent.trim()!=='PAGE '+page)return;var d=card.querySelector('.design-nos');if(d){d.classList.toggle('muted',!codes.length);d.textContent=codes.length?'DESIGN: '+codes.join(' · '):'Design No. not found'}})}
   async function loadImage(src){var img=new Image();img.crossOrigin='anonymous';await new Promise(function(resolve,reject){img.onload=resolve;img.onerror=reject;img.src=src});return img}
-  function cropCanvas(img,x,y,w,h,scale,threshold){
+  function cropCanvas(img,x,y,w,h,scale,mode){
     var cv=document.createElement('canvas');cv.width=Math.max(1,Math.round(w*scale));cv.height=Math.max(1,Math.round(h*scale));var cx=cv.getContext('2d',{willReadFrequently:true});cx.imageSmoothingEnabled=false;cx.drawImage(img,x,y,w,h,0,0,cv.width,cv.height);
-    var id=cx.getImageData(0,0,cv.width,cv.height),d=id.data;for(var i=0;i<d.length;i+=4){var g=.299*d[i]+.587*d[i+1]+.114*d[i+2];var v;if(threshold){v=g>198?255:(g<120?0:Math.round((g-120)*255/78))}else{v=Math.max(0,Math.min(255,(g-128)*1.8+128))}d[i]=d[i+1]=d[i+2]=v}cx.putImageData(id,0,0);return cv
+    var id=cx.getImageData(0,0,cv.width,cv.height),d=id.data;for(var i=0;i<d.length;i+=4){var g=.299*d[i]+.587*d[i+1]+.114*d[i+2],v=g;if(mode===1)v=g>205?255:(g<135?0:Math.round((g-135)*255/70));else if(mode===2)v=g>185?255:(g<95?0:Math.round((g-95)*255/90));else v=Math.max(0,Math.min(255,(g-128)*2.1+128));d[i]=d[i+1]=d[i+2]=v}cx.putImageData(id,0,0);return cv
   }
-  async function recognize(input,out,label,woodline,psm){
+  async function recognize(input,out,label,woodline,psm,allowBare){
     var opts={logger:function(m){if(m.status==='recognizing text')show(out,[],label+' '+Math.round((m.progress||0)*100)+'%')}};
     if(woodline){opts.tessedit_char_whitelist='WLVI0123456789-. ';opts.tessedit_pageseg_mode=String(psm||11)}
-    var r=await Tesseract.recognize(input,'eng',opts);return extract(r&&r.data&&r.data.text||'',woodline)
+    var r=await Tesseract.recognize(input,'eng',opts);return extract(r&&r.data&&r.data.text||'',woodline,allowBare)
   }
   async function woodlineLabelScan(img,out){
     var W=img.naturalWidth,H=img.naturalHeight,all=[];
-    var bandTop=.285*H,bandBottom=.715*H,bandH=bandBottom-bandTop;
-    var cols=3,rows=2,cellW=W/cols,cellH=bandH/rows;
-    var jobs=[];
-    for(var r=0;r<rows;r++)for(var c=0;c<cols;c++){
-      var x=Math.max(0,c*cellW-cellW*.04),w=Math.min(W-x,cellW*1.08);
-      var cellY=bandTop+r*cellH;
-      var topLabelY=Math.max(0,cellY-cellH*.12),topLabelH=cellH*.28;
-      var bottomLabelY=Math.max(0,cellY+cellH*.70),bottomLabelH=Math.min(H-bottomLabelY,cellH*.34);
-      jobs.push([x,topLabelY,w,topLabelH]);jobs.push([x,bottomLabelY,w,bottomLabelH]);
+    var bands=[.20,.25,.30,.35,.40,.45,.50,.55,.60,.65,.70,.75,.80];
+    for(var bi=0;bi<bands.length;bi++){
+      show(out,[],'Reading label strip '+(bi+1)+'/'+bands.length+'…');
+      var cy=bands[bi]*H,hh=Math.max(24,H*.055),y=Math.max(0,cy-hh/2),h=Math.min(H-y,hh);
+      for(var mode=1;mode<=2;mode++){
+        var strip=cropCanvas(img,0,y,W,h,Math.max(7,5200/Math.max(W,1)),mode);
+        var got=await recognize(strip,out,'Strip '+(bi+1)+'/'+bands.length+'…',true,7,true);all=all.concat(got);
+      }
+      all=uniq(all);
+      if(all.length>=6)break;
     }
-    for(var i=0;i<jobs.length;i++){
-      show(out,[],'Reading design labels '+(i+1)+'/'+jobs.length+'…');
-      var j=jobs[i],cv=cropCanvas(img,j[0],j[1],j[2],j[3],7.5,true);var got=await recognize(cv,out,'Label '+(i+1)+'/'+jobs.length+'…',true,7);all=all.concat(got);
-    }
-    all=uniq(all);
     if(all.length<4){
-      var band=cropCanvas(img,0,bandTop,W,bandH,5.5,true);all=all.concat(await recognize(band,out,'Reading full design band…',true,11));
+      var cols=3,rows=2,top=.20*H,bottom=.82*H,cellW=W/cols,cellH=(bottom-top)/rows;
+      for(var r=0;r<rows;r++)for(var c=0;c<cols;c++){
+        var x=Math.max(0,c*cellW-cellW*.03),w=Math.min(W-x,cellW*1.06),cellY=top+r*cellH;
+        var regions=[[cellY-cellH*.10,cellH*.24],[cellY+cellH*.70,cellH*.25]];
+        for(var q=0;q<regions.length;q++){
+          var yy=Math.max(0,regions[q][0]),hh2=Math.min(H-yy,regions[q][1]);
+          var cv=cropCanvas(img,x,yy,w,hh2,10,1);all=all.concat(await recognize(cv,out,'Reading design label…',true,7,true));
+        }
+      }
     }
-    return uniq(all).sort(function(a,b){return parseInt(a.replace(/\D/g,''),10)-parseInt(b.replace(/\D/g,''),10)}).slice(0,40)
+    all=uniq(all).filter(function(c){var n=parseInt(c.replace(/\D/g,''),10);return /^WL-/.test(c)&&n>=100&&n<=299});
+    return all.sort(function(a,b){return parseInt(a.replace(/\D/g,''),10)-parseInt(b.replace(/\D/g,''),10)}).slice(0,40)
   }
   async function scanCurrent(force){
     var viewer=document.getElementById('viewer'),imgEl=document.getElementById('viewerImg'),out=document.getElementById('viewerDesigns');if(!viewer||!viewer.classList.contains('show')||!imgEl||!imgEl.src||!out)return;
@@ -86,7 +92,7 @@ const libraryOcrEnhancement=`
       if(!window.Tesseract)throw new Error('OCR engine unavailable');
       var img=await loadImage(src),codes=[];
       if(woodline)codes=await woodlineLabelScan(img,out);
-      if(!codes.length){var full=cropCanvas(img,0,0,img.naturalWidth,img.naturalHeight,Math.max(3,3600/Math.max(img.naturalWidth,1)),true);codes=await recognize(full,out,'Reading full page…',woodline,11)}
+      if(!codes.length){var full=cropCanvas(img,0,0,img.naturalWidth,img.naturalHeight,Math.max(3.5,4200/Math.max(img.naturalWidth,1)),1);codes=await recognize(full,out,'Reading full page…',woodline,11,woodline)}
       cache.set(src,codes);show(out,codes,codes.length?'':'Design No. not found automatically. Please zoom page to verify.');updatePageCard(page,codes)
     }catch(e){show(out,[],'Design scan could not read this page. Please zoom page to verify.')}finally{running.delete(src)}
   }
@@ -103,7 +109,7 @@ export default {
   async fetch(request,env,ctx){
     const url=new URL(request.url);let response=await app.fetch(request,env,ctx);
     if(request.method==='GET'&&(url.pathname==='/'||url.pathname==='/index.html')){const type=response.headers.get('content-type')||'';if(type.includes('text/html')){let html=(await response.text()).split(oldCatalogue).join('/catalogues/');if(!html.includes('woodrick-brand-library-script'))html=html.includes('</body>')?html.replace('</body>',brandLibraryEnhancement+'\n</body>'):html+brandLibraryEnhancement;const headers=new Headers(response.headers);headers.set('cache-control','no-store');headers.set('x-woodrick-version','brand-library-links-v1');headers.delete('content-length');return new Response(html,{status:response.status,statusText:response.statusText,headers})}}
-    if(request.method==='GET'&&(url.pathname==='/woodrick-library.html'||url.pathname==='/woodrick-library')){const type=response.headers.get('content-type')||'';if(type.includes('text/html')){let html=await response.text();if(!html.includes('woodrick-library-ocr-script'))html=html.includes('</body>')?html.replace('</body>',libraryOcrEnhancement+'\n</body>'):html+libraryOcrEnhancement;const headers=new Headers(response.headers);headers.set('cache-control','no-store');headers.set('x-woodrick-version','library-design-ocr-v4');headers.delete('content-length');return new Response(html,{status:response.status,statusText:response.statusText,headers})}}
+    if(request.method==='GET'&&(url.pathname==='/woodrick-library.html'||url.pathname==='/woodrick-library')){const type=response.headers.get('content-type')||'';if(type.includes('text/html')){let html=await response.text();if(!html.includes('woodrick-library-ocr-script'))html=html.includes('</body>')?html.replace('</body>',libraryOcrEnhancement+'\n</body>'):html+libraryOcrEnhancement;const headers=new Headers(response.headers);headers.set('cache-control','no-store');headers.set('x-woodrick-version','library-design-ocr-v5');headers.delete('content-length');return new Response(html,{status:response.status,statusText:response.statusText,headers})}}
     if(request.method==='GET'&&(url.pathname==='/3d-design-preview.html'||url.pathname==='/3d-design-preview'||url.pathname==='/auto-layout-result.html'||url.pathname==='/auto-layout-result'))response=fresh(response,'3d-ai-v3-project-sync');
     return response;
   }
