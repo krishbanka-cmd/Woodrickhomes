@@ -1,0 +1,13 @@
+# Keep deployment focused on public website assets.
+# Wrangler runs with assets.directory = ".", so exclude build/tooling files.
+node_modules/
+android-app/
+scripts/
+google-apps-script/
+functions/
+.github/
+worker*.js
+wrangler.toml
+package.json
+package-lock.json
+npm-debug.log*
