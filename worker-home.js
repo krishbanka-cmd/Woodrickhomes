@@ -16,90 +16,64 @@ const brandLibraryEnhancement=`
 })();
 </script>`;
 
-const libraryOcrEnhancement=`
-<style id="woodrick-library-ocr-style">
-#viewerDesigns .sku-chip{display:inline-block;margin:4px 5px 0 0;padding:7px 9px;border:1px solid #f0c96b;border-radius:4px;color:#f0c96b;background:#17130c;font-size:15px;font-weight:900;letter-spacing:.04em}
-#viewerDesigns .scan-state{display:block;font-size:12px;color:#d7c39b;font-weight:700;line-height:1.5}
+const libraryDesignMapEnhancement=`
+<style id="woodrick-library-design-map-style">
+#viewerDesigns .sku-chip{display:inline-block;margin:5px 6px 0 0;padding:7px 9px;border:1px solid #f0c96b;border-radius:4px;color:#f0c96b;background:#17130c;font-size:15px;font-weight:900;letter-spacing:.04em}
+#viewerDesigns .verified-label{display:block;margin-bottom:6px;color:#f0c96b;font-size:11px;font-weight:900;letter-spacing:.08em}
+.design-nos.verified-designs{color:#7b5410;font-weight:900}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script id="woodrick-library-ocr-script">
+<script id="woodrick-library-design-map-script">
 (function(){
-  var cache=new Map(),running=new Set();
-  function uniq(a){return a.filter(function(v,i){return v&&a.indexOf(v)===i})}
-  function cleanCode(v){
-    v=String(v||'').toUpperCase().replace(/[|]/g,'I').replace(/[^A-Z0-9]/g,'');
-    v=v.replace(/^W[1I]/,'WL').replace(/^V[L1I]/,'WL').replace(/^WII/,'WL').replace(/^VI/,'WL');
-    var m=v.match(/^WL(\d{2,4})$/);if(m)return 'WL-'+m[1];
-    m=v.match(/^([A-Z]{2,6})(\d{2,5}[A-Z]?)$/);return m?m[1]+'-'+m[2]:'';
+  var verifiedMaps=[
+    {brand:'woodline',category:'louvers',catalogue:'woodline louvers 8x5',pages:{2:['WL-147','WL-150','WL-151','WL-152']}}
+  ];
+  function norm(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()}
+  function pageNo(el){var p=el&&el.querySelector('.page-no');var m=p&&p.textContent.match(/\d+/);return m?Number(m[0]):0}
+  function cardInfo(card){
+    var title=norm((card&&card.querySelector('h3')||{}).textContent||'');
+    var meta=norm((card&&card.querySelector('.meta')||{}).textContent||'');
+    return {title:title,meta:meta};
   }
-  function extract(text,woodline,allowBare){
-    var u=String(text||'').toUpperCase().replace(/[|]/g,'I');
-    var out=[];
-    var patterns=[/\bW\s*[L1I]\s*[-.:]?\s*\d{2,4}\b/g,/\bV\s*[L1I]\s*[-.:]?\s*\d{2,4}\b/g,/\bW\s*I\s*I\s*[-.:]?\s*\d{2,4}\b/g,/\bWL\s*[-.:]?\s*\d{2,4}\b/g];
-    patterns.forEach(function(re){(u.match(re)||[]).forEach(function(x){var c=cleanCode(x);if(c)out.push(c)})});
-    if(woodline&&allowBare){(u.match(/\b1\d{2}\b/g)||[]).forEach(function(n){var x=parseInt(n,10);if(x>=100&&x<=299)out.push('WL-'+x)})}
-    if(woodline&&out.length)return uniq(out).sort(function(a,b){return parseInt(a.replace(/\D/g,''),10)-parseInt(b.replace(/\D/g,''),10)}).slice(0,40);
-    (u.match(/\b[A-Z]{2,6}\s*[-.:]?\s*\d{2,5}[A-Z]?\b/g)||[]).forEach(function(x){var c=cleanCode(x);if(!c||/^PAGE-/.test(c)||/^ISO-/.test(c))return;out.push(c)});
-    return uniq(out).slice(0,40);
-  }
-  function pageNumber(){var h=document.getElementById('viewerPage');var m=h&&h.textContent.match(/\d+/);return m?m[0]:''}
-  function isWoodline(){var m=document.getElementById('viewerMeta');return !!(m&&/woodline/i.test(m.textContent))}
-  function show(out,codes,msg){if(codes&&codes.length){out.innerHTML=codes.map(function(c){return '<span class="sku-chip">'+c+'</span>'}).join('')}else{out.innerHTML='<span class="scan-state">'+msg+'</span>'}}
-  function updatePageCard(page,codes){document.querySelectorAll('.page').forEach(function(card){var n=card.querySelector('.page-no');if(!n||n.textContent.trim()!=='PAGE '+page)return;var d=card.querySelector('.design-nos');if(d){d.classList.toggle('muted',!codes.length);d.textContent=codes.length?'DESIGN: '+codes.join(' · '):'Design No. not found'}})}
-  async function loadImage(src){var img=new Image();img.crossOrigin='anonymous';await new Promise(function(resolve,reject){img.onload=resolve;img.onerror=reject;img.src=src});return img}
-  function cropCanvas(img,x,y,w,h,scale,mode){
-    var cv=document.createElement('canvas');cv.width=Math.max(1,Math.round(w*scale));cv.height=Math.max(1,Math.round(h*scale));var cx=cv.getContext('2d',{willReadFrequently:true});cx.imageSmoothingEnabled=false;cx.drawImage(img,x,y,w,h,0,0,cv.width,cv.height);
-    var id=cx.getImageData(0,0,cv.width,cv.height),d=id.data;for(var i=0;i<d.length;i+=4){var g=.299*d[i]+.587*d[i+1]+.114*d[i+2],v=g;if(mode===1)v=g>205?255:(g<135?0:Math.round((g-135)*255/70));else if(mode===2)v=g>185?255:(g<95?0:Math.round((g-95)*255/90));else v=Math.max(0,Math.min(255,(g-128)*2.1+128));d[i]=d[i+1]=d[i+2]=v}cx.putImageData(id,0,0);return cv
-  }
-  async function recognize(input,out,label,woodline,psm,allowBare){
-    var opts={logger:function(m){if(m.status==='recognizing text')show(out,[],label+' '+Math.round((m.progress||0)*100)+'%')}};
-    if(woodline){opts.tessedit_char_whitelist='WLVI0123456789-. ';opts.tessedit_pageseg_mode=String(psm||11)}
-    var r=await Tesseract.recognize(input,'eng',opts);return extract(r&&r.data&&r.data.text||'',woodline,allowBare)
-  }
-  async function woodlineLabelScan(img,out){
-    var W=img.naturalWidth,H=img.naturalHeight,all=[];
-    var bands=[.20,.25,.30,.35,.40,.45,.50,.55,.60,.65,.70,.75,.80];
-    for(var bi=0;bi<bands.length;bi++){
-      show(out,[],'Reading label strip '+(bi+1)+'/'+bands.length+'…');
-      var cy=bands[bi]*H,hh=Math.max(24,H*.055),y=Math.max(0,cy-hh/2),h=Math.min(H-y,hh);
-      for(var mode=1;mode<=2;mode++){
-        var strip=cropCanvas(img,0,y,W,h,Math.max(7,5200/Math.max(W,1)),mode);
-        var got=await recognize(strip,out,'Strip '+(bi+1)+'/'+bands.length+'…',true,7,true);all=all.concat(got);
-      }
-      all=uniq(all);
-      if(all.length>=6)break;
+  function findCodes(card,page){
+    var info=cardInfo(card);
+    for(var i=0;i<verifiedMaps.length;i++){
+      var m=verifiedMaps[i];
+      if(info.meta.indexOf(m.brand)<0||info.meta.indexOf(m.category)<0||info.title.indexOf(m.catalogue)<0)continue;
+      return (m.pages[page]||[]).slice();
     }
-    if(all.length<4){
-      var cols=3,rows=2,top=.20*H,bottom=.82*H,cellW=W/cols,cellH=(bottom-top)/rows;
-      for(var r=0;r<rows;r++)for(var c=0;c<cols;c++){
-        var x=Math.max(0,c*cellW-cellW*.03),w=Math.min(W-x,cellW*1.06),cellY=top+r*cellH;
-        var regions=[[cellY-cellH*.10,cellH*.24],[cellY+cellH*.70,cellH*.25]];
-        for(var q=0;q<regions.length;q++){
-          var yy=Math.max(0,regions[q][0]),hh2=Math.min(H-yy,regions[q][1]);
-          var cv=cropCanvas(img,x,yy,w,hh2,10,1);all=all.concat(await recognize(cv,out,'Reading design label…',true,7,true));
-        }
-      }
-    }
-    all=uniq(all).filter(function(c){var n=parseInt(c.replace(/\D/g,''),10);return /^WL-/.test(c)&&n>=100&&n<=299});
-    return all.sort(function(a,b){return parseInt(a.replace(/\D/g,''),10)-parseInt(b.replace(/\D/g,''),10)}).slice(0,40)
+    return [];
   }
-  async function scanCurrent(force){
-    var viewer=document.getElementById('viewer'),imgEl=document.getElementById('viewerImg'),out=document.getElementById('viewerDesigns');if(!viewer||!viewer.classList.contains('show')||!imgEl||!imgEl.src||!out)return;
-    if(!force&&!/not detected|not found|scanning|scan/i.test(out.textContent))return;
-    var src=imgEl.src,page=pageNumber(),woodline=isWoodline();if(cache.has(src)){var cached=cache.get(src);show(out,cached,cached.length?'':'Design No. not found');updatePageCard(page,cached);return}
-    if(running.has(src))return;running.add(src);show(out,[],'Scanning design numbers…');
-    try{
-      if(!window.Tesseract)throw new Error('OCR engine unavailable');
-      var img=await loadImage(src),codes=[];
-      if(woodline)codes=await woodlineLabelScan(img,out);
-      if(!codes.length){var full=cropCanvas(img,0,0,img.naturalWidth,img.naturalHeight,Math.max(3.5,4200/Math.max(img.naturalWidth,1)),1);codes=await recognize(full,out,'Reading full page…',woodline,11,woodline)}
-      cache.set(src,codes);show(out,codes,codes.length?'':'Design No. not found automatically. Please zoom page to verify.');updatePageCard(page,codes)
-    }catch(e){show(out,[],'Design scan could not read this page. Please zoom page to verify.')}finally{running.delete(src)}
+  function renderViewer(codes){
+    var out=document.getElementById('viewerDesigns');if(!out||!codes.length)return;
+    out.innerHTML='<span class="verified-label">VERIFIED DESIGN NOS</span>'+codes.map(function(c){return '<span class="sku-chip">'+c+'</span>'}).join('');
+    var old=document.getElementById('rescanDesigns');if(old)old.remove();
   }
-  function addRescan(){var side=document.querySelector('.viewer-side');if(!side||document.getElementById('rescanDesigns'))return;var b=document.createElement('button');b.id='rescanDesigns';b.type='button';b.className='viewer-close';b.style.marginTop='8px';b.textContent='SCAN DESIGN NOS';b.addEventListener('click',function(){var img=document.getElementById('viewerImg');if(img)cache.delete(img.src);scanCurrent(true)});side.insertBefore(b,document.getElementById('viewerClose'))}
-  addRescan();
-  var viewer=document.getElementById('viewer');if(viewer)new MutationObserver(function(){setTimeout(function(){scanCurrent(false)},300)}).observe(viewer,{attributes:true,attributeFilter:['class']});
-  document.addEventListener('click',function(e){if(e.target.closest('[data-page-open]'))setTimeout(function(){scanCurrent(false)},450)},true);
+  function applyCards(){
+    document.querySelectorAll('.card').forEach(function(card){
+      card.querySelectorAll('.page').forEach(function(page){
+        var codes=findCodes(card,pageNo(page));if(!codes.length)return;
+        var d=page.querySelector('.design-nos');if(!d)return;
+        d.classList.remove('muted');d.classList.add('verified-designs');d.textContent='DESIGN: '+codes.join(' · ');
+        page.dataset.verifiedDesigns=codes.join(',');
+      });
+    });
+  }
+  document.addEventListener('click',function(e){
+    var page=e.target.closest('[data-page-open]');if(!page)return;
+    var card=page.closest('.card');var codes=findCodes(card,pageNo(page));if(codes.length)setTimeout(function(){renderViewer(codes)},120);
+  },true);
+  var catalogueRoot=document.getElementById('catalogues')||document.body;
+  new MutationObserver(function(){applyCards()}).observe(catalogueRoot,{childList:true,subtree:true});
+  var viewer=document.getElementById('viewer');if(viewer)new MutationObserver(function(){
+    if(!viewer.classList.contains('show'))return;
+    var pageText=(document.getElementById('viewerPage')||{}).textContent||'';var pm=pageText.match(/\d+/);if(!pm)return;
+    var meta=norm((document.getElementById('viewerMeta')||{}).textContent||'');
+    if(meta.indexOf('woodline')<0||meta.indexOf('louvers')<0)return;
+    var page=Number(pm[0]);var codes=verifiedMaps[0].pages[page]||[];if(codes.length)setTimeout(function(){renderViewer(codes)},40);
+  }).observe(viewer,{attributes:true,attributeFilter:['class']});
+  applyCards();
+  setTimeout(applyCards,500);
+  setTimeout(applyCards,1500);
 })();
 </script>`;
 
@@ -109,7 +83,7 @@ export default {
   async fetch(request,env,ctx){
     const url=new URL(request.url);let response=await app.fetch(request,env,ctx);
     if(request.method==='GET'&&(url.pathname==='/'||url.pathname==='/index.html')){const type=response.headers.get('content-type')||'';if(type.includes('text/html')){let html=(await response.text()).split(oldCatalogue).join('/catalogues/');if(!html.includes('woodrick-brand-library-script'))html=html.includes('</body>')?html.replace('</body>',brandLibraryEnhancement+'\n</body>'):html+brandLibraryEnhancement;const headers=new Headers(response.headers);headers.set('cache-control','no-store');headers.set('x-woodrick-version','brand-library-links-v1');headers.delete('content-length');return new Response(html,{status:response.status,statusText:response.statusText,headers})}}
-    if(request.method==='GET'&&(url.pathname==='/woodrick-library.html'||url.pathname==='/woodrick-library')){const type=response.headers.get('content-type')||'';if(type.includes('text/html')){let html=await response.text();if(!html.includes('woodrick-library-ocr-script'))html=html.includes('</body>')?html.replace('</body>',libraryOcrEnhancement+'\n</body>'):html+libraryOcrEnhancement;const headers=new Headers(response.headers);headers.set('cache-control','no-store');headers.set('x-woodrick-version','library-design-ocr-v5');headers.delete('content-length');return new Response(html,{status:response.status,statusText:response.statusText,headers})}}
+    if(request.method==='GET'&&(url.pathname==='/woodrick-library.html'||url.pathname==='/woodrick-library')){const type=response.headers.get('content-type')||'';if(type.includes('text/html')){let html=await response.text();if(!html.includes('woodrick-library-design-map-script'))html=html.includes('</body>')?html.replace('</body>',libraryDesignMapEnhancement+'\n</body>'):html+libraryDesignMapEnhancement;const headers=new Headers(response.headers);headers.set('cache-control','no-store');headers.set('x-woodrick-version','library-design-map-v1');headers.delete('content-length');return new Response(html,{status:response.status,statusText:response.statusText,headers})}}
     if(request.method==='GET'&&(url.pathname==='/3d-design-preview.html'||url.pathname==='/3d-design-preview'||url.pathname==='/auto-layout-result.html'||url.pathname==='/auto-layout-result'))response=fresh(response,'3d-ai-v3-project-sync');
     return response;
   }
