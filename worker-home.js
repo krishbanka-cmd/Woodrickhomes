@@ -3,88 +3,33 @@ import app from './worker-project-sync.js';
 const oldCatalogue='https://drive.google.com/drive/folders/1zf6WNeCcctv6Hm-zxAsyV6I1RVcqicj0';
 
 const brandLibraryEnhancement=`
-<style id="woodrick-brand-library-links">
-.trusted-card[data-library-brand]{cursor:pointer;position:relative}
-.trusted-card[data-library-brand]:focus-visible{outline:3px solid #f0c96b;outline-offset:3px}
-.trusted-card[data-library-brand]::after{content:'VIEW DESIGNS →';font-size:10px;font-weight:900;letter-spacing:.08em;color:#8b5f16;margin-top:8px}
-</style>
-<script id="woodrick-brand-library-script">
-(function(){
-  var searchMap={'UltraTech Cement':'UltraTech','UltraTech Building Solutions':'UltraTech','Birla Opus Paints':'Birla Opus','Asian Paints':'Asian Paints','Griham by Supreme':'Griham','Varmora Tiles':'Varmora','Senator':'Senator','Thermax Steel':'Thermax','CenturyPly':'CenturyPly','Greenply':'Greenply','Green HDHMR':'Green HDHMR','Ristal Laminates':'Ristal','Merino':'Merino','Royale Touche':'Royale Touche','Woodline':'Woodline','MWUD':'MWUD','Greenpanel':'Greenpanel','Nilkamal':'Nilkamal','Godrej Locks':'Godrej','Hettich Hardware':'Hettich','Ebco Hardware':'Ebco','Philips Lighting':'Philips','Supreme uPVC':'Supreme','Birla Putty':'Birla','550D Grade Steel':'550D'};
-  function openLibrary(card){var name=(card.querySelector('.trusted-name')||{}).textContent||'';name=name.trim();var q=searchMap[name]||name;location.href='/woodrick-library.html?q='+encodeURIComponent(q)}
-  document.querySelectorAll('.trusted-card').forEach(function(card){var name=(card.querySelector('.trusted-name')||{}).textContent||'';name=name.trim();if(!name)return;card.dataset.libraryBrand=searchMap[name]||name;card.setAttribute('role','link');card.setAttribute('tabindex','0');card.setAttribute('aria-label','View '+name+' designs and catalogues');card.addEventListener('click',function(){openLibrary(card)});card.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openLibrary(card)}})});
-})();
-</script>`;
+<style id="woodrick-brand-library-links">.trusted-card[data-library-brand]{cursor:pointer;position:relative}.trusted-card[data-library-brand]:focus-visible{outline:3px solid #f0c96b;outline-offset:3px}.trusted-card[data-library-brand]::after{content:'VIEW DESIGNS →';font-size:10px;font-weight:900;letter-spacing:.08em;color:#8b5f16;margin-top:8px}</style>
+<script id="woodrick-brand-library-script">(function(){var m={'UltraTech Cement':'UltraTech','UltraTech Building Solutions':'UltraTech','Birla Opus Paints':'Birla Opus','Asian Paints':'Asian Paints','Griham by Supreme':'Griham','Varmora Tiles':'Varmora','Senator':'Senator','Thermax Steel':'Thermax','CenturyPly':'CenturyPly','Greenply':'Greenply','Green HDHMR':'Green HDHMR','Ristal Laminates':'Ristal','Merino':'Merino','Royale Touche':'Royale Touche','Woodline':'Woodline','MWUD':'MWUD','Greenpanel':'Greenpanel','Nilkamal':'Nilkamal','Godrej Locks':'Godrej','Hettich Hardware':'Hettich','Ebco Hardware':'Ebco','Philips Lighting':'Philips','Supreme uPVC':'Supreme','Birla Putty':'Birla','550D Grade Steel':'550D'};function go(c){var n=((c.querySelector('.trusted-name')||{}).textContent||'').trim();location.href='/woodrick-library.html?q='+encodeURIComponent(m[n]||n)}document.querySelectorAll('.trusted-card').forEach(function(c){var n=((c.querySelector('.trusted-name')||{}).textContent||'').trim();if(!n)return;c.dataset.libraryBrand=m[n]||n;c.setAttribute('role','link');c.setAttribute('tabindex','0');c.addEventListener('click',function(){go(c)});c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go(c)}})})})();</script>`;
 
-const libraryDesignMapEnhancement=`
-<style id="woodrick-library-design-map-style">
-#viewerDesigns .sku-chip{display:inline-block;margin:5px 6px 0 0;padding:7px 9px;border:1px solid #f0c96b;border-radius:4px;color:#f0c96b;background:#17130c;font-size:15px;font-weight:900;letter-spacing:.04em}
-#viewerDesigns .verified-label{display:block;margin-bottom:6px;color:#f0c96b;font-size:11px;font-weight:900;letter-spacing:.08em}
-.design-nos.verified-designs{color:#7b5410;font-weight:900}
-</style>
-<script id="woodrick-library-design-map-script">
-(function(){
-  var verifiedMaps=[
-    {brand:'woodline',category:'louvers',pages:{2:['WL-147','WL-150','WL-151','WL-152']}}
-  ];
-  function norm(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()}
-  function pageNo(el){var p=el&&el.querySelector('.page-no');var m=p&&p.textContent.match(/\d+/);return m?Number(m[0]):0}
-  function cardInfo(card){
-    var title=norm((card&&card.querySelector('h3')||{}).textContent||'');
-    var meta=norm((card&&card.querySelector('.meta')||{}).textContent||'');
-    return {title:title,meta:meta};
-  }
-  function findCodes(card,page){
-    var info=cardInfo(card);
-    for(var i=0;i<verifiedMaps.length;i++){
-      var m=verifiedMaps[i];
-      if(info.meta.indexOf(m.brand)<0||info.meta.indexOf(m.category)<0)continue;
-      return (m.pages[page]||[]).slice();
-    }
-    return [];
-  }
-  function renderViewer(codes){
-    var out=document.getElementById('viewerDesigns');if(!out||!codes.length)return;
-    out.innerHTML='<span class="verified-label">VERIFIED DESIGN NOS</span>'+codes.map(function(c){return '<span class="sku-chip">'+c+'</span>'}).join('');
-    var old=document.getElementById('rescanDesigns');if(old)old.remove();
-  }
-  function applyCards(){
-    document.querySelectorAll('.card').forEach(function(card){
-      card.querySelectorAll('.page').forEach(function(page){
-        var codes=findCodes(card,pageNo(page));if(!codes.length)return;
-        var d=page.querySelector('.design-nos');if(!d)return;
-        d.classList.remove('muted');d.classList.add('verified-designs');d.textContent='DESIGN: '+codes.join(' · ');
-        page.dataset.verifiedDesigns=codes.join(',');
-      });
-    });
-  }
-  document.addEventListener('click',function(e){
-    var page=e.target.closest('[data-page-open]');if(!page)return;
-    var card=page.closest('.card');var codes=findCodes(card,pageNo(page));if(codes.length)setTimeout(function(){renderViewer(codes)},180);
-  },true);
-  var catalogueRoot=document.getElementById('catalogues')||document.body;
-  new MutationObserver(function(){applyCards()}).observe(catalogueRoot,{childList:true,subtree:true});
-  var viewer=document.getElementById('viewer');if(viewer)new MutationObserver(function(){
-    if(!viewer.classList.contains('show'))return;
-    var pageText=(document.getElementById('viewerPage')||{}).textContent||'';var pm=pageText.match(/\d+/);if(!pm)return;
-    var meta=norm((document.getElementById('viewerMeta')||{}).textContent||'');
-    if(meta.indexOf('woodline')<0||meta.indexOf('louvers')<0)return;
-    var page=Number(pm[0]);var codes=verifiedMaps[0].pages[page]||[];if(codes.length)setTimeout(function(){renderViewer(codes)},80);
-  }).observe(viewer,{attributes:true,attributeFilter:['class']});
-  applyCards();
-  setTimeout(applyCards,500);
-  setTimeout(applyCards,1500);
-})();
-</script>`;
+const libraryDesignEnhancement=`
+<style id="woodrick-library-design-map-style">#viewerDesigns .sku-chip{display:inline-block;margin:5px 6px 0 0;padding:7px 9px;border:1px solid #f0c96b;border-radius:4px;color:#f0c96b;background:#17130c;font-size:15px;font-weight:900}.design-nos.verified-designs{color:#7b5410;font-weight:900}</style>
+<script id="woodrick-library-design-map-script">(function(){
+var entries=[];var fallback={brand:'woodline',category:'louvers',page:2,codes:['WL-147','WL-150','WL-151','WL-152']};
+function norm(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()}
+function splitCodes(s){return String(s||'').toUpperCase().split(/[\\s,;|·]+/).map(function(x){return x.trim()}).filter(Boolean).filter(function(x,i,a){return a.indexOf(x)===i})}
+function pageNo(el){var p=el&&el.querySelector('.page-no');var m=p&&p.textContent.match(/\\d+/);return m?Number(m[0]):0}
+function info(card){return{title:norm(((card.querySelector('h3')||{}).textContent||'')),meta:norm(((card.querySelector('.meta')||{}).textContent||''))}}
+function codesFor(card,page){var x=info(card);for(var i=0;i<entries.length;i++){var e=entries[i];if(e.page===page&&x.meta.indexOf(e.brand)>=0&&x.meta.indexOf(e.category)>=0&&(x.title===e.catalogue||x.title.indexOf(e.catalogue)>=0||e.catalogue.indexOf(x.title)>=0))return e.codes.slice()}if(page===fallback.page&&x.meta.indexOf(fallback.brand)>=0&&x.meta.indexOf(fallback.category)>=0)return fallback.codes.slice();return[]}
+function renderViewer(codes){var out=document.getElementById('viewerDesigns');if(!out||!codes.length)return;out.innerHTML='<span style="display:block;color:#f0c96b;font-size:11px;font-weight:900;margin-bottom:7px">DESIGN NOS</span>'+codes.map(function(c){return '<span class="sku-chip">'+c+'</span>'}).join('')}
+function apply(){document.querySelectorAll('.card').forEach(function(card){card.querySelectorAll('.page').forEach(function(p){var codes=codesFor(card,pageNo(p));if(!codes.length)return;var d=p.querySelector('.design-nos');if(d){d.classList.remove('muted');d.classList.add('verified-designs');d.textContent='DESIGN: '+codes.join(' · ')}p.dataset.verifiedDesigns=codes.join(',')})})}
+async function load(){var cursor='',all=[];do{var u='/api/media?prefix=library/'+(cursor?'&cursor='+encodeURIComponent(cursor):'');var r=await fetch(u,{cache:'no-store'});var d=await r.json();all=all.concat(d.items||[]);cursor=d.truncated&&d.cursor?d.cursor:''}while(cursor);entries=(all||[]).filter(function(x){return x.type==='jpg-page'&&x.designNumbers}).map(function(x){return{brand:norm(x.brand),category:norm(x.category),catalogue:norm(x.catalogue),page:Number(x.page||0),codes:splitCodes(x.designNumbers)}}).filter(function(x){return x.page&&x.codes.length});apply()}
+document.addEventListener('click',function(e){var p=e.target.closest('[data-page-open]');if(!p)return;var codes=codesFor(p.closest('.card'),pageNo(p));if(codes.length)setTimeout(function(){renderViewer(codes)},160)},true);
+new MutationObserver(apply).observe(document.getElementById('catalogues')||document.body,{childList:true,subtree:true});load().catch(function(){apply()});setTimeout(apply,700);setTimeout(apply,1800)
+})();</script>`;
 
-function fresh(response,version){const headers=new Headers(response.headers);headers.set('cache-control','no-store, no-cache, must-revalidate, max-age=0');headers.set('pragma','no-cache');headers.set('expires','0');if(version)headers.set('x-woodrick-version',version);headers.delete('content-length');return new Response(response.body,{status:response.status,statusText:response.statusText,headers})}
+const adminDesignCaptureEnhancement=`
+<script id="woodrick-admin-design-capture-script">(function(){
+var designMap={};var originalFetch=window.fetch.bind(window);window.fetch=function(input,init){try{if(String(input).indexOf('/api/upload')>=0&&init&&init.body instanceof FormData&&String(init.body.get('library')||'')==='1'&&String(init.body.get('type')||'')==='jpg-page'){var p=Number(init.body.get('page')||0),codes=designMap[p]||[];if(codes.length)init.body.set('designNumbers',codes.join(','))}}catch(e){}return originalFetch(input,init)};
+function extract(text){var up=String(text||'').toUpperCase().replace(/\\s+/g,' '),m=up.match(/\\b[A-Z]{1,8}[\\s-]?\\d{2,6}[A-Z]?\\b/g)||[];return m.map(function(x){return x.replace(/\\s+/g,'-')}).filter(function(x){return !/^PAGE-?\\d+$/.test(x)}).filter(function(x,i,a){return a.indexOf(x)===i}).slice(0,60)}
+async function build(){designMap={};var inp=document.getElementById('libPdf'),file=inp&&inp.files&&inp.files[0];if(!file)return;try{var pdfjs=await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs');pdfjs.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';var pdf=await pdfjs.getDocument({data:await file.arrayBuffer()}).promise;for(var i=1;i<=pdf.numPages;i++){var page=await pdf.getPage(i),tc=await page.getTextContent(),text=(tc.items||[]).map(function(x){return x.str||''}).join(' ');designMap[i]=extract(text)}}catch(e){designMap={}}}
+function wrap(){var b=document.getElementById('libStart');if(!b||typeof b.onclick!=='function'||b.dataset.designCaptureWrapped)return false;var old=b.onclick;b.dataset.designCaptureWrapped='1';b.onclick=async function(e){var s=document.getElementById('libStatus');if(s){s.textContent='Reading design numbers from PDF…';s.className='status show'}await build();return old.call(this,e)};return true}var tries=0,t=setInterval(function(){tries++;if(wrap()||tries>80)clearInterval(t)},100)})();</script>`;
 
-export default {
-  async fetch(request,env,ctx){
-    const url=new URL(request.url);let response=await app.fetch(request,env,ctx);
-    if(request.method==='GET'&&(url.pathname==='/'||url.pathname==='/index.html')){const type=response.headers.get('content-type')||'';if(type.includes('text/html')){let html=(await response.text()).split(oldCatalogue).join('/catalogues/');if(!html.includes('woodrick-brand-library-script'))html=html.includes('</body>')?html.replace('</body>',brandLibraryEnhancement+'\n</body>'):html+brandLibraryEnhancement;const headers=new Headers(response.headers);headers.set('cache-control','no-store');headers.set('x-woodrick-version','brand-library-links-v1');headers.delete('content-length');return new Response(html,{status:response.status,statusText:response.statusText,headers})}}
-    if(request.method==='GET'&&(url.pathname==='/woodrick-library.html'||url.pathname==='/woodrick-library')){const type=response.headers.get('content-type')||'';if(type.includes('text/html')){let html=await response.text();if(!html.includes('woodrick-library-design-map-script'))html=html.includes('</body>')?html.replace('</body>',libraryDesignMapEnhancement+'\n</body>'):html+libraryDesignMapEnhancement;const headers=new Headers(response.headers);headers.set('cache-control','no-store');headers.set('x-woodrick-version','library-design-map-v2');headers.delete('content-length');return new Response(html,{status:response.status,statusText:response.statusText,headers})}}
-    if(request.method==='GET'&&(url.pathname==='/3d-design-preview.html'||url.pathname==='/3d-design-preview'||url.pathname==='/auto-layout-result.html'||url.pathname==='/auto-layout-result'))response=fresh(response,'3d-ai-v3-project-sync');
-    return response;
-  }
-};
+function inject(response,enhancement,marker,version){const type=response.headers.get('content-type')||'';if(!type.includes('text/html'))return response;return response.text().then(html=>{if(!html.includes(marker))html=html.includes('</body>')?html.replace('</body>',enhancement+'\n</body>'):html+enhancement;const h=new Headers(response.headers);h.set('cache-control','no-store, no-cache, must-revalidate, max-age=0');h.set('x-woodrick-version',version);h.delete('content-length');return new Response(html,{status:response.status,statusText:response.statusText,headers:h})})}
+function fresh(response,version){const h=new Headers(response.headers);h.set('cache-control','no-store, no-cache, must-revalidate, max-age=0');h.set('pragma','no-cache');h.set('expires','0');if(version)h.set('x-woodrick-version',version);h.delete('content-length');return new Response(response.body,{status:response.status,statusText:response.statusText,headers:h})}
+
+export default{async fetch(request,env,ctx){const url=new URL(request.url);let response=await app.fetch(request,env,ctx);if(request.method==='GET'&&(url.pathname==='/'||url.pathname==='/index.html')){const type=response.headers.get('content-type')||'';if(type.includes('text/html')){let html=(await response.text()).split(oldCatalogue).join('/catalogues/');if(!html.includes('woodrick-brand-library-script'))html=html.includes('</body>')?html.replace('</body>',brandLibraryEnhancement+'\n</body>'):html+brandLibraryEnhancement;const h=new Headers(response.headers);h.set('cache-control','no-store');h.set('x-woodrick-version','brand-library-links-v1');h.delete('content-length');return new Response(html,{status:response.status,statusText:response.statusText,headers:h})}}if(request.method==='GET'&&(url.pathname==='/woodrick-library.html'||url.pathname==='/woodrick-library'))return inject(response,libraryDesignEnhancement,'woodrick-library-design-map-script','library-design-metadata-v1');if(request.method==='GET'&&(url.pathname==='/admin-products/'||url.pathname==='/admin-products'||url.pathname==='/admin-products/index.html'))return inject(response,adminDesignCaptureEnhancement,'woodrick-admin-design-capture-script','admin-library-design-capture-v1');if(request.method==='GET'&&(url.pathname==='/3d-design-preview.html'||url.pathname==='/3d-design-preview'||url.pathname==='/auto-layout-result.html'||url.pathname==='/auto-layout-result'))response=fresh(response,'3d-ai-v3-project-sync');return response}};
