@@ -25,7 +25,10 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
+
+      - name: Confirm Node version
+        run: node --version
 
       - name: Install Wrangler
         run: npm install --no-save wrangler@latest
