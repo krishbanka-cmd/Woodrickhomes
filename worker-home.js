@@ -1,4 +1,4 @@
-import app from './worker-greeting.js';
+import app from './worker-project-sync.js';
 
 const oldCatalogue='https://drive.google.com/drive/folders/1zf6WNeCcctv6Hm-zxAsyV6I1RVcqicj0';
 
@@ -27,7 +27,7 @@ export default {
       }
     }
     if(request.method==='GET'&&(url.pathname==='/3d-design-preview.html'||url.pathname==='/3d-design-preview'||url.pathname==='/auto-layout-result.html'||url.pathname==='/auto-layout-result')){
-      response=fresh(response,'3d-ai-v2');
+      response=fresh(response,'3d-ai-v3-project-sync');
     }
     return response;
   }
