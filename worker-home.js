@@ -25,7 +25,7 @@ const libraryDesignMapEnhancement=`
 <script id="woodrick-library-design-map-script">
 (function(){
   var verifiedMaps=[
-    {brand:'woodline',category:'louvers',catalogue:'woodline louvers 8x5',pages:{2:['WL-147','WL-150','WL-151','WL-152']}}
+    {brand:'woodline',category:'louvers',pages:{2:['WL-147','WL-150','WL-151','WL-152']}}
   ];
   function norm(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()}
   function pageNo(el){var p=el&&el.querySelector('.page-no');var m=p&&p.textContent.match(/\d+/);return m?Number(m[0]):0}
@@ -38,7 +38,7 @@ const libraryDesignMapEnhancement=`
     var info=cardInfo(card);
     for(var i=0;i<verifiedMaps.length;i++){
       var m=verifiedMaps[i];
-      if(info.meta.indexOf(m.brand)<0||info.meta.indexOf(m.category)<0||info.title.indexOf(m.catalogue)<0)continue;
+      if(info.meta.indexOf(m.brand)<0||info.meta.indexOf(m.category)<0)continue;
       return (m.pages[page]||[]).slice();
     }
     return [];
@@ -60,7 +60,7 @@ const libraryDesignMapEnhancement=`
   }
   document.addEventListener('click',function(e){
     var page=e.target.closest('[data-page-open]');if(!page)return;
-    var card=page.closest('.card');var codes=findCodes(card,pageNo(page));if(codes.length)setTimeout(function(){renderViewer(codes)},120);
+    var card=page.closest('.card');var codes=findCodes(card,pageNo(page));if(codes.length)setTimeout(function(){renderViewer(codes)},180);
   },true);
   var catalogueRoot=document.getElementById('catalogues')||document.body;
   new MutationObserver(function(){applyCards()}).observe(catalogueRoot,{childList:true,subtree:true});
@@ -69,7 +69,7 @@ const libraryDesignMapEnhancement=`
     var pageText=(document.getElementById('viewerPage')||{}).textContent||'';var pm=pageText.match(/\d+/);if(!pm)return;
     var meta=norm((document.getElementById('viewerMeta')||{}).textContent||'');
     if(meta.indexOf('woodline')<0||meta.indexOf('louvers')<0)return;
-    var page=Number(pm[0]);var codes=verifiedMaps[0].pages[page]||[];if(codes.length)setTimeout(function(){renderViewer(codes)},40);
+    var page=Number(pm[0]);var codes=verifiedMaps[0].pages[page]||[];if(codes.length)setTimeout(function(){renderViewer(codes)},80);
   }).observe(viewer,{attributes:true,attributeFilter:['class']});
   applyCards();
   setTimeout(applyCards,500);
@@ -83,7 +83,7 @@ export default {
   async fetch(request,env,ctx){
     const url=new URL(request.url);let response=await app.fetch(request,env,ctx);
     if(request.method==='GET'&&(url.pathname==='/'||url.pathname==='/index.html')){const type=response.headers.get('content-type')||'';if(type.includes('text/html')){let html=(await response.text()).split(oldCatalogue).join('/catalogues/');if(!html.includes('woodrick-brand-library-script'))html=html.includes('</body>')?html.replace('</body>',brandLibraryEnhancement+'\n</body>'):html+brandLibraryEnhancement;const headers=new Headers(response.headers);headers.set('cache-control','no-store');headers.set('x-woodrick-version','brand-library-links-v1');headers.delete('content-length');return new Response(html,{status:response.status,statusText:response.statusText,headers})}}
-    if(request.method==='GET'&&(url.pathname==='/woodrick-library.html'||url.pathname==='/woodrick-library')){const type=response.headers.get('content-type')||'';if(type.includes('text/html')){let html=await response.text();if(!html.includes('woodrick-library-design-map-script'))html=html.includes('</body>')?html.replace('</body>',libraryDesignMapEnhancement+'\n</body>'):html+libraryDesignMapEnhancement;const headers=new Headers(response.headers);headers.set('cache-control','no-store');headers.set('x-woodrick-version','library-design-map-v1');headers.delete('content-length');return new Response(html,{status:response.status,statusText:response.statusText,headers})}}
+    if(request.method==='GET'&&(url.pathname==='/woodrick-library.html'||url.pathname==='/woodrick-library')){const type=response.headers.get('content-type')||'';if(type.includes('text/html')){let html=await response.text();if(!html.includes('woodrick-library-design-map-script'))html=html.includes('</body>')?html.replace('</body>',libraryDesignMapEnhancement+'\n</body>'):html+libraryDesignMapEnhancement;const headers=new Headers(response.headers);headers.set('cache-control','no-store');headers.set('x-woodrick-version','library-design-map-v2');headers.delete('content-length');return new Response(html,{status:response.status,statusText:response.statusText,headers})}}
     if(request.method==='GET'&&(url.pathname==='/3d-design-preview.html'||url.pathname==='/3d-design-preview'||url.pathname==='/auto-layout-result.html'||url.pathname==='/auto-layout-result'))response=fresh(response,'3d-ai-v3-project-sync');
     return response;
   }
