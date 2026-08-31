@@ -1,5 +1,5 @@
 name = "woodrickhomes"
-main = "worker-product-media-stability.js"
+main = "worker-product-refresh-fix.js"
 compatibility_date = "2026-08-23"
 keep_vars = true
 
