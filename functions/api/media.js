@@ -17,9 +17,32 @@ export async function onRequestGet({request,env}){
     }
     return new Response(obj.body,{headers});
   }
+
   const prefix=url.searchParams.get('prefix')||'';
-  const cursor=url.searchParams.get('cursor')||undefined;
-  const listed=await env.PRODUCT_MEDIA.list({limit:500,prefix,cursor,include:['customMetadata','httpMetadata']});
+  const requestedCursor=url.searchParams.get('cursor')||undefined;
+
+  // Library catalogues can contain thousands of files because every PDF page is
+  // stored as a JPG. When the library root is requested without an explicit
+  // cursor, walk every R2 page so the admin UI never silently stops at 500 files.
+  if(prefix.startsWith('library/')&&!requestedCursor){
+    const objects=[];
+    let cursor=undefined;
+    let truncated=true;
+    let pages=0;
+    const MAX_OBJECTS=50000;
+    while(truncated&&objects.length<MAX_OBJECTS){
+      const listed=await env.PRODUCT_MEDIA.list({limit:1000,prefix,cursor,include:['customMetadata','httpMetadata']});
+      objects.push(...listed.objects);
+      truncated=listed.truncated;
+      cursor=listed.cursor||undefined;
+      pages++;
+      if(!cursor) break;
+    }
+    const items=objects.map(o=>({key:o.key,size:o.size,uploaded:o.uploaded,url:`/api/media?key=${encodeURIComponent(o.key)}`,...(o.customMetadata||{})})).sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));
+    return json({items,truncated:truncated&&objects.length>=MAX_OBJECTS,cursor:cursor||null,pages,limit:MAX_OBJECTS});
+  }
+
+  const listed=await env.PRODUCT_MEDIA.list({limit:500,prefix,cursor:requestedCursor,include:['customMetadata','httpMetadata']});
   const items=listed.objects.map(o=>({key:o.key,size:o.size,uploaded:o.uploaded,url:`/api/media?key=${encodeURIComponent(o.key)}`,...(o.customMetadata||{})})).sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));
   return json({items,truncated:listed.truncated,cursor:listed.cursor||null});
 }
