@@ -17,9 +17,9 @@ function hasExplicitAdminPassword(request,env){
 }
 
 const deletePasswordPatch=`
-<script id="woodrick-delete-password-v1">(function(){
-  function askPassword(){
-    var p=prompt('Enter admin password to delete this product:');
+<script id="woodrick-delete-password-v2">(function(){
+  function askPassword(label){
+    var p=prompt('Enter admin password to '+label+':');
     return p===null?'':p.trim();
   }
 
@@ -30,7 +30,7 @@ const deletePasswordPatch=`
     e.preventDefault();
     e.stopImmediatePropagation();
 
-    var password=askPassword();
+    var password=askPassword('delete this product');
     if(!password)return;
     if(!confirm('Delete this product media item?'))return;
 
@@ -51,17 +51,30 @@ const deletePasswordPatch=`
       if(!r.ok)throw new Error(d.error||'Delete failed');
 
       var refresh=document.getElementById('refreshBtn');
-      if(refresh){
-        refresh.click();
-      }else{
-        location.reload();
-      }
+      if(refresh)refresh.click();
+      else location.reload();
     }catch(err){
       alert(err.message);
     }finally{
       btn.disabled=false;
       btn.textContent=old;
     }
+  },true);
+
+  document.addEventListener('click',function(e){
+    var btn=e.target.closest('.delete-catalogue-btn');
+    if(!btn)return;
+
+    var password=askPassword('delete this catalogue');
+    if(!password){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return;
+    }
+
+    var input=document.getElementById('libToken');
+    if(input)input.value=password;
+    try{sessionStorage.setItem('woodrick_library_token',password)}catch(_){}
   },true);
 })();</script>`;
 
@@ -75,6 +88,16 @@ export default{
       }
     }
 
+    if(request.method==='POST'&&url.pathname==='/api/upload'){
+      const ct=(request.headers.get('content-type')||'').toLowerCase();
+      if(ct.includes('application/json')){
+        let body={};try{body=await request.clone().json()}catch{}
+        if(body.action==='delete-library'&&!hasExplicitAdminPassword(request,env)){
+          return json({error:'Correct admin password is required to delete a catalogue.'},401);
+        }
+      }
+    }
+
     const response=await app.fetch(request,env,ctx);
 
     if(request.method==='GET'&&(url.pathname==='/admin-products/'||url.pathname==='/admin-products'||url.pathname==='/admin-products/index.html')){
@@ -82,13 +105,14 @@ export default{
       if(!type.includes('text/html'))return response;
 
       let html=await response.text();
-      if(!html.includes('woodrick-delete-password-v1')){
+      html=html.replace(/<script id="woodrick-delete-password-v1">[\s\S]*?<\/script>/g,'');
+      if(!html.includes('woodrick-delete-password-v2')){
         html=html.includes('</body>')?html.replace('</body>',deletePasswordPatch+'\n</body>'):html+deletePasswordPatch;
       }
       const headers=new Headers(response.headers);
       headers.delete('content-length');
       headers.set('cache-control','no-store, no-cache, must-revalidate, max-age=0');
-      headers.set('x-woodrick-version','delete-password-v1');
+      headers.set('x-woodrick-version','delete-password-v2');
       return new Response(html,{status:response.status,statusText:response.statusText,headers});
     }
 
