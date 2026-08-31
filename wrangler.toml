@@ -1,5 +1,5 @@
 name = "woodrickhomes"
-main = "worker-delete-password-fix.js"
+main = "worker-admin-media-refresh-stable.js"
 compatibility_date = "2026-08-23"
 keep_vars = true
 
