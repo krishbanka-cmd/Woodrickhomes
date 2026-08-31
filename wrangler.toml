@@ -1,5 +1,5 @@
 name = "woodrickhomes"
-main = "worker-category-management.js"
+main = "worker-edit-category-sync.js"
 compatibility_date = "2026-08-23"
 keep_vars = true
 
