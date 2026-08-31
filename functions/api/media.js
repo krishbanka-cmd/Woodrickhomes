@@ -1,4 +1,27 @@
-function json(data,status=200){return new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}})}
+function json(data,status=200){return new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store, no-cache, must-revalidate','pragma':'no-cache','expires':'0'}})}
+
+function toItem(o){return {key:o.key,size:o.size,uploaded:o.uploaded,url:`/api/media?key=${encodeURIComponent(o.key)}`,...(o.customMetadata||{})}}
+
+async function listAll(env,prefix=''){
+  const objects=[];
+  let cursor=undefined;
+  let page=0;
+  const seen=new Set();
+  const MAX_OBJECTS=100000;
+  while(objects.length<MAX_OBJECTS){
+    const opts={limit:1000,prefix,include:['customMetadata','httpMetadata']};
+    if(cursor) opts.cursor=cursor;
+    const listed=await env.PRODUCT_MEDIA.list(opts);
+    objects.push(...listed.objects);
+    page++;
+    if(!listed.truncated) break;
+    const next=listed.cursor;
+    if(!next||seen.has(next)) break;
+    seen.add(next);
+    cursor=next;
+  }
+  return {objects,pages:page,truncated:objects.length>=MAX_OBJECTS,cursor:cursor||null};
+}
 
 export async function onRequestGet({request,env}){
   if(!env.PRODUCT_MEDIA) return json({error:'PRODUCT_MEDIA R2 binding is missing'},500);
@@ -21,30 +44,19 @@ export async function onRequestGet({request,env}){
   const prefix=url.searchParams.get('prefix')||'';
   const requestedCursor=url.searchParams.get('cursor')||undefined;
 
-  // Library catalogues can contain thousands of files because every PDF page is
-  // stored as a JPG. When the library root is requested without an explicit
-  // cursor, walk every R2 page so the admin UI never silently stops at 500 files.
+  // Library listings must never stop at one R2 page. Every catalogue PDF can
+  // generate dozens or hundreds of JPG objects, so aggregate all pages here.
   if(prefix.startsWith('library/')&&!requestedCursor){
-    const objects=[];
-    let cursor=undefined;
-    let truncated=true;
-    let pages=0;
-    const MAX_OBJECTS=50000;
-    while(truncated&&objects.length<MAX_OBJECTS){
-      const listed=await env.PRODUCT_MEDIA.list({limit:1000,prefix,cursor,include:['customMetadata','httpMetadata']});
-      objects.push(...listed.objects);
-      truncated=listed.truncated;
-      cursor=listed.cursor||undefined;
-      pages++;
-      if(!cursor) break;
-    }
-    const items=objects.map(o=>({key:o.key,size:o.size,uploaded:o.uploaded,url:`/api/media?key=${encodeURIComponent(o.key)}`,...(o.customMetadata||{})})).sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));
-    return json({items,truncated:truncated&&objects.length>=MAX_OBJECTS,cursor:cursor||null,pages,limit:MAX_OBJECTS});
+    const all=await listAll(env,prefix);
+    const items=all.objects.map(toItem).sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));
+    return json({items,truncated:all.truncated,cursor:all.cursor,pages:all.pages,total:items.length,mode:'full-library'});
   }
 
-  const listed=await env.PRODUCT_MEDIA.list({limit:500,prefix,cursor:requestedCursor,include:['customMetadata','httpMetadata']});
-  const items=listed.objects.map(o=>({key:o.key,size:o.size,uploaded:o.uploaded,url:`/api/media?key=${encodeURIComponent(o.key)}`,...(o.customMetadata||{})})).sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));
-  return json({items,truncated:listed.truncated,cursor:listed.cursor||null});
+  const opts={limit:500,prefix,include:['customMetadata','httpMetadata']};
+  if(requestedCursor) opts.cursor=requestedCursor;
+  const listed=await env.PRODUCT_MEDIA.list(opts);
+  const items=listed.objects.map(toItem).sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));
+  return json({items,truncated:listed.truncated,cursor:listed.cursor||null,total:items.length,mode:'paged'});
 }
 
 async function deleteLibrary(request,env){
@@ -56,7 +68,7 @@ async function deleteLibrary(request,env){
   try{body=await request.json()}catch{return json({error:'Invalid delete request'},400)}
   const keys=Array.isArray(body?.keys)?[...new Set(body.keys.filter(k=>typeof k==='string'&&k.startsWith('library/')))]:[];
   if(!keys.length) return json({error:'No library files selected'},400);
-  if(keys.length>500) return json({error:'Too many files in one delete request'},400);
+  if(keys.length>5000) return json({error:'Too many files in one delete request'},400);
   let deleted=0;
   try{
     for(const key of keys){await env.PRODUCT_MEDIA.delete(key);deleted++}
