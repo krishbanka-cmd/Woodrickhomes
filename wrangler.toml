@@ -1,5 +1,5 @@
 name = "woodrickhomes"
-main = "worker-category-ui-hardfix.js"
+main = "worker-vendor-portal.js"
 compatibility_date = "2026-08-23"
 keep_vars = true
 
