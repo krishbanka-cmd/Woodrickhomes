@@ -47,10 +47,11 @@ function mediaItem(o){return {key:o.key,size:o.size,uploaded:o.uploaded,url:`/ap
 function isLegacyLibraryItem(item){return item.key.startsWith('library/')||item.library==='1'||item.type==='original-pdf'||item.type==='jpg-page';}
 function legacyPageNumber(item){const text=`${item.key||''} ${item.originalName||''}`.toLowerCase();const match=text.match(/(?:page[-_ ]?)(\d+)(?:\D|$)/);return match?String(Number(match[1])):String(item.page||'').trim();}
 function normalizeLegacyLibraryItem(item){
-  if(item.key.startsWith('library/'))return item;
   const key=String(item.key||'').toLowerCase(),original=String(item.originalName||'').toLowerCase(),title=String(item.title||'').toLowerCase();
   const ristal1mm=key.includes('ristal1mm')||original.includes('ristal1mm')||title.includes('ristal1mm');
   if(ristal1mm)return {...item,brand:'Ristal',category:'Laminate',catalogue:'Ristal 1mm',title:item.title||'Ristal 1mm',page:item.type==='jpg-page'?legacyPageNumber(item):item.page,legacyCatalogueIdentified:'1'};
+  if(/^woodline\s+louvers?$/i.test(String(item.brand||'').trim()))return {...item,brand:'Woodline',category:'Louvers'};
+  if(/^door\s*skins?$/i.test(String(item.category||'').trim()))return {...item,category:'Door Skin'};
   if(!String(item.brand||'').trim())return {...item,brand:'Unknown Brand',legacyBrandMissing:'1'};
   return item;
 }
