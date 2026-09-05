@@ -41,6 +41,11 @@ async function normalizeAiRequest(request,env,ctx){
 }
 
 function patchVoiceWorkspace(html){
+  // Explicit New Design entry points always start clean; an ordinary refresh still restores ongoing work.
+  if(!html.includes('woodrick-new-design-reset-v1')){
+    const reset=`<script id="woodrick-new-design-reset-v1">(function(){var q=new URLSearchParams(location.search),fresh=q.get('new')==='1';if(fresh){try{localStorage.removeItem('woodrickDesignWorkspaceV1')}catch(_){}history.replaceState({},'',location.pathname+location.hash)}window.addEventListener('DOMContentLoaded',function(){var b=document.getElementById('resetVoice');if(b)b.addEventListener('click',function(){try{localStorage.removeItem('woodrickDesignWorkspaceV1')}catch(_){}},true)})})();<\/script>`;
+    html=html.replace('</head>',reset+'</head>');
+  }
   // Add office-appropriate placement targets while keeping existing bedroom targets.
   html=html.replace(
     "surfaces=['TV Unit','Wardrobe','Back Wall','Dresser','Bed / Headboard']",
