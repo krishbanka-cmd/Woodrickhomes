@@ -13,19 +13,22 @@ async function readCatalogueDesignCode(request,env){
     if(request.method!=='POST')return json({ok:false,error:'Method not allowed'},405);
     if(!env.OPENAI_API_KEY)return json({ok:false,error:'Design number reader is not configured.'},503);
     const body=await request.json();
-    const src=String(body&&body.src||'');const x=Number(body&&body.x),y=Number(body&&body.y);
+    const src=String(body&&body.src||''),markedImage=String(body&&body.markedImage||'');const x=Number(body&&body.x),y=Number(body&&body.y);
     if(!src||!Number.isFinite(x)||!Number.isFinite(y))return json({ok:false,error:'Missing catalogue selection.'},400);
-    const pageUrl=new URL(src,new URL(request.url).origin),site=new URL(request.url);
-    if(pageUrl.origin!==site.origin)return json({ok:false,error:'Only Woodrick catalogue images can be read.'},400);
-    const imageResponse=await fetch(pageUrl.toString(),{headers:{accept:'image/*'}});
-    if(!imageResponse.ok)return json({ok:false,error:'Catalogue page image could not be loaded.'},502);
-    const type=(imageResponse.headers.get('content-type')||'image/jpeg').split(';')[0];
-    if(!type.startsWith('image/'))return json({ok:false,error:'Catalogue page is not an image.'},422);
-    const ab=await imageResponse.arrayBuffer();
-    if(ab.byteLength>7*1024*1024)return json({ok:false,error:'Catalogue page image is too large to read.'},413);
-    const dataUrl=`data:${type};base64,${toBase64(ab)}`;
+    let dataUrl='';
+    if(/^data:image\/(?:jpeg|png);base64,/i.test(markedImage)&&markedImage.length<7*1024*1024){dataUrl=markedImage}else{
+      const pageUrl=new URL(src,new URL(request.url).origin),site=new URL(request.url);
+      if(pageUrl.origin!==site.origin)return json({ok:false,error:'Only Woodrick catalogue images can be read.'},400);
+      const imageResponse=await fetch(pageUrl.toString(),{headers:{accept:'image/*'}});
+      if(!imageResponse.ok)return json({ok:false,error:'Catalogue page image could not be loaded.'},502);
+      const type=(imageResponse.headers.get('content-type')||'image/jpeg').split(';')[0];
+      if(!type.startsWith('image/'))return json({ok:false,error:'Catalogue page is not an image.'},422);
+      const ab=await imageResponse.arrayBuffer();
+      if(ab.byteLength>7*1024*1024)return json({ok:false,error:'Catalogue page image is too large to read.'},413);
+      dataUrl=`data:${type};base64,${toBase64(ab)}`;
+    }
     const px=Math.round(Math.max(0,Math.min(1,x))*100),py=Math.round(Math.max(0,Math.min(1,y))*100);
-    const prompt=`You are reading a building-material catalogue page. The customer clicked a product/design located around ${px}% from the left and ${py}% from the top of this exact page image. Read the printed SKU / Design No. / product code that belongs to the clicked design. Codes may look like WL 141, WL-141, 141, WR 145, etc. Use the code actually printed nearest or clearly associated with that clicked design. Do not invent or infer a code. Ignore page number, dimensions, prices and unrelated numbers. Return ONLY JSON in this exact form: {"designNo":"WL 141"}. If the code is not clearly readable or cannot be confidently associated with the clicked design, return {"designNo":""}.`;
+    const prompt=`You are reading a building-material catalogue image. The exact customer-selected design is marked with a RED TARGET. The original click was around ${px}% from the left and ${py}% from the top. Read the printed SKU / Design No. / product code belonging to that marked design. Codes may look like FL-403, WL 141, WL-141, M-183 or MM-173. Use only the code actually printed below or clearly associated with the marked design. Do not return a page number, dimension, price, QR content, nearby design code or invented code. Return ONLY JSON in this exact form: {"designNo":"FL-403"}. If the correct code is not clearly readable, return {"designNo":""}.`;
     const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{authorization:`Bearer ${env.OPENAI_API_KEY}`,'content-type':'application/json'},body:JSON.stringify({model:'gpt-4.1-mini',messages:[{role:'user',content:[{type:'text',text:prompt},{type:'image_url',image_url:{url:dataUrl,detail:'high'}}]}],temperature:0,max_tokens:60,response_format:{type:'json_object'}})});
     const raw=await r.text();let d={};try{d=raw?JSON.parse(raw):{}}catch(_){return json({ok:false,error:'Design number reader returned an unreadable response.'},502)}
     if(!r.ok)return json({ok:false,error:(d&&d.error&&d.error.message)||'Design number reader failed.'},502);
@@ -51,7 +54,7 @@ async function enhance(response,url){
   // Read the real printed SKU/design number from the selected point on the catalogue page.
   html=html.replace(
     "function near(a,b){return Math.abs(a.x-b.x)<.035&&Math.abs(a.y-b.y)<.035}",
-    "function near(a,b){return Math.abs(a.x-b.x)<.035&&Math.abs(a.y-b.y)<.035}function resolvePoint(p){if(!current||!p)return;p.reading=true;status('Reading actual design number from catalogue…');fetch('/api/catalogue-design-code',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({src:current.src,x:p.x,y:p.y,page:current.page,brand:current.brand})}).then(function(r){return r.json()}).then(function(d){p.reading=false;p.designNo=d&&d.designNo?String(d.designNo).trim():'';if(p.designNo)status('Design No. '+p.designNo+' identified. Add selected designs to Mood Board.');else status('Design selected, but its printed design number was not clearly readable. Please click closer to the design/code and try again.');drawDots()}).catch(function(){p.reading=false;p.designNo='';status('Could not read the printed design number. Please click closer to the design/code and try again.')})}"
+    "function near(a,b){return Math.abs(a.x-b.x)<.035&&Math.abs(a.y-b.y)<.035}function markedCrop(p){try{var img=document.getElementById('wwPickerImg');if(!img||!img.complete||!img.naturalWidth)return'';var iw=img.naturalWidth,ih=img.naturalHeight,cw=Math.min(iw,Math.round(iw*.24)),ch=Math.min(ih,Math.round(ih*.62)),cx=p.x*iw,cy=p.y*ih,sx=Math.max(0,Math.min(iw-cw,cx-cw/2)),sy=Math.max(0,Math.min(ih-ch,cy-ch*.44)),canvas=document.createElement('canvas'),scale=Math.min(1,1200/cw,1200/ch);canvas.width=Math.max(1,Math.round(cw*scale));canvas.height=Math.max(1,Math.round(ch*scale));var ctx=canvas.getContext('2d');ctx.drawImage(img,sx,sy,cw,ch,0,0,canvas.width,canvas.height);var tx=(cx-sx)*scale,ty=(cy-sy)*scale,r=Math.max(18,Math.min(canvas.width,canvas.height)*.035);ctx.strokeStyle='#e00000';ctx.lineWidth=Math.max(7,r*.22);ctx.beginPath();ctx.arc(tx,ty,r,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(tx-r*1.45,ty);ctx.lineTo(tx+r*1.45,ty);ctx.moveTo(tx,ty-r*1.45);ctx.lineTo(tx,ty+r*1.45);ctx.stroke();return canvas.toDataURL('image/jpeg',.9)}catch(_){return''}}function resolvePoint(p){if(!current||!p)return;p.reading=true;status('Reading actual design number from catalogue…');fetch('/api/catalogue-design-code',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({src:current.src,x:p.x,y:p.y,page:current.page,brand:current.brand,markedImage:markedCrop(p)})}).then(function(r){return r.json()}).then(function(d){p.reading=false;p.designNo=d&&d.designNo?String(d.designNo).trim():'';if(p.designNo)status('Design No. '+p.designNo+' identified. Add selected designs to Mood Board.');else status('Design No. साफ नहीं पढ़ा गया। उसी design के बीच में दोबारा click करें।');drawDots()}).catch(function(){p.reading=false;p.designNo='';status('Design No. नहीं पढ़ा गया। उसी design के बीच में दोबारा click करें।')})}"
   );
   html=html.replace(
     "selection:'Pick '+n,designNo:current.sku||'',surfaces:[]",
@@ -63,7 +66,17 @@ async function enhance(response,url){
   );
   html=html.replace(
     "function addAllTemp(){if(!current||!tempPoints.length){status('First click one or more designs on the catalogue page.');return false}",
-    "function addAllTemp(){if(!current||!tempPoints.length){status('First click one or more designs on the catalogue page.');return false}if(tempPoints.some(function(p){return p.reading})){status('Please wait a moment — Woodrick is reading the actual design number.');return false}"
+    "function addAllTemp(){if(!current||!tempPoints.length){status('First click one or more designs on the catalogue page.');return false}if(tempPoints.some(function(p){return p.reading})){status('Please wait a moment — Woodrick is reading the actual design number.');return false}if(tempPoints.some(function(p){return !p.designNo&&!current.sku})){status('Design No. identify हुए बिना design Mood Board में add नहीं होगा। उसी design के बीच में दोबारा click करें।');return false}"
+  );
+
+  // Never show a temporary Pick number as the material identity. Keep page + verified design number together.
+  html=html.replace(
+    "esc(id?('Design No. '+id):('Page '+x.page+' · '+x.selection))",
+    "esc(id?('Page '+x.page+' · Design No. '+id):('Page '+x.page+' · Design No. pending'))"
+  );
+  html=html.replace(
+    "if(!exact.length){if(st)st.textContent='Please select at least one exact design from a catalogue page first.';return}",
+    "if(!exact.length){if(st)st.textContent='Please select at least one exact design from a catalogue page first.';return}if(exact.some(function(x){return !designId(x)})){if(st)st.textContent='हर selected material का Design No. verify होने के बाद ही 3D Layout बनेगा।';return}"
   );
 
   html=html.replace(
