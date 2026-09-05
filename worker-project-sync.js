@@ -60,10 +60,11 @@ function patchVoiceWorkspace(html){
     "if(e)e.addEventListener('input',saveSession)",
     "if(e)e.addEventListener('input',function(){if(exact.length&&(id==='room'||id==='requirements')){var old='';try{var rr=localStorage.getItem(sessionKey);old=rr?((JSON.parse(rr).fields||{})[id]||''):''}catch(_){old=''}var nv=String(e.value||'').trim();if(String(old||'').trim()!==nv){exact=[];render();markCards();status('New room/requirement detected — old Mood Board cleared. Please select materials for this fresh brief.')}}saveSession()})"
   );
-  // If fresh values already exist before session restore, never overwrite/attach an old Mood Board to them.
+  // Restore the current in-progress session on an ordinary browser refresh. Explicit
+  // New Design entry points are cleared earlier by woodrick-new-design-reset-v1.
   html=html.replace(
     "var s=JSON.parse(raw);if(Array.isArray(s.exact))exact=s.exact.map(function(x){if(!Array.isArray(x.surfaces))x.surfaces=[];return x});var f=s.fields||{};Object.keys(f).forEach(function(id){var e=document.getElementById(id);if(e&&!e.value)e.value=f[id]||''})",
-    "var s=JSON.parse(raw),f=s.fields||{},fresh=false;Object.keys(f).forEach(function(id){var e=document.getElementById(id),live=e?String(e.value||'').trim():'';if(live&&live!==String(f[id]||'').trim())fresh=true});if(fresh){exact=[];localStorage.removeItem(sessionKey);return}if(Array.isArray(s.exact))exact=s.exact.map(function(x){if(!Array.isArray(x.surfaces))x.surfaces=[];return x});Object.keys(f).forEach(function(id){var e=document.getElementById(id);if(e&&!e.value)e.value=f[id]||''})"
+    "var s=JSON.parse(raw),f=s.fields||{};if(Array.isArray(s.exact))exact=s.exact.map(function(x){if(!Array.isArray(x.surfaces))x.surfaces=[];return x});Object.keys(f).forEach(function(id){var e=document.getElementById(id);if(e)e.value=f[id]||''})"
   );
   return html;
 }
