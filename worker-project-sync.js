@@ -1,4 +1,3 @@
-worker-project-sync.js:45:  html=html.replace(".slice(0,120),groups={}",".slice(0,500),groups={}");
 import app from './worker-greeting.js';
 
 function parseJson(v,fallback){try{const x=JSON.parse(String(v||''));return x==null?fallback:x}catch(_){return fallback}}
