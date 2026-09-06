@@ -72,6 +72,10 @@ function patchVoiceWorkspace(html){
     const restoreSignal=`<script id="woodrick-library-ready-v1">window.addEventListener('DOMContentLoaded',function(){var sent=false;function watch(){var cards=document.getElementById('wwCards');if(!cards)return false;function ready(){if(!sent&&cards.querySelector('.ww-card')){sent=true;document.dispatchEvent(new Event('woodrickLibraryReady'))}}new MutationObserver(ready).observe(cards,{childList:true,subtree:true});ready();return true}if(!watch()){var tries=0,t=setInterval(function(){tries++;if(watch()||tries>30)clearInterval(t)},200)}});<\/script>`;
     html=html.replace('</head>',searchUi+restoreSignal+'</head>');
   }
+  if(!html.includes('woodrick-library-browse-all-v1')){
+    const browseAll=`<script id="woodrick-library-browse-all-v1">window.addEventListener('DOMContentLoaded',function(){function install(){var input=document.getElementById('wwLibrarySearch'),cards=document.getElementById('wwCards');if(!input||!cards)return false;function showAll(){setTimeout(function(){var q=String(input.value||'').trim().toLowerCase(),shown=0;cards.querySelectorAll('.ww-card').forEach(function(card){var match=!q||String(card.innerText||'').toLowerCase().indexOf(q)>=0;card.style.display=match?'':'none';if(match)shown++});cards.querySelectorAll('.ww-thickness-group,.ww-brand-group').forEach(function(group){group.style.display=group.querySelector('.ww-card:not([style*="display: none"])')?'':'none'});var status=document.getElementById('wwLibraryStatus');if(status&&shown)status.textContent=shown+' verified catalogue page'+(shown===1?'':'s')+'. Scroll to browse all matching pages.'},0)}input.addEventListener('input',showAll);new MutationObserver(showAll).observe(cards,{childList:true,subtree:true});showAll();return true}if(!install()){var tries=0,t=setInterval(function(){tries++;if(install()||tries>30)clearInterval(t)},200)}});<\/script>`;
+    html=html.replace('</head>',browseAll+'</head>');
+  }
   return html;
 }
 
