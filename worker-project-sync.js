@@ -1,3 +1,4 @@
+worker-project-sync.js:45:  html=html.replace(".slice(0,120),groups={}",".slice(0,500),groups={}");
 import app from './worker-greeting.js';
 
 function parseJson(v,fallback){try{const x=JSON.parse(String(v||''));return x==null?fallback:x}catch(_){return fallback}}
@@ -41,6 +42,8 @@ async function normalizeAiRequest(request,env,ctx){
 }
 
 function patchVoiceWorkspace(html){
+  // Keep every verified catalogue page available to brand/thickness search.
+  html=html.replace(".slice(0,120),groups={}",".slice(0,500),groups={}");
   // Explicit New Design entry points always start clean; an ordinary refresh still restores ongoing work.
   if(!html.includes('woodrick-new-design-reset-v2')){
     const reset=`<script id="woodrick-new-design-reset-v2">(function(){var q=new URLSearchParams(location.search),fresh=q.get('new')==='1',freshKey='woodrickFreshDesignV2';function forget(){try{localStorage.removeItem('woodrickDesignWorkspaceV1')}catch(_){}}function markFresh(){try{sessionStorage.setItem(freshKey,'1')}catch(_){}}if(fresh){forget();markFresh()}window.addEventListener('DOMContentLoaded',function(){var shouldClear=fresh;try{shouldClear=shouldClear||sessionStorage.getItem(freshKey)==='1'}catch(_){}if(shouldClear){forget();['room','sku','length','width','height','style','openings','requirements'].forEach(function(id){var e=document.getElementById(id);if(e){e.value='';e.classList.remove('invalid')}});var heard=document.getElementById('heard'),status=document.getElementById('status'),label=document.getElementById('micLabel');if(heard)heard.textContent='Tap the microphone and start speaking.';if(status){status.textContent='Fresh start ready. Tap the microphone and start speaking.';status.className='status'}if(label)label.textContent='TAP TO START';try{sessionStorage.removeItem(freshKey)}catch(_){}if(fresh)history.replaceState({},'',location.pathname+location.hash);setTimeout(function(){window.scrollTo(0,0)},0)}var b=document.getElementById('resetVoice');if(b)b.addEventListener('click',forget,true)})})();<\/script>`;
