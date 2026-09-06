@@ -79,10 +79,13 @@ function layoutScript(){return `<script id="woodrick-project-layout-v1">(functio
 
 function previewScript(){return `<script id="woodrick-project-preview-v1">(function(){function parse(s){try{return JSON.parse(s||'')}catch(_){return null}}function code(x){return String((x&&((x.designNo||x.sku)))||'').trim()}function mt(x){if(!x)return'';return [x.brand,x.category,code(x)?('Design No. '+code(x)):'',x.page?('Page '+x.page):''].filter(Boolean).join(' · ')}var q=new URLSearchParams(location.search),room=(q.get('roomType')||'Room').trim(),mapping=parse(q.get('materialMapping'))||{};var title=document.querySelector('.hero h1');if(title)title.textContent='Your '+room+' is ready for 3D design.';var list=document.getElementById('lockList');if(list){var rows=[];Object.keys(mapping).forEach(function(s){var arr=Array.isArray(mapping[s])?mapping[s]:[mapping[s]];var vals=arr.map(mt).filter(Boolean);if(vals.length)rows.push('<div><strong>'+s.replace(/[&<>]/g,'')+'</strong> → '+vals.join(' + ').replace(/[&<>]/g,'')+'</div>')});list.innerHTML=rows.join('')}var box=document.getElementById('locks');if(box&&Object.keys(mapping).length)box.style.display='block';})();<\/script>`}
 
+function autoSummaryScript(){return `<script id="woodrick-auto-summary-v1">(function(){function parse(s){try{return JSON.parse(s||'')}catch(_){return null}}function code(x){return String((x&&((x.designNo||x.sku)))||'').trim()}var q=new URLSearchParams(location.search),items=parse(q.get('selectedMaterials'))||[];if(!Array.isArray(items)||!items.length)return;var names=items.map(function(x){return [x.brand,x.category,x.catalogue,code(x)?('Design No. '+code(x)):'',x.page?('Page '+x.page):''].filter(Boolean).join(' · ')}).filter(Boolean),values=document.querySelectorAll('#summary .value');if(values[3]&&names.length)values[3].textContent=names.join(' + ');})();<\/script>`}
+
 async function patchHtml(response,url){
   const type=response.headers.get('content-type')||'';if(!type.includes('text/html'))return response;
   let html=await response.text();
   if(url.pathname==='/voice-design-assistant.html'||url.pathname==='/voice-design-assistant')html=patchVoiceWorkspace(html);
+  if(url.pathname==='/auto-layout.html'||url.pathname==='/auto-layout')html=html.replace(/<\/body>/i,autoSummaryScript()+'</body>');
   if(url.pathname==='/auto-layout-result.html'||url.pathname==='/auto-layout-result')html=html.replace(/<\/body>/i,layoutScript()+'</body>');
   if(url.pathname==='/3d-design-preview.html'||url.pathname==='/3d-design-preview')html=html.replace(/<\/body>/i,previewScript()+'</body>');
   const h=new Headers(response.headers);h.delete('content-length');h.set('cache-control','no-store, no-cache, must-revalidate, max-age=0');h.set('x-woodrick-project-sync','v1');
