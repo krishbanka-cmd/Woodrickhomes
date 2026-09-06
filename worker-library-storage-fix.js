@@ -76,6 +76,7 @@ async function libraryUpload(request,env,form){
   }
   let key;if(type==='original-pdf')key=`${root}/original/${slug(catalogue)}.pdf`;else if(type==='jpg-page')key=`${root}/jpg/page-${String(page||'1').padStart(3,'0')}.jpg`;else key=`${root}/${slug(type||'file')}/${Date.now()}-${slug(title)}.${ext}`;
   const meta={category,title,type,brand,catalogue,page,designNumbers,library:'1',originalName:file.name,uploadedAt:new Date().toISOString()};await env.PRODUCT_MEDIA.put(key,await file.arrayBuffer(),{httpMetadata:{contentType:file.type||'application/octet-stream'},customMetadata:meta});
+  if(type==='jpg-page'&&!designNumbers){try{await env.PRODUCT_MEDIA.delete('_system/design-backfill/state.json');await env.PRODUCT_MEDIA.delete(`_system/design-backfill/pages/${encodeURIComponent(key)}.json`)}catch(_){}}
   const verify=await env.PRODUCT_MEDIA.head(key);if(!verify)return json({error:'Upload verification failed after storage write'},500);
   return json({ok:true,key,category,title,type,brand,catalogue,page,designNumbers,url:`/api/media?key=${encodeURIComponent(key)}`,verified:true,replaced:overwrite},201);
 }
