@@ -10,33 +10,45 @@ const seededDesigns={
 async function rememberDesign(env,item){
   const id=normalizeDesignNo(item&&item.designNo);if(!id||!env.PRODUCT_MEDIA)return;
   const value={...item,designNo:String(item.designNo).trim().toUpperCase(),verified:true,verifiedAt:new Date().toISOString()};
-  try{await env.PRODUCT_MEDIA.put(`_system/design-index/${id}.json`,JSON.stringify(value),{httpMetadata:{contentType:'application/json'}})}catch(_){}
+  try{
+    const key=`_system/design-index/${id}.json`,stored=await env.PRODUCT_MEDIA.get(key);let previous=[];
+    if(stored){const old=await stored.json();previous=Array.isArray(old.items)?old.items:[old]}
+    const identity=x=>[String(x.key||''),String(x.page||''),String(x.brand||''),String(x.catalogue||'')].join('|').toLowerCase();
+    const next=previous.filter(x=>x&&normalizeDesignNo(x.designNo)===id&&identity(x)!==identity(value));next.push(value);
+    await env.PRODUCT_MEDIA.put(key,JSON.stringify({designNo:value.designNo,items:next.slice(-20),verified:true,verifiedAt:value.verifiedAt}),{httpMetadata:{contentType:'application/json'}});
+  }catch(_){}
 }
 
 async function searchDesign(request,env){
-  const q=normalizeDesignNo(new URL(request.url).searchParams.get('q'));
-  if(q.length<3)return json({ok:true,found:false});
-  let item=seededDesigns[q]||null;
-  if(!item&&env.PRODUCT_MEDIA){try{const stored=await env.PRODUCT_MEDIA.get(`_system/design-index/${q}.json`);if(stored)item=await stored.json()}catch(_){}}
+  const raw=String(new URL(request.url).searchParams.get('q')||'').trim(),parts=(raw.toUpperCase().match(/[A-Z]+|[0-9]+/g)||[]);
+  const candidates=[];for(let i=0;i<parts.length;i++){const id=normalizeDesignNo(parts.slice(i).join(''));if(id.length>=3&&/[0-9]/.test(id)&&!candidates.includes(id))candidates.push(id)}
+  const whole=normalizeDesignNo(raw);if(whole.length>=3&&/[0-9]/.test(whole)&&!candidates.includes(whole))candidates.unshift(whole);
+  if(!candidates.length)return json({ok:true,found:false});
+  const context=normalizeDesignNo(raw),dedupe=items=>{const seen=new Set();return items.filter(x=>{const k=[x.key,x.page,x.brand,x.catalogue,normalizeDesignNo(x.designNo)].join('|').toLowerCase();if(seen.has(k))return false;seen.add(k);return true})};
+  const choose=items=>{items=dedupe(items);if(items.length<2)return items;const scored=items.map(x=>{const words=[x.brand,x.category,x.catalogue].join(' ').toUpperCase().match(/[A-Z]+|[0-9]+/g)||[];return{x,s:words.filter(w=>w.length>1&&context.includes(normalizeDesignNo(w))).length}}),best=Math.max(...scored.map(r=>r.s));return best>0?scored.filter(r=>r.s===best).map(r=>r.x):items};
+  let matches=[];
+  for(const q of candidates){if(seededDesigns[q])matches.push(seededDesigns[q]);if(!env.PRODUCT_MEDIA)continue;try{const stored=await env.PRODUCT_MEDIA.get(`_system/design-index/${q}.json`);if(stored){const d=await stored.json();matches.push(...(Array.isArray(d.items)?d.items:[d]))}}catch(_){}if(matches.length)break}
+  matches=choose(matches);let item=matches.length===1?matches[0]:null;
+  if(matches.length>1)return json({ok:true,found:false,ambiguous:true,matches:matches.slice(0,12).map(x=>({...x,src:`/api/media?raw=1&key=${encodeURIComponent(x.key)}`}))});
   if(!item&&env.PRODUCT_MEDIA){
     try{
-      const matches=[];let cursor;
+      let scanned=[];let cursor;
       for(let loop=0;loop<200;loop++){
         const options={limit:1000,prefix:'library/',include:['customMetadata']};if(cursor)options.cursor=cursor;
         const listed=await env.PRODUCT_MEDIA.list(options);
         for(const object of listed.objects||[]){
           const m=object.customMetadata||{};if(String(m.type||'')!=='jpg-page')continue;
           const codes=String(m.designNumbers||'').split(/[\s,;|·]+/).filter(Boolean);
-          if(!codes.some(code=>normalizeDesignNo(code)===q))continue;
-          matches.push({designNo:codes.find(code=>normalizeDesignNo(code)===q)||q,brand:String(m.brand||''),category:String(m.category||''),catalogue:String(m.catalogue||m.title||''),page:String(m.page||''),key:object.key,verified:true,needsLocate:true});
+          const code=codes.find(code=>candidates.includes(normalizeDesignNo(code)));if(!code)continue;
+          scanned.push({designNo:code,brand:String(m.brand||''),category:String(m.category||''),catalogue:String(m.catalogue||m.title||''),page:String(m.page||''),key:object.key,verified:true,needsLocate:true});
         }
         if(!listed.truncated||!listed.cursor)break;cursor=listed.cursor;
       }
-      if(matches.length===1)item=matches[0];
-      else if(matches.length>1)return json({ok:true,found:false,ambiguous:true,matches:matches.slice(0,12)});
+      scanned=choose(scanned);if(scanned.length===1)item=scanned[0];
+      else if(scanned.length>1)return json({ok:true,found:false,ambiguous:true,matches:scanned.slice(0,12).map(x=>({...x,src:`/api/media?raw=1&key=${encodeURIComponent(x.key)}`}))});
     }catch(_){}
   }
-  if(!item||normalizeDesignNo(item.designNo)!==q)return json({ok:true,found:false});
+  if(!item||!candidates.includes(normalizeDesignNo(item.designNo)))return json({ok:true,found:false});
   return json({ok:true,found:true,item:{...item,src:`/api/media?raw=1&key=${encodeURIComponent(item.key)}`}});
 }
 
@@ -44,6 +56,46 @@ function toBase64(buffer){
   const bytes=new Uint8Array(buffer);let out='';const step=0x8000;
   for(let i=0;i<bytes.length;i+=step)out+=String.fromCharCode(...bytes.subarray(i,Math.min(i+step,bytes.length)));
   return btoa(out);
+}
+
+const backfillStateKey='_system/design-backfill/state.json';
+const pageMarkerKey=key=>`_system/design-backfill/pages/${encodeURIComponent(key)}.json`;
+
+async function readAllDesignsOnPage(env,entry){
+  const object=await env.PRODUCT_MEDIA.get(entry.key);if(!object)return[];
+  const ab=await object.arrayBuffer();if(!ab.byteLength||ab.byteLength>7*1024*1024)return[];
+  const type=(object.httpMetadata&&object.httpMetadata.contentType)||'image/jpeg',dataUrl=`data:${type};base64,${toBase64(ab)}`;
+  const prompt='Read this building-material catalogue page and extract every clearly printed product Design No. / SKU that belongs to a visible material swatch. Include the normalized centre coordinates of that swatch, from 0 to 1. Ignore page numbers, dimensions, prices, phone numbers, QR codes, years and decorative text. Never invent a code. Return ONLY JSON: {"designs":[{"designNo":"FL-403","x":0.25,"y":0.45}]}. If there are no clearly readable product codes, return {"designs":[]}.';
+  const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{authorization:`Bearer ${env.OPENAI_API_KEY}`,'content-type':'application/json'},body:JSON.stringify({model:'gpt-4.1-mini',messages:[{role:'user',content:[{type:'text',text:prompt},{type:'image_url',image_url:{url:dataUrl,detail:'high'}}]}],temperature:0,max_tokens:2200,response_format:{type:'json_object'}})});
+  const response=await r.json();if(!r.ok)throw new Error((response&&response.error&&response.error.message)||'Catalogue OCR failed');
+  let parsed={};try{parsed=JSON.parse(response&&response.choices&&response.choices[0]&&response.choices[0].message&&response.choices[0].message.content||'{}')}catch(_){}
+  const seen=new Set();return (Array.isArray(parsed.designs)?parsed.designs:[]).map(x=>({designNo:String(x&&x.designNo||'').trim().toUpperCase().replace(/\s+/g,' '),x:Number(x&&x.x),y:Number(x&&x.y)})).filter(x=>{const id=normalizeDesignNo(x.designNo);if(id.length<3||id.length>40||!/[0-9]/.test(id)||seen.has(id)||!Number.isFinite(x.x)||!Number.isFinite(x.y)||x.x<0||x.x>1||x.y<0||x.y>1)return false;seen.add(id);return true}).slice(0,80);
+}
+
+export async function backfillDesignIndex(env,maxPages=2){
+  if(!env.PRODUCT_MEDIA||!env.OPENAI_API_KEY)return{ok:false,reason:'not-configured'};
+  let state={cursor:'',queue:[],cycles:0,processed:0,designs:0,complete:false,endReached:false};
+  try{const saved=await env.PRODUCT_MEDIA.get(backfillStateKey);if(saved)state={...state,...await saved.json()}}catch(_){}
+  if(state.complete&&Number(state.nextScanAt||0)>Date.now())return{ok:true,...state};
+  if(state.complete){state.cursor='';state.queue=[];state.complete=false;state.endReached=false;state.cycles=0}
+  let done=0;
+  while(done<maxPages){
+    if(!Array.isArray(state.queue)||!state.queue.length){
+      if(state.endReached){state.complete=true;break}
+      const options={prefix:'library/',limit:80,include:['customMetadata']};if(state.cursor)options.cursor=state.cursor;
+      const listed=await env.PRODUCT_MEDIA.list(options);state.queue=(listed.objects||[]).filter(o=>String((o.customMetadata||{}).type||'')==='jpg-page').map(o=>({key:o.key,meta:o.customMetadata||{}}));state.cursor=listed.truncated&&listed.cursor?listed.cursor:'';state.endReached=!listed.truncated;state.cycles=Number(state.cycles||0)+1;if(!state.queue.length&&state.endReached){state.complete=true;break}if(!state.queue.length)continue;
+    }
+    const entry=state.queue.shift(),marker=await env.PRODUCT_MEDIA.get(pageMarkerKey(entry.key));if(marker)continue;
+    let designs=[],error='';try{
+      const metadataCodes=String(entry.meta.designNumbers||'').split(/[\s,;|·]+/).filter(Boolean);
+      designs=metadataCodes.length?metadataCodes.map(designNo=>({designNo,needsLocate:true})):await readAllDesignsOnPage(env,entry);
+      for(const x of designs)await rememberDesign(env,{...x,brand:String(entry.meta.brand||''),category:String(entry.meta.category||''),catalogue:String(entry.meta.catalogue||entry.meta.title||''),page:String(entry.meta.page||''),key:entry.key,source:metadataCodes.length?'pdf-text-backfill':'catalogue-ocr-backfill'});
+    }catch(e){error=String(e&&e.message||e).slice(0,300)}
+    await env.PRODUCT_MEDIA.put(pageMarkerKey(entry.key),JSON.stringify({key:entry.key,indexedAt:new Date().toISOString(),designCount:designs.length,error}),{httpMetadata:{contentType:'application/json'}});
+    state.processed=Number(state.processed||0)+1;state.designs=Number(state.designs||0)+designs.length;done++;
+  }
+  if(!state.queue.length&&state.endReached){state.complete=true;state.nextScanAt=Date.now()+24*60*60*1000}
+  state.updatedAt=new Date().toISOString();await env.PRODUCT_MEDIA.put(backfillStateKey,JSON.stringify(state),{httpMetadata:{contentType:'application/json'}});return{ok:true,processedNow:done,...state};
 }
 
 async function readCatalogueDesignCode(request,env){
@@ -198,4 +250,4 @@ async function enhance(response,url){
   const h=new Headers(response.headers);h.delete('content-length');h.set('cache-control','no-store, no-cache, must-revalidate, max-age=0');h.set('x-woodrick-picker-fix','v5-design-code-reader');return new Response(html,{status:response.status,statusText:response.statusText,headers:h});
 }
 
-export default{async fetch(request,env,ctx){const url=new URL(request.url);if(url.pathname==='/api/catalogue-design-search')return searchDesign(request,env);if(url.pathname==='/api/catalogue-design-code')return readCatalogueDesignCode(request,env);if(url.pathname==='/api/catalogue-locate-design')return locateCatalogueDesignCode(request,env);let response=await app.fetch(request,env,ctx);if(request.method==='GET')response=await enhance(response,url);return response;}};
+export default{async fetch(request,env,ctx){const url=new URL(request.url);if(url.pathname==='/api/catalogue-design-search')return searchDesign(request,env);if(url.pathname==='/api/catalogue-design-code')return readCatalogueDesignCode(request,env);if(url.pathname==='/api/catalogue-locate-design')return locateCatalogueDesignCode(request,env);if(url.pathname==='/api/design-index-status'){let state={processed:0,designs:0,complete:false};try{const saved=await env.PRODUCT_MEDIA.get(backfillStateKey);if(saved)state={...state,...await saved.json()}}catch(_){}return json({ok:true,...state,queue:Array.isArray(state.queue)?state.queue.length:0})}if(request.method==='GET'&&(url.pathname==='/voice-design-assistant'||url.pathname==='/voice-design-assistant.html')&&ctx&&ctx.waitUntil)ctx.waitUntil(backfillDesignIndex(env,1));let response=await app.fetch(request,env,ctx);if(request.method==='GET')response=await enhance(response,url);return response;}};
