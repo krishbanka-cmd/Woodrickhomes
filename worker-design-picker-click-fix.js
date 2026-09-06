@@ -85,14 +85,14 @@ export async function backfillDesignIndex(env,maxPages=2){
       const options={prefix:'library/',limit:80,include:['customMetadata']};if(state.cursor)options.cursor=state.cursor;
       const listed=await env.PRODUCT_MEDIA.list(options);state.queue=(listed.objects||[]).filter(o=>String((o.customMetadata||{}).type||'')==='jpg-page').map(o=>({key:o.key,meta:o.customMetadata||{}}));state.cursor=listed.truncated&&listed.cursor?listed.cursor:'';state.endReached=!listed.truncated;state.cycles=Number(state.cycles||0)+1;if(!state.queue.length&&state.endReached){state.complete=true;break}if(!state.queue.length)continue;
     }
-    const entry=state.queue.shift(),marker=await env.PRODUCT_MEDIA.get(pageMarkerKey(entry.key));if(marker)continue;
+    const entry=state.queue.shift(),marker=await env.PRODUCT_MEDIA.get(pageMarkerKey(entry.key));if(marker){let prior={};try{prior=await marker.json()}catch(_){}if(!prior.error||Number(prior.retryAt||0)>Date.now())continue}
     let designs=[],error='';try{
       const metadataCodes=String(entry.meta.designNumbers||'').split(/[\s,;|·]+/).filter(Boolean);
       designs=metadataCodes.length?metadataCodes.map(designNo=>({designNo,needsLocate:true})):await readAllDesignsOnPage(env,entry);
       for(const x of designs)await rememberDesign(env,{...x,brand:String(entry.meta.brand||''),category:String(entry.meta.category||''),catalogue:String(entry.meta.catalogue||entry.meta.title||''),page:String(entry.meta.page||''),key:entry.key,source:metadataCodes.length?'pdf-text-backfill':'catalogue-ocr-backfill'});
     }catch(e){error=String(e&&e.message||e).slice(0,300)}
-    await env.PRODUCT_MEDIA.put(pageMarkerKey(entry.key),JSON.stringify({key:entry.key,indexedAt:new Date().toISOString(),designCount:designs.length,error}),{httpMetadata:{contentType:'application/json'}});
-    state.processed=Number(state.processed||0)+1;state.designs=Number(state.designs||0)+designs.length;done++;
+    await env.PRODUCT_MEDIA.put(pageMarkerKey(entry.key),JSON.stringify({key:entry.key,indexedAt:new Date().toISOString(),designCount:designs.length,error,retryAt:error?Date.now()+60*60*1000:0}),{httpMetadata:{contentType:'application/json'}});
+    if(!error){state.processed=Number(state.processed||0)+1;state.designs=Number(state.designs||0)+designs.length}done++;
   }
   if(!state.queue.length&&state.endReached){state.complete=true;state.nextScanAt=Date.now()+24*60*60*1000}
   state.updatedAt=new Date().toISOString();await env.PRODUCT_MEDIA.put(backfillStateKey,JSON.stringify(state),{httpMetadata:{contentType:'application/json'}});return{ok:true,processedNow:done,...state};
