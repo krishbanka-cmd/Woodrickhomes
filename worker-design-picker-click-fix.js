@@ -76,7 +76,7 @@ async function enhance(response,url){
   // This code is injected inside the picker closure so it can safely restore `exact`.
   html=html.replace(
     "var exact=[],current=null,tempPoints=[],lastPoint=null,lastVoiceCommand='',surfaces=['TV Unit','Wardrobe','Back Wall','Dresser','Bed / Headboard'];",
-    "var exact=[],current=null,tempPoints=[],lastPoint=null,lastVoiceCommand='',surfaces=['TV Unit','Wardrobe','Back Wall','Dresser','Bed / Headboard'],sessionKey='woodrickDesignWorkspaceV1';function saveSession(){try{var fields={};['room','length','width','height','style','openings','requirements'].forEach(function(id){var e=document.getElementById(id);if(e)fields[id]=e.value});localStorage.setItem(sessionKey,JSON.stringify({exact:exact,fields:fields,savedAt:Date.now()}))}catch(_){}}function restoreSession(){try{var raw=localStorage.getItem(sessionKey);if(!raw)return;var s=JSON.parse(raw);if(Array.isArray(s.exact))exact=s.exact.map(function(x){if(!Array.isArray(x.surfaces))x.surfaces=[];return x});var f=s.fields||{};Object.keys(f).forEach(function(id){var e=document.getElementById(id);if(e&&!e.value)e.value=f[id]||''})}catch(_){}}"
+    "var exact=[],current=null,tempPoints=[],lastPoint=null,lastVoiceCommand='',surfaces=['TV Unit','Wardrobe','Back Wall','Dresser','Bed / Headboard'],sessionKey='woodrickDesignWorkspaceV1';function saveSession(){try{var fields={};['room','sku','length','width','height','style','openings','requirements'].forEach(function(id){var e=document.getElementById(id);if(e)fields[id]=e.value});localStorage.setItem(sessionKey,JSON.stringify({exact:exact,fields:fields,savedAt:Date.now()}))}catch(_){}}function restoreSession(){try{var raw=localStorage.getItem(sessionKey);if(!raw)return;var s=JSON.parse(raw);if(Array.isArray(s.exact))exact=s.exact.map(function(x){if(!Array.isArray(x.surfaces))x.surfaces=[];return x});var f=s.fields||{};Object.keys(f).forEach(function(id){var e=document.getElementById(id);if(e&&!e.value)e.value=f[id]||''})}catch(_){}}"
   );
 
   // Read the real printed SKU/design number from the selected point on the catalogue page.
@@ -128,7 +128,7 @@ async function enhance(response,url){
   );
   html=html.replace(
     "setTimeout(function(){upgrade();render();var create=document.getElementById('wwCreate');",
-    "setTimeout(function(){restoreSession();upgrade();render();['room','length','width','height','style','openings','requirements'].forEach(function(id){var e=document.getElementById(id);if(e)e.addEventListener('input',saveSession)});var create=document.getElementById('wwCreate');"
+    "document.addEventListener('woodrickLibraryReady',function(){restoreSession();upgrade();render();markCards()});setTimeout(function(){restoreSession();upgrade();render();['room','sku','length','width','height','style','openings','requirements'].forEach(function(id){var e=document.getElementById(id);if(e)e.addEventListener('input',saveSession)});var create=document.getElementById('wwCreate');"
   );
 
   // Patch the real picker action itself. When one or more designs are added,
