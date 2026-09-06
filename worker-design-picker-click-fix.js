@@ -18,6 +18,24 @@ async function searchDesign(request,env){
   if(q.length<3)return json({ok:true,found:false});
   let item=seededDesigns[q]||null;
   if(!item&&env.PRODUCT_MEDIA){try{const stored=await env.PRODUCT_MEDIA.get(`_system/design-index/${q}.json`);if(stored)item=await stored.json()}catch(_){}}
+  if(!item&&env.PRODUCT_MEDIA){
+    try{
+      const matches=[];let cursor;
+      for(let loop=0;loop<200;loop++){
+        const options={limit:1000,prefix:'library/',include:['customMetadata']};if(cursor)options.cursor=cursor;
+        const listed=await env.PRODUCT_MEDIA.list(options);
+        for(const object of listed.objects||[]){
+          const m=object.customMetadata||{};if(String(m.type||'')!=='jpg-page')continue;
+          const codes=String(m.designNumbers||'').split(/[\s,;|·]+/).filter(Boolean);
+          if(!codes.some(code=>normalizeDesignNo(code)===q))continue;
+          matches.push({designNo:codes.find(code=>normalizeDesignNo(code)===q)||q,brand:String(m.brand||''),category:String(m.category||''),catalogue:String(m.catalogue||m.title||''),page:String(m.page||''),key:object.key,verified:true,needsLocate:true});
+        }
+        if(!listed.truncated||!listed.cursor)break;cursor=listed.cursor;
+      }
+      if(matches.length===1)item=matches[0];
+      else if(matches.length>1)return json({ok:true,found:false,ambiguous:true,matches:matches.slice(0,12)});
+    }catch(_){}
+  }
   if(!item||normalizeDesignNo(item.designNo)!==q)return json({ok:true,found:false});
   return json({ok:true,found:true,item:{...item,src:`/api/media?raw=1&key=${encodeURIComponent(item.key)}`}});
 }
@@ -169,7 +187,7 @@ async function enhance(response,url){
 
   html=html.replace(
     "function designId(x){return x.designNo||x.sku||''}",
-    "window.woodrickOpenIndexedDesign=function(item){if(!item||!item.key)return false;var card=Array.from(document.querySelectorAll('.ww-card')).find(function(c){return pageInfo(c).key===item.key});if(!card){card=document.createElement('div');card.className='ww-card';var im=document.createElement('img'),info=document.createElement('div');im.src=item.src||('/api/media?raw=1&key='+encodeURIComponent(item.key));info.textContent=[item.category,item.brand,item.catalogue,'Page '+item.page].filter(Boolean).join('\\n');card.appendChild(im);card.appendChild(info)}openPick(card);current.category=item.category||current.category;current.brand=item.brand||current.brand;current.catalogue=item.catalogue||current.catalogue;current.page=String(item.page||current.page);current.key=item.key;var mark=function(){var p={x:Number(item.x),y:Number(item.y),reading:false,designNo:String(item.designNo||'')};tempPoints=[p];lastPoint=p;drawDots();status('Verified Design No. '+p.designNo+' · '+current.brand+' · Page '+current.page+'. Check the marker, then add it to Mood Board.')};var image=document.getElementById('wwPickerImg');if(image&&image.complete)mark();else if(image)image.addEventListener('load',mark,{once:true});return true};function designId(x){return x.designNo||x.sku||''}"
+    "window.woodrickOpenIndexedDesign=function(item){if(!item||!item.key)return false;var card=Array.from(document.querySelectorAll('.ww-card')).find(function(c){return pageInfo(c).key===item.key});if(!card){card=document.createElement('div');card.className='ww-card';var im=document.createElement('img'),info=document.createElement('div');im.src=item.src||('/api/media?raw=1&key='+encodeURIComponent(item.key));info.textContent=[item.category,item.brand,item.catalogue,'Page '+item.page].filter(Boolean).join('\\n');card.appendChild(im);card.appendChild(info)}openPick(card);current.category=item.category||current.category;current.brand=item.brand||current.brand;current.catalogue=item.catalogue||current.catalogue;current.page=String(item.page||current.page);current.key=item.key;function mark(x,y){var p={x:Number(x),y:Number(y),reading:false,designNo:String(item.designNo||'')};tempPoints=[p];lastPoint=p;drawDots();status('Verified Design No. '+p.designNo+' · '+current.brand+' · Page '+current.page+'. Check the marker, then add it to Mood Board.')}function ready(){if(Number.isFinite(Number(item.x))&&Number.isFinite(Number(item.y)))return mark(item.x,item.y);status('Design No. '+item.designNo+' का exact marker verify कर रहे हैं…');fetch('/api/catalogue-locate-design',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({src:current.src,designNo:item.designNo,page:current.page,brand:current.brand,category:current.category,catalogue:current.catalogue,key:current.key})}).then(function(r){return r.json()}).then(function(d){if(d&&d.ok&&d.found)mark(d.x,d.y);else status('Design No. '+item.designNo+' इस catalogue page पर साफ नहीं मिला। कुछ भी select नहीं किया गया।')}).catch(function(){status('Exact marker अभी verify नहीं हुआ। Page पर design के बीच में click करें।')})}var image=document.getElementById('wwPickerImg');if(image&&image.complete)ready();else if(image)image.addEventListener('load',ready,{once:true});return true};function designId(x){return x.designNo||x.sku||''}"
   );
 
   if(html.includes('woodrick-moodboard-click-fix-v5'))return response;
