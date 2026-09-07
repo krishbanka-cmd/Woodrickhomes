@@ -25,6 +25,9 @@ const HERO_CSS = `
 #products-services{background:#f7f3ec!important}
 #products-services #ws-products .ws-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:14px!important}
 #products-services #ws-products .ws-card{position:relative!important;min-height:245px!important;padding:19px 18px 16px!important;border:1px solid #e6dccb!important;border-radius:4px!important;background:linear-gradient(180deg,#fff 0%,#fffdf9 100%)!important;box-shadow:0 9px 24px rgba(46,35,18,.07)!important;overflow:hidden!important;transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease!important}
+#products-services #ws-products .ws-card[data-product-link]{cursor:pointer!important}
+#products-services #ws-products .ws-card[data-product-link]:focus-visible{outline:3px solid #cda95d!important;outline-offset:3px!important}
+#products-services #ws-products .ws-card .ws-card-link{position:absolute!important;left:18px!important;bottom:17px!important;z-index:3!important;color:#8b5f16!important;font-size:9px!important;font-weight:900!important;letter-spacing:.08em!important;text-transform:uppercase!important}
 #products-services #ws-products .ws-card:hover{transform:translateY(-4px)!important;box-shadow:0 18px 38px rgba(46,35,18,.11)!important;border-color:#cda95d!important}
 #products-services #ws-products .ws-card .tag{position:relative!important;z-index:2!important;display:block!important;margin:0 0 7px!important;color:#a87929!important;font-size:9px!important;font-weight:800!important;letter-spacing:1.4px!important;text-transform:uppercase!important;padding-left:21px!important}
 #products-services #ws-products .ws-card h3{position:relative!important;z-index:2!important;max-width:58%!important;margin:0 0 9px!important;font-family:Georgia,'Times New Roman',serif!important;font-size:20px!important;line-height:1.08!important;color:#171512!important;font-weight:500!important}
@@ -60,6 +63,13 @@ window.addEventListener('DOMContentLoaded',function(){
   var productPanel=document.querySelector('#ws-products');
   if(productPanel){
     var cards=Array.from(productPanel.querySelectorAll('.ws-card'));
+    var productCategories={
+      'Cement':'Cement','Building Solutions':'Building Solutions','550D Grade Steel':'550D Grade Steel',
+      'uPVC Doors & Windows':'Doors','Paints':'Paints','Wall Putty':'Wall Putty','Tiles':'Tiles',
+      'Sanitary & Bath Fittings':'Sanitaryware','Lighting':'Lighting','Plywood':'Plywood',
+      'HDHMR / MDF / WPC Boards':'HDHMR & MDF','Laminates & Decorative Surfaces':'Laminates',
+      'Furniture & Kitchen Hardware':'Hardware','Furniture & Storage':'Furniture','Modular Kitchen':'Modular Kitchen'
+    };
     var imgs=[
       'https://www.ultratechcement.com/content/ultratechcement/in/ta/home/for-homebuilders/products/_jcr_content/root/container/container/container_267731970__2023425555/teaser.coreimg.png/1707274353185/cement-card.png',
       'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=700&q=82',
@@ -78,6 +88,23 @@ window.addEventListener('DOMContentLoaded',function(){
       'https://images.unsplash.com/photo-1556912167-f556f1f39fdf?auto=format&fit=crop&w=700&q=82'
     ];
     cards.forEach(function(card,i){
+      var title=(card.querySelector('h3')||{}).textContent||'';
+      var category=productCategories[title.trim()]||title.trim();
+      var href='/products/?category='+encodeURIComponent(category)+'#categories';
+      card.dataset.productLink=href;
+      card.setAttribute('role','link');
+      card.setAttribute('tabindex','0');
+      card.setAttribute('aria-label','Explore '+title+' products');
+      if(!card.querySelector('.ws-card-link')){
+        var linkLabel=document.createElement('span');
+        linkLabel.className='ws-card-link';
+        linkLabel.textContent='VIEW PRODUCTS →';
+        card.appendChild(linkLabel);
+      }
+      card.addEventListener('click',function(){window.location.href=href;});
+      card.addEventListener('keydown',function(event){
+        if(event.key==='Enter'||event.key===' '){event.preventDefault();window.location.href=href;}
+      });
       var im=card.querySelector('.ws-product-img');
       if(!im){im=document.createElement('img');im.className='ws-product-img';card.appendChild(im);}
       im.src=imgs[i%imgs.length];
