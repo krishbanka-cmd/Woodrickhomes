@@ -4,7 +4,8 @@ const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:
 
 const normalizeDesignNo=value=>String(value||'').trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
 const seededDesigns={
-  FL405:{designNo:'FL-405',brand:'Woodline',category:'Acrylic Laminates',catalogue:'Woodline Acrylic',page:'10',key:'library/woodline/acrylic-laminates/woodline-acrylic/jpg/page-010.jpg',x:.629,y:.55,verified:true}
+  FL405:{designNo:'FL-405',brand:'Woodline',category:'Acrylic Laminates',catalogue:'Woodline Acrylic',page:'10',key:'library/woodline/acrylic-laminates/woodline-acrylic/jpg/page-010.jpg',x:.629,y:.55,verified:true},
+  WL141:{designNo:'WL-141',brand:'Woodline',category:'Louvers',catalogue:'Woodline Louvers 8x5',page:'6',key:'library/woodline-louvers/louvers/woodline-louvers-8x5/jpg/page-006.jpg',x:.63,y:.44,verified:true}
 };
 
 async function rememberDesign(env,item){
@@ -58,6 +59,19 @@ function toBase64(buffer){
   return btoa(out);
 }
 
+async function catalogueImage(request,env,src,key){
+  const safeKey=String(key||'');
+  if(env.PRODUCT_MEDIA&&safeKey.startsWith('library/')&&!safeKey.includes('..')){
+    const object=await env.PRODUCT_MEDIA.get(safeKey);if(!object)return null;
+    const type=(object.httpMetadata&&object.httpMetadata.contentType)||'image/jpeg';
+    return {type,buffer:await object.arrayBuffer()};
+  }
+  const pageUrl=new URL(src,new URL(request.url).origin),site=new URL(request.url);
+  if(pageUrl.origin!==site.origin)return null;
+  const response=await fetch(pageUrl.toString(),{headers:{accept:'image/*'}});if(!response.ok)return null;
+  return {type:(response.headers.get('content-type')||'image/jpeg').split(';')[0],buffer:await response.arrayBuffer()};
+}
+
 const backfillStateKey='_system/design-backfill/state.json';
 const pageMarkerKey=key=>`_system/design-backfill/pages/${encodeURIComponent(key)}.json`;
 
@@ -107,13 +121,11 @@ async function readCatalogueDesignCode(request,env){
     if(!src||!Number.isFinite(x)||!Number.isFinite(y))return json({ok:false,error:'Missing catalogue selection.'},400);
     let dataUrl='';
     if(/^data:image\/(?:jpeg|png);base64,/i.test(markedImage)&&markedImage.length<7*1024*1024){dataUrl=markedImage}else{
-      const pageUrl=new URL(src,new URL(request.url).origin),site=new URL(request.url);
-      if(pageUrl.origin!==site.origin)return json({ok:false,error:'Only Woodrick catalogue images can be read.'},400);
-      const imageResponse=await fetch(pageUrl.toString(),{headers:{accept:'image/*'}});
-      if(!imageResponse.ok)return json({ok:false,error:'Catalogue page image could not be loaded.'},502);
-      const type=(imageResponse.headers.get('content-type')||'image/jpeg').split(';')[0];
+      const image=await catalogueImage(request,env,src,body.key);
+      if(!image)return json({ok:false,error:'Catalogue page image could not be loaded.'},502);
+      const type=image.type;
       if(!type.startsWith('image/'))return json({ok:false,error:'Catalogue page is not an image.'},422);
-      const ab=await imageResponse.arrayBuffer();
+      const ab=image.buffer;
       if(ab.byteLength>7*1024*1024)return json({ok:false,error:'Catalogue page image is too large to read.'},413);
       dataUrl=`data:${type};base64,${toBase64(ab)}`;
     }
@@ -137,13 +149,11 @@ async function locateCatalogueDesignCode(request,env){
     const body=await request.json();
     const src=String(body&&body.src||''),wanted=String(body&&body.designNo||'').trim().toUpperCase();
     if(!src||!wanted||wanted.length>40)return json({ok:false,error:'Catalogue page and Design No. are required.'},400);
-    const pageUrl=new URL(src,new URL(request.url).origin),site=new URL(request.url);
-    if(pageUrl.origin!==site.origin)return json({ok:false,error:'Only Woodrick catalogue images can be searched.'},400);
-    const imageResponse=await fetch(pageUrl.toString(),{headers:{accept:'image/*'}});
-    if(!imageResponse.ok)return json({ok:false,error:'Catalogue page image could not be loaded.'},502);
-    const type=(imageResponse.headers.get('content-type')||'image/jpeg').split(';')[0];
+    const image=await catalogueImage(request,env,src,body.key);
+    if(!image)return json({ok:false,error:'Catalogue page image could not be loaded.'},502);
+    const type=image.type;
     if(!type.startsWith('image/'))return json({ok:false,error:'Catalogue page is not an image.'},422);
-    const ab=await imageResponse.arrayBuffer();
+    const ab=image.buffer;
     if(ab.byteLength>7*1024*1024)return json({ok:false,error:'Catalogue page image is too large to search.'},413);
     const dataUrl=`data:${type};base64,${toBase64(ab)}`;
     const prompt=`Find the exact building-material Design No. / SKU "${wanted}" on this catalogue page. If it is clearly printed, identify the centre of the material swatch or design sample that belongs to that exact code (not the centre of the printed code text). Return normalized image coordinates from 0 to 1. Never use a nearby code and never guess. Return ONLY JSON: {"found":true,"designNo":"${wanted}","x":0.5,"y":0.5}. If the exact code is not clearly present, return {"found":false,"designNo":"","x":0,"y":0}.`;
