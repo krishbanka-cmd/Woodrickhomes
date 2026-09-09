@@ -52,7 +52,7 @@ export default {
     }
     let response=await base.fetch(request,env,ctx);
     if(request.method==='GET'&&(url.pathname==='/voice-design-assistant.html'||url.pathname==='/voice-design-assistant'))response=freshResponse(response);
-    if(request.method==='GET')response=await addBackButton(response,url);
+    if(request.method==='GET'&&url.pathname!=='/'&&url.pathname!=='/index.html')response=await addBackButton(response,url);
     return response;
   }
 };
