@@ -23,7 +23,11 @@ async function normalizeAiRequest(request,env,ctx){
       brand:'Woodrick verified selection',
       catalogue:first.catalogue||'',
       page:first.page||'',
-      sku:items.length===1?codeOf(first):''
+      sku:items.length===1?codeOf(first):'',
+      key:first.key||'',
+      pickX:Number.isFinite(Number(first.pickX))?Number(first.pickX):'',
+      pickY:Number.isFinite(Number(first.pickY))?Number(first.pickY):'',
+      selection:first.selection||''
     };
   });
   const normalizedSelected=Array.isArray(selected)?selected.map(x=>x&&typeof x==='object'?{...x,sku:codeOf(x)||x.sku||''}:x):[];
