@@ -24,11 +24,17 @@ async function searchDesign(request,env){
   const raw=String(new URL(request.url).searchParams.get('q')||'').trim(),parts=(raw.toUpperCase().match(/[A-Z]+|[0-9]+/g)||[]);
   const candidates=[];for(let i=0;i<parts.length;i++){const id=normalizeDesignNo(parts.slice(i).join(''));if(id.length>=3&&/[0-9]/.test(id)&&!candidates.includes(id))candidates.push(id)}
   const whole=normalizeDesignNo(raw);if(whole.length>=3&&/[0-9]/.test(whole)&&!candidates.includes(whole))candidates.unshift(whole);
+  const spokenNumber=(parts.slice().reverse().find(x=>/^\d+$/.test(x))||'').replace(/^0+/,'')||'0',allowNumberFallback=/^[A-Z]?\s*[-–]?\s*\d+$/i.test(raw);
+  const candidateMatches=id=>candidates.includes(id)||(allowNumberFallback&&spokenNumber!=='0'&&id.replace(/^.*?(\d+)$/,'$1').replace(/^0+/,'')===spokenNumber);
   if(!candidates.length)return json({ok:true,found:false});
   const context=normalizeDesignNo(raw),dedupe=items=>{const seen=new Set();return items.filter(x=>{const k=[x.key,x.page,x.brand,x.catalogue,normalizeDesignNo(x.designNo)].join('|').toLowerCase();if(seen.has(k))return false;seen.add(k);return true})};
   const choose=items=>{items=dedupe(items);if(items.length<2)return items;const scored=items.map(x=>{const words=[x.brand,x.category,x.catalogue].join(' ').toUpperCase().match(/[A-Z]+|[0-9]+/g)||[];return{x,s:words.filter(w=>w.length>1&&context.includes(normalizeDesignNo(w))).length}}),best=Math.max(...scored.map(r=>r.s));return best>0?scored.filter(r=>r.s===best).map(r=>r.x):items};
   let matches=[];
   for(const q of candidates){if(seededDesigns[q])matches.push(seededDesigns[q]);if(!env.PRODUCT_MEDIA)continue;try{const stored=await env.PRODUCT_MEDIA.get(`_system/design-index/${q}.json`);if(stored){const d=await stored.json();matches.push(...(Array.isArray(d.items)?d.items:[d]))}}catch(_){}if(matches.length)break}
+  if(!matches.length&&allowNumberFallback){
+    matches.push(...Object.values(seededDesigns).filter(x=>candidateMatches(normalizeDesignNo(x.designNo))));
+    if(env.PRODUCT_MEDIA)try{let cursor;for(let loop=0;loop<20;loop++){const options={limit:1000,prefix:'_system/design-index/'};if(cursor)options.cursor=cursor;const listed=await env.PRODUCT_MEDIA.list(options);for(const object of listed.objects||[]){const id=String(object.key||'').replace(/^_system\/design-index\//,'').replace(/\.json$/,'');if(!candidateMatches(id))continue;const stored=await env.PRODUCT_MEDIA.get(object.key);if(stored){const d=await stored.json();matches.push(...(Array.isArray(d.items)?d.items:[d]))}}if(!listed.truncated||!listed.cursor)break;cursor=listed.cursor}}catch(_){}
+  }
   matches=choose(matches);let item=matches.length===1?matches[0]:null;
   if(matches.length>1)return json({ok:true,found:false,ambiguous:true,matches:matches.slice(0,12).map(x=>({...x,src:`/api/media?raw=1&key=${encodeURIComponent(x.key)}`}))});
   if(!item&&env.PRODUCT_MEDIA){
@@ -49,7 +55,7 @@ async function searchDesign(request,env){
       else if(scanned.length>1)return json({ok:true,found:false,ambiguous:true,matches:scanned.slice(0,12).map(x=>({...x,src:`/api/media?raw=1&key=${encodeURIComponent(x.key)}`}))});
     }catch(_){}
   }
-  if(!item||!candidates.includes(normalizeDesignNo(item.designNo)))return json({ok:true,found:false});
+  if(!item||!candidateMatches(normalizeDesignNo(item.designNo)))return json({ok:true,found:false});
   return json({ok:true,found:true,item:{...item,src:`/api/media?raw=1&key=${encodeURIComponent(item.key)}`}});
 }
 
