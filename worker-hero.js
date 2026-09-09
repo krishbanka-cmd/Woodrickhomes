@@ -90,7 +90,7 @@ window.addEventListener('DOMContentLoaded',function(){
     cards.forEach(function(card,i){
       var title=(card.querySelector('h3')||{}).textContent||'';
       var category=productCategories[title.trim()]||title.trim();
-      var href='/woodrick-library.html?category='+encodeURIComponent(category);
+      var href='/products/?category='+encodeURIComponent(category)+'#categories';
       card.dataset.productLink=href;
       card.setAttribute('role','link');
       card.setAttribute('tabindex','0');
@@ -98,7 +98,7 @@ window.addEventListener('DOMContentLoaded',function(){
       if(!card.querySelector('.ws-card-link')){
         var linkLabel=document.createElement('span');
         linkLabel.className='ws-card-link';
-        linkLabel.textContent='VIEW BRANDS & CATALOGUES →';
+        linkLabel.textContent='VIEW PRODUCTS →';
         card.appendChild(linkLabel);
       }
       card.addEventListener('click',function(){window.location.href=href;});
