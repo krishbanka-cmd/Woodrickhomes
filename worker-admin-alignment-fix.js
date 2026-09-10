@@ -26,16 +26,20 @@ function isLibraryJpg(x){const key=String(x.key||''),t=String(x.type||'').toLowe
 function isLibraryPdf(x){const key=String(x.key||''),t=String(x.type||'').toLowerCase();return t==='original-pdf'||(key.startsWith('library/')&&String(x.originalName||'').toLowerCase().endsWith('.pdf'))}
 function pageStem(x){const title=String(x.title||'').trim();const m=title.match(/^(.*?)\s+page\s*(\d+)\s*$/i);return m?norm((x.category||'')+'|'+m[1]):''}
 function publicItems(items,{dedupe=true}={}){
-  const raw=(Array.isArray(items)?items:[]).filter(x=>!isLibraryJpg(x));
+  const all=Array.isArray(items)?items:[],covers=new Map();
+  for(const x of all){if(!isLibraryJpg(x))continue;const key=[norm(canonicalCategory(x.category||'')),norm(inferBrand(x)),norm(inferCatalogue(x))].join('|'),page=Number(x.page||String(x.key||'').match(/page-(\d+)/i)?.[1]||9999),prev=covers.get(key);if(!prev||page<prev.page)covers.set(key,{page,key:x.key})}
+  const raw=all.filter(x=>!isLibraryJpg(x));
   const stems={};for(const x of raw){const s=pageStem(x);if(s)stems[s]=(stems[s]||0)+1}
   const cleaned=raw.filter(x=>{const s=pageStem(x);return !(s&&stems[s]>1)}).map(x=>{
     const libraryPdf=isLibraryPdf(x);
+    const cover=covers.get([norm(canonicalCategory(x.category||'')),norm(inferBrand(x)),norm(inferCatalogue(x))].join('|'));
     return {...x,
       category:canonicalCategory(x.category||''),
       brand:inferBrand(x),
       catalogue:inferCatalogue(x),
       type:libraryPdf?'pdf':x.type,
       title:inferCatalogue(x),
+      coverUrl:cover?`/api/media?raw=1&key=${encodeURIComponent(cover.key)}`:String(x.coverUrl||''),
       librarySource:libraryPdf?'1':String(x.librarySource||'')
     };
   });
@@ -75,7 +79,7 @@ var root=document.getElementById('mediaList');if(root)new MutationObserver(addDe
 
 const productHierarchy=`
 <style id="woodrick-product-hierarchy-v2">
-.brand-choice{cursor:pointer}.brand-choice .media-preview{background:linear-gradient(135deg,#0c0c0c,#242018);color:#f0c96b;font-family:Georgia,serif;font-size:34px;font-weight:700;text-align:center;padding:24px}.brand-choice .media-title{margin-bottom:4px}.hierarchy-back{display:inline-flex;margin:0 0 18px;padding:10px 14px;border:1px solid #f0c96b;background:#171717;color:#f0c96b;font-size:11px;font-weight:900;cursor:pointer}.catalogue-media-label{font-size:10px;color:#aaa;margin-top:6px}.pdf-cover{width:100%;height:100%;border:0;background:#fff;pointer-events:none}.media-preview{position:relative}.cover-title{position:absolute;left:0;right:0;bottom:0;padding:10px 12px;background:linear-gradient(transparent,rgba(0,0,0,.88));color:#fff;font-size:12px;font-weight:900;letter-spacing:.02em}
+.brand-choice{cursor:pointer}.brand-choice .media-preview{background:linear-gradient(135deg,#0c0c0c,#242018);color:#f0c96b;font-family:Georgia,serif;font-size:34px;font-weight:700;text-align:center;padding:24px}.brand-choice .media-title{margin-bottom:4px}.hierarchy-back{display:inline-flex;margin:0 0 18px;padding:10px 14px;border:1px solid #f0c96b;background:#171717;color:#f0c96b;font-size:11px;font-weight:900;cursor:pointer}.catalogue-media-label{font-size:10px;color:#aaa;margin-top:6px}.pdf-cover{width:100%;height:100%;object-fit:cover;background:#171717}.pdf-cover-fallback{width:100%;height:100%;display:grid;place-items:center;background:linear-gradient(135deg,#171717,#30291d);color:#f0c96b;font:700 28px Georgia,serif}.media-preview{position:relative}.cover-title{position:absolute;left:0;right:0;bottom:0;padding:10px 12px;background:linear-gradient(transparent,rgba(0,0,0,.88));color:#fff;font-size:12px;font-weight:900;letter-spacing:.02em}
 </style>
 <script id="woodrick-product-hierarchy-script-v2">(function(){
 var selectedBrand='';
@@ -87,7 +91,7 @@ function grouped(items){var g={};items.forEach(function(x){var k=n(x.category)+'
 function card(g){
   var image=g.items.find(function(x){return mediaType(x)==='image'}),pdf=g.items.find(function(x){return mediaType(x)==='pdf'}),video=g.items.find(function(x){return mediaType(x)==='video'}),preview='';
   if(image)preview='<img loading="lazy" src="'+mediaUrl(image)+'" alt="'+esc(g.catalogue)+'"><div class="cover-title">'+esc(g.catalogue)+'</div>';
-  else if(pdf)preview='<iframe class="pdf-cover" loading="lazy" title="'+esc(g.catalogue)+' cover" src="'+mediaUrl(pdf)+'#page=1&toolbar=0&navpanes=0&scrollbar=0&view=FitH"></iframe><div class="cover-title">'+esc(g.catalogue)+'</div>';
+  else if(pdf)preview=(pdf.coverUrl?'<img class="pdf-cover" loading="lazy" src="'+esc(pdf.coverUrl)+'" alt="'+esc(g.catalogue)+' cover">':'<div class="pdf-cover-fallback">PDF CATALOGUE</div>')+'<div class="cover-title">'+esc(g.catalogue)+'</div>';
   else if(video)preview='<video preload="metadata" muted src="'+mediaUrl(video)+'"></video><div class="cover-title">'+esc(g.catalogue)+'</div>';
   var acts='';if(pdf)acts+='<a class="open-media" href="'+mediaUrl(pdf)+'" target="_blank" rel="noopener">OPEN PDF</a>';if(image)acts+='<a class="open-media" href="'+mediaUrl(image)+'" target="_blank" rel="noopener">OPEN PHOTO</a>';if(video)acts+='<a class="open-media" href="'+mediaUrl(video)+'" target="_blank" rel="noopener">OPEN VIDEO</a>';
   return '<article class="media-card"><div class="media-preview">'+preview+'</div><div class="media-info"><div class="media-category">'+esc(g.category)+' · '+esc(g.brand)+'</div><div class="media-title">'+esc(g.catalogue)+'</div><div class="catalogue-media-label">'+g.items.map(function(x){return typeLabel(mediaType(x))}).filter(function(v,i,a){return a.indexOf(v)===i}).join(' · ')+'</div><div class="media-actions" style="margin-top:12px">'+acts+'</div></div></article>'
@@ -98,7 +102,7 @@ renderMedia=function(){
   liveStatus.textContent=(activeCategory==='all'?'All categories':activeCategory)+' · '+(activeType==='all'?'All media':activeType.toUpperCase())+' · '+groups.length+' catalogue'+(groups.length===1?'':'s');
   if(!items.length){mediaGrid.innerHTML='<div class="empty-media">No uploaded catalogue is available for this selection yet.</div>';return}
   if(activeCategory==='all'){mediaGrid.innerHTML=groups.map(card).join('');return}
-  if(!selectedBrand){var brands={};items.forEach(function(x){var b=brandOf(x);(brands[b]||(brands[b]=[])).push(x)});mediaGrid.innerHTML=Object.keys(brands).sort().map(function(b){var bg=grouped(brands[b]);var first=bg[0],thumb='';if(first){var im=first.items.find(function(x){return mediaType(x)==='image'}),pd=first.items.find(function(x){return mediaType(x)==='pdf'});if(im)thumb='<img loading="lazy" src="'+mediaUrl(im)+'" alt="'+esc(b)+'">';else if(pd)thumb='<iframe class="pdf-cover" loading="lazy" title="'+esc(b)+'" src="'+mediaUrl(pd)+'#page=1&toolbar=0&navpanes=0&scrollbar=0&view=FitH"></iframe>'}return '<article class="media-card brand-choice" data-brand="'+esc(b)+'"><div class="media-preview">'+(thumb||esc(b))+'<div class="cover-title">'+esc(b)+'</div></div><div class="media-info"><div class="media-category">'+esc(activeCategory)+'</div><div class="media-title">'+esc(b)+'</div><div class="catalogue-media-label">'+bg.length+' catalogue'+(bg.length===1?'':'s')+'</div><div class="media-actions" style="margin-top:12px"><button class="open-media" type="button">VIEW CATALOGUES</button></div></div></article>'}).join('');return}
+  if(!selectedBrand){var brands={};items.forEach(function(x){var b=brandOf(x);(brands[b]||(brands[b]=[])).push(x)});mediaGrid.innerHTML=Object.keys(brands).sort().map(function(b){var bg=grouped(brands[b]);var first=bg[0],thumb='';if(first){var im=first.items.find(function(x){return mediaType(x)==='image'}),pd=first.items.find(function(x){return mediaType(x)==='pdf'});if(im)thumb='<img loading="lazy" src="'+mediaUrl(im)+'" alt="'+esc(b)+'">';else if(pd&&pd.coverUrl)thumb='<img class="pdf-cover" loading="lazy" src="'+esc(pd.coverUrl)+'" alt="'+esc(b)+'">';else if(pd)thumb='<div class="pdf-cover-fallback">PDF</div>'}return '<article class="media-card brand-choice" data-brand="'+esc(b)+'"><div class="media-preview">'+(thumb||esc(b))+'<div class="cover-title">'+esc(b)+'</div></div><div class="media-info"><div class="media-category">'+esc(activeCategory)+'</div><div class="media-title">'+esc(b)+'</div><div class="catalogue-media-label">'+bg.length+' catalogue'+(bg.length===1?'':'s')+'</div><div class="media-actions" style="margin-top:12px"><button class="open-media" type="button">VIEW CATALOGUES</button></div></div></article>'}).join('');return}
   var chosen=items.filter(function(x){return n(brandOf(x))===n(selectedBrand)});mediaGrid.innerHTML='<button class="hierarchy-back" type="button" id="brandBack">← ALL '+esc(activeCategory.toUpperCase())+' BRANDS</button>'+grouped(chosen).map(card).join('')
 };
 document.addEventListener('click',function(e){var bc=e.target.closest('.brand-choice');if(bc){selectedBrand=bc.dataset.brand||'';renderMedia();return}if(e.target.closest('#brandBack')){selectedBrand='';renderMedia()}},true);
