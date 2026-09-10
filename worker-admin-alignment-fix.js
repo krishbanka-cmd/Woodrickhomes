@@ -21,7 +21,7 @@ function inferBrand(x){
   const first=(clean.match(/^[A-Za-z0-9&+-]+/)||[])[0];
   return first||'Other';
 }
-function inferCatalogue(x){return String(x.catalogue||x.title||x.originalName||'Catalogue').replace(/\.[a-z0-9]{2,5}$/i,'').replace(/\s+page\s*\d+\s*$/i,'').trim()||'Catalogue'}
+function inferCatalogue(x){const value=String(x.catalogue||x.title||x.originalName||'Catalogue').replace(/\.[a-z0-9]{2,5}$/i,'').replace(/\s+page\s*\d+\s*$/i,'').trim()||'Catalogue';return norm(value)==='ris'?'Ristal':value}
 function isLibraryJpg(x){const key=String(x.key||''),t=String(x.type||'').toLowerCase();return t==='jpg-page'||(key.startsWith('library/')&&t!=='original-pdf'&&!String(x.originalName||'').toLowerCase().endsWith('.pdf'))}
 function isLibraryPdf(x){const key=String(x.key||''),t=String(x.type||'').toLowerCase();return t==='original-pdf'||(key.startsWith('library/')&&String(x.originalName||'').toLowerCase().endsWith('.pdf'))}
 function pageStem(x){const title=String(x.title||'').trim();const m=title.match(/^(.*?)\s+page\s*(\d+)\s*$/i);return m?norm((x.category||'')+'|'+m[1]):''}
@@ -81,7 +81,7 @@ const productHierarchy=`
 var selectedBrand='';
 function n(v){return String(v||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()}
 function brandOf(x){return String(x.brand||'Other').trim()||'Other'}
-function catalogueOf(x){return String(x.catalogue||x.title||x.originalName||'Catalogue').replace(/\.[a-z0-9]{2,5}$/i,'').replace(/\s+page\s*\d+\s*$/i,'').trim()||'Catalogue'}
+function catalogueOf(x){var value=String(x.catalogue||x.title||x.originalName||'Catalogue').replace(/\.[a-z0-9]{2,5}$/i,'').replace(/\s+page\s*\d+\s*$/i,'').trim()||'Catalogue';return n(value)==='ris'?'Ristal':value}
 function typeLabel(t){return t==='pdf'?'PDF':t==='video'?'VIDEO':'PHOTO'}
 function grouped(items){var g={};items.forEach(function(x){var k=n(x.category)+'|'+n(brandOf(x))+'|'+n(catalogueOf(x));if(!g[k])g[k]={category:x.category||'Uncategorised',brand:brandOf(x),catalogue:catalogueOf(x),items:[]};g[k].items.push(x)});return Object.values(g)}
 function card(g){
