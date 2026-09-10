@@ -31,6 +31,13 @@ async function listAll(env,prefix=''){
   return out;
 }
 
+async function listCustomerMedia(env){
+  const synced=await listAll(env,'product-sync/'),root=await env.PRODUCT_MEDIA.list({limit:1000,delimiter:'/',include:['customMetadata','httpMetadata']}),skip=new Set(['library/','product-sync/','_system/','_config/']);
+  const prefixes=(root.delimitedPrefixes||[]).filter(prefix=>!skip.has(prefix));
+  const legacy=(await Promise.all(prefixes.map(prefix=>listAll(env,prefix)))).flat().filter(o=>!isLibrary(o));
+  return [...synced,...legacy,...(root.objects||[]).filter(o=>!isLibrary(o))];
+}
+
 async function putSyncedPdf(env,lib){
   const m=lib.customMetadata||{},key=syncKeyFor(lib),existing=await env.PRODUCT_MEDIA.head(key);
   const stamp=String(m.uploadedAt||lib.uploaded||''),same=existing&&String((existing.customMetadata||{}).sourceKey||'')===String(lib.key)&&String((existing.customMetadata||{}).sourceUploadedAt||'')===stamp&&Number(existing.size||0)===Number(lib.size||0);
@@ -64,7 +71,7 @@ async function syncAndClean(env){
 }
 
 async function publicMediaList(env){
-  const objects=await listAll(env,'product-sync/'),items=[];
+  const objects=await listCustomerMedia(env),items=[];
   for(const o of objects){const m=o.customMetadata||{},title=String(m.title||'').trim();if(/\s+page\s*\d+\s*$/i.test(title))continue;const sourceRoot=String(m.sourceKey||'').replace(/\/original\/[^/]+$/,'');const coverKey=sourceRoot?sourceRoot+'/jpg/page-001.jpg':'';items.push({key:o.key,size:o.size,uploaded:o.uploaded,url:`/api/media?key=${encodeURIComponent(o.key)}`,...m,category:canonicalCategory(m.category||''),brand:m.brand||brandOf(o),catalogue:m.catalogue||catalogueOf(o),coverUrl:coverKey?`/api/media?raw=1&key=${encodeURIComponent(coverKey)}`:''})}
   items.sort((a,b)=>String(b.syncedAt||b.uploadedAt||b.uploaded||'').localeCompare(String(a.syncedAt||a.uploadedAt||a.uploaded||'')));
   return json({items,total:items.length,truncated:false,cursor:null,mode:'library-canonical-product-media-v1'});
