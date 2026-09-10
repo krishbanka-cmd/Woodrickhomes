@@ -21,10 +21,10 @@ function brandOf(o){const m=o.customMetadata||{};if(String(m.brand||'').trim())r
 function identity(o){const m=o.customMetadata||{};return [norm(canonicalCategory(m.category||'')),typeOf(o),norm(catalogueOf(o))].join('|')}
 function syncKeyFor(o){const m=o.customMetadata||{},brand=brandOf(o),category=canonicalCategory(m.category||'Other'),catalogue=catalogueOf(o);return `product-sync/${slug(category)}/${slug(brand)}/${slug(catalogue)}.pdf`}
 
-async function listAll(env){
+async function listAll(env,prefix=''){
   const out=[];let cursor;const seen=new Set();
   for(let i=0;i<200;i++){
-    const opts={limit:1000,include:['customMetadata','httpMetadata']};if(cursor)opts.cursor=cursor;
+    const opts={limit:1000,include:['customMetadata','httpMetadata']};if(prefix)opts.prefix=prefix;if(cursor)opts.cursor=cursor;
     const r=await env.PRODUCT_MEDIA.list(opts);out.push(...r.objects);
     if(!r.truncated||!r.cursor||seen.has(r.cursor))break;seen.add(r.cursor);cursor=r.cursor;
   }
@@ -64,10 +64,8 @@ async function syncAndClean(env){
 }
 
 async function publicMediaList(env){
-  await syncAndClean(env);
-  const objects=await listAll(env),items=[],covers=new Map();
-  for(const o of objects){const key=String(o.key||''),m=o.customMetadata||{};if(!key.includes('/jpg/')&&m.type!=='jpg-page')continue;const root=key.includes('/jpg/')?key.split('/jpg/')[0]:key.replace(/\/[^/]+$/,''),page=Number(m.page||key.match(/page-(\d+)/i)?.[1]||9999),prev=covers.get(root);if(!prev||page<prev.page)covers.set(root,{page,key})}
-  for(const o of objects){if(isLibrary(o))continue;const m=o.customMetadata||{},title=String(m.title||'').trim();if(/\s+page\s*\d+\s*$/i.test(title))continue;const sourceRoot=String(m.sourceKey||'').replace(/\/original\/[^/]+$/,'');const cover=covers.get(sourceRoot);items.push({key:o.key,size:o.size,uploaded:o.uploaded,url:`/api/media?key=${encodeURIComponent(o.key)}`,...m,category:canonicalCategory(m.category||''),brand:m.brand||brandOf(o),catalogue:m.catalogue||catalogueOf(o),coverUrl:cover?`/api/media?raw=1&key=${encodeURIComponent(cover.key)}`:''})}
+  const objects=await listAll(env,'product-sync/'),items=[];
+  for(const o of objects){const m=o.customMetadata||{},title=String(m.title||'').trim();if(/\s+page\s*\d+\s*$/i.test(title))continue;const sourceRoot=String(m.sourceKey||'').replace(/\/original\/[^/]+$/,'');const coverKey=sourceRoot?sourceRoot+'/jpg/page-001.jpg':'';items.push({key:o.key,size:o.size,uploaded:o.uploaded,url:`/api/media?key=${encodeURIComponent(o.key)}`,...m,category:canonicalCategory(m.category||''),brand:m.brand||brandOf(o),catalogue:m.catalogue||catalogueOf(o),coverUrl:coverKey?`/api/media?raw=1&key=${encodeURIComponent(coverKey)}`:''})}
   items.sort((a,b)=>String(b.syncedAt||b.uploadedAt||b.uploaded||'').localeCompare(String(a.syncedAt||a.uploadedAt||a.uploaded||'')));
   return json({items,total:items.length,truncated:false,cursor:null,mode:'library-canonical-product-media-v1'});
 }
