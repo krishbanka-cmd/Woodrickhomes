@@ -65,8 +65,9 @@ async function syncAndClean(env){
 
 async function publicMediaList(env){
   await syncAndClean(env);
-  const objects=await listAll(env),items=[];
-  for(const o of objects){if(isLibrary(o))continue;const m=o.customMetadata||{},title=String(m.title||'').trim();if(/\s+page\s*\d+\s*$/i.test(title))continue;items.push({key:o.key,size:o.size,uploaded:o.uploaded,url:`/api/media?key=${encodeURIComponent(o.key)}`,...m,category:canonicalCategory(m.category||''),brand:m.brand||brandOf(o),catalogue:m.catalogue||catalogueOf(o)})}
+  const objects=await listAll(env),items=[],covers=new Map();
+  for(const o of objects){const key=String(o.key||''),m=o.customMetadata||{};if(!key.includes('/jpg/')&&m.type!=='jpg-page')continue;const root=key.includes('/jpg/')?key.split('/jpg/')[0]:key.replace(/\/[^/]+$/,''),page=Number(m.page||key.match(/page-(\d+)/i)?.[1]||9999),prev=covers.get(root);if(!prev||page<prev.page)covers.set(root,{page,key})}
+  for(const o of objects){if(isLibrary(o))continue;const m=o.customMetadata||{},title=String(m.title||'').trim();if(/\s+page\s*\d+\s*$/i.test(title))continue;const sourceRoot=String(m.sourceKey||'').replace(/\/original\/[^/]+$/,'');const cover=covers.get(sourceRoot);items.push({key:o.key,size:o.size,uploaded:o.uploaded,url:`/api/media?key=${encodeURIComponent(o.key)}`,...m,category:canonicalCategory(m.category||''),brand:m.brand||brandOf(o),catalogue:m.catalogue||catalogueOf(o),coverUrl:cover?`/api/media?raw=1&key=${encodeURIComponent(cover.key)}`:''})}
   items.sort((a,b)=>String(b.syncedAt||b.uploadedAt||b.uploaded||'').localeCompare(String(a.syncedAt||a.uploadedAt||a.uploaded||'')));
   return json({items,total:items.length,truncated:false,cursor:null,mode:'library-canonical-product-media-v1'});
 }
