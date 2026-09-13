@@ -2,7 +2,7 @@ import app from './worker-edit-save-fast.js';
 import {backfillDesignIndex} from './worker-design-picker-click-fix.js';
 import {syncAndClean} from './worker-product-media-sync.js';
 
-const STATIC=['Plywood','Laminates','Louvers','Acrylic Laminates','Shuttering Plywood','Doors','HDHMR & MDF','WPC Board & Chaukhat','Cement','Tiles','Sanitaryware','Bath Fittings','uPVC Doors & Windows','Hardware','Furniture & Kitchen Hardware','Flooring','Wallpapers','Decorative Panels'];
+const STATIC=['Plywood','Laminates','Louvers','Acrylic Laminates','Shuttering Plywood','Doors','Door Skin','HDHMR & MDF','WPC Board & Chaukhat','Cement','Tiles','Sanitaryware','Bath Fittings','uPVC Doors & Windows','Hardware','Furniture & Kitchen Hardware','Flooring','Wallpapers','Decorative Panels'];
 function json(data,status=200){return new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store, no-cache, must-revalidate, max-age=0'}})}
 function clean(v=''){return String(v||'').trim().replace(/\s+/g,' ')}
 function slug(v=''){return clean(v).toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,80)||'category'}
