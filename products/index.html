@@ -22,6 +22,7 @@
 .footer{background:#050505;color:#aaa;border-top:1px solid #222;padding:28px 0;text-align:center;font-size:12px}.footer b{color:var(--gold2)}
 @media(max-width:980px){.category-grid,.live-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.topbar .wrap{min-height:68px}.home-link{display:none}}
 @media(max-width:620px){.wrap{width:min(94%,1180px)}.category-grid,.live-grid{grid-template-columns:1fr}.hero{padding:64px 0 52px}.hero p{font-size:15px}.media-link{font-size:10px}.card{min-height:0}.card-visual{height:190px}.media-preview{height:210px}}
+.media-title{overflow-wrap:break-word;word-break:normal}
 .card.requested-category{border-color:var(--gold)!important;box-shadow:0 0 0 3px rgba(215,179,106,.24),0 18px 38px rgba(0,0,0,.11)}
 </style>
 </head>
@@ -53,13 +54,27 @@ function esc(v=''){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt
 function mediaType(x){const key=String(x.key||'').toLowerCase(),name=String(x.originalName||'').toLowerCase();if(/\.(pdf)(\?|$)/.test(key)||name.endsWith('.pdf'))return'pdf';if(/\.(mp4|webm)(\?|$)/.test(key)||/\.(mp4|webm)$/.test(name))return'video';if(/\.(jpg|jpeg|png|webp)(\?|$)/.test(key)||/\.(jpg|jpeg|png|webp)$/.test(name))return'image';return x.type||'image';}
 function mediaUrl(x){return'/api/media?key='+encodeURIComponent(x.key)}
 const catalogueTitles={
+'product-sync/laminates/ristal/ristal.pdf':'Ristal 0.82mm Premium Laminates',
 'kitchen/pdf/woodrick-kitchen-catalogue.pdf':'Woodrick Kitchen Catalogue',
+'hardware/pdf/godrej-lock-price-list.pdf':'Godrej Lock Catalogue & Price List',
+'hardware/pdf/ipsa-catalogue-and-price-list.pdf':'IPSA Hardware Catalogue & Price List',
+'product-sync/laminates/mwud/mwud.pdf':'MWUD Futura 0.8mm Laminates',
+'product-sync/laminates/woodline/woodline.pdf':'Woodline 0.8mm Laminates',
+'product-sync/doors/woodline/woodline-door-skin.pdf':'Woodline Door Skin',
 'product-sync/acrylic-laminates/woodline/woodline-acrylic.pdf':'Woodline Acrylic',
 'product-sync/louvers/woodline-louvers/woodline-louvers-8x5.pdf':"Woodline Louvers 8x5''",
+'product-sync/laminates/ristal/ristal-solid-colour.pdf':'Ristal Solid Colour 0.92mm',
+'door-skin/rainbow/rainbow-door-skin/pdf/1788237489087-rainbow-door-skin.pdf':'Rainbow Door Skin',
+'product-sync/laminates/ristal1mm/ristal1mm.pdf':'Ristal 1mm Laminates',
+'shuttering-plywood/image/1787752234100-woodrick-25-kg-mr.pdf':'Woodrick Shuttering Plywood 25 KG MR',
+'laminates/pdf/1787751962530-ristal-slim-75mm.pdf':'Ristal Slim 0.75mm Laminates',
+'charcoal-moulding/image/1787751647846-charcoal-moulding.jpeg':'Charcoal Moulding',
+'laminates/video/1787680697962-woodline-display-video.mp4':'Woodline Display Video',
 'louvers/image/1787636923292-woodline-louvers-9-5x6.pdf':'Woodline Louvers 9.5x6',
-'louvers/image/1787636958432-woodline-led-louvers.pdf':'Woodline LED Louvers'
+'louvers/image/1787636958432-woodline-led-louvers.pdf':'Woodline LED Louvers',
+'shuttering-plywood/image/1787633917425-woodly-30-kg-pf.jpeg':'Woodly Shuttering Plywood 30 KG PF'
 };
-function mediaTitle(x){return catalogueTitles[String(x.key||'')]||String(x.catalogue||x.title||x.originalName||'Product Media').replace(/\.(pdf|jpe?g|png|webp|mp4|webm)$/i,'').trim()||'Product Media'}
+function mediaTitle(x){if(catalogueTitles[String(x.key||'')])return catalogueTitles[String(x.key||'')];const names=[x.catalogue,x.title].map(v=>String(v||'').replace(/\.(pdf|jpe?g|png|webp|mp4|webm)$/i,'').trim()).filter(Boolean).sort((a,b)=>b.length-a.length);return names[0]||String(x.originalName||'Product Media').replace(/\.(pdf|jpe?g|png|webp|mp4|webm)$/i,'').trim()||'Product Media'}
 const catalogueCoverFallbacks={'shuttering-plywood/image/1787752234100-woodrick-25-kg-mr.pdf':'/catalogue-covers/woodrick-25-kg-mr.webp','louvers/image/1787636958432-woodline-led-louvers.pdf':'/catalogue-covers/woodline-led-louvers.webp','louvers/image/1787636923292-woodline-louvers-9-5x6.pdf':'/catalogue-covers/woodline-louvers-9-5x6.webp'};
 function coverUrl(x){const src=String(x.coverUrl||catalogueCoverFallbacks[x.key]||'');if(!src.startsWith('/catalogue-covers/'))return src;return src.split('?')[0]+'?v=20260913-3'}
 const categoryFallbacks={
@@ -80,7 +95,7 @@ function libraryCategory(category){return({'Laminates':'Laminate','Doors':'Door 
 function openCategoryBrands(card){const category=libraryCategory(card.dataset.category||'');if(category)location.href='/woodrick-library.html?category='+encodeURIComponent(category)}
 function enableCategoryCards(){document.querySelectorAll('.card[data-category]').forEach(card=>{const category=card.dataset.category||'Products';card.tabIndex=0;card.setAttribute('role','link');card.setAttribute('aria-label','View '+category+' brands and catalogues');if(!card.querySelector('.category-open')){const label=document.createElement('div');label.className='category-open';label.textContent='VIEW BRANDS & CATALOGUES →';const mediaRow=card.querySelector('.media-row');card.insertBefore(label,mediaRow||null)}card.addEventListener('click',event=>{if(event.target.closest('a,button'))return;openCategoryBrands(card)});card.addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&!event.target.closest('a,button')){event.preventDefault();openCategoryBrands(card)}})})}
 function renderMedia(){const items=uploadedMedia.filter(x=>(activeCategory==='all'||String(x.category||'').toLowerCase()===activeCategory.toLowerCase())&&(activeType==='all'||mediaType(x)===activeType));liveStatus.textContent=(activeCategory==='all'?'All categories':activeCategory)+' · '+(activeType==='all'?'All media':activeType.toUpperCase())+' · '+items.length+' item'+(items.length===1?'':'s');if(!items.length){mediaGrid.innerHTML='<div class="empty-media">No uploaded media is available for this selection yet.</div>';return}mediaGrid.innerHTML=items.map(x=>{const t=mediaType(x),url=mediaUrl(x),cover=coverUrl(x),title=mediaTitle(x),alt=esc(title||x.category||'Product media');let preview=t==='image'?`<img loading="eager" decoding="async" fetchpriority="high" src="${url}" alt="${alt}">`:t==='video'?`<video preload="none" controls src="${url}"></video>`:cover?`<img class="pdf-preview" loading="eager" decoding="async" fetchpriority="high" src="${esc(cover)}" alt="${alt} cover page" onerror="this.outerHTML='<span class=&quot;media-icon&quot;>▤</span>'">`:`<span class="media-icon">▤</span>`;return`<article class="media-card"><div class="media-preview">${preview}</div><div class="media-info"><div class="media-category">${esc(x.category||'Uncategorised')} · ${t==='pdf'?'PDF CATALOGUE':t==='video'?'VIDEO':'PHOTO'}</div><div class="media-title" title="${esc(title)}">${esc(title)}</div><div class="media-actions"><a class="open-media" href="${url}" target="_blank" rel="noopener">${t==='pdf'?'OPEN PDF':t==='video'?'OPEN VIDEO':'OPEN PHOTO'}</a></div></div></article>`}).join('')}
-async function loadUploadedMedia(){try{const r=await fetch('/api/media?catalogue-covers=3');if(!r.ok)throw new Error('Media service unavailable');const data=await r.json();uploadedMedia=Array.isArray(data.items)?data.items:[];applyCategoryVisuals();renderMedia()}catch(e){applyCategoryVisuals();liveStatus.textContent='Unable to load media right now';mediaGrid.innerHTML='<div class="empty-media">Uploaded product media could not be loaded. Please try again shortly.</div>'}}
+async function loadUploadedMedia(){try{const r=await fetch('/api/media?catalogue-covers=3');if(!r.ok)throw new Error('Media service unavailable');const data=await r.json();uploadedMedia=(Array.isArray(data.items)?data.items:[]).sort((a,b)=>String(a.category||'').localeCompare(String(b.category||''))||mediaTitle(a).localeCompare(mediaTitle(b)));applyCategoryVisuals();renderMedia()}catch(e){applyCategoryVisuals();liveStatus.textContent='Unable to load media right now';mediaGrid.innerHTML='<div class="empty-media">Uploaded product media could not be loaded. Please try again shortly.</div>'}}
 document.querySelectorAll('.media-filter').forEach(link=>link.addEventListener('click',()=>{const card=link.closest('.card');activeCategory=card?card.dataset.category:'all';activeType=link.dataset.type||'all';document.querySelectorAll('.filter-btn').forEach(b=>b.classList.toggle('active',b.dataset.filterType===activeType));renderMedia()}));
 document.querySelectorAll('.filter-btn').forEach(btn=>btn.addEventListener('click',()=>{activeCategory='all';activeType=btn.dataset.filterType||'all';document.querySelectorAll('.filter-btn').forEach(b=>b.classList.toggle('active',b===btn));renderMedia()}));
 applyCategoryVisuals();
