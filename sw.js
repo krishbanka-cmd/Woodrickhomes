@@ -1,4 +1,4 @@
-const CACHE = 'woodrick-app-v2';
+const CACHE = 'woodrick-app-v3-catalogue-covers';
 const APP_SHELL = ['/', '/manifest.webmanifest', '/app-icon.svg', '/offline.html'];
 
 self.addEventListener('install', (event) => {
@@ -19,6 +19,20 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== location.origin) return;
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/admin-products') || url.pathname.startsWith('/admin-login') || url.pathname.startsWith('/admin-logout')) return;
+
+  if (url.pathname.startsWith('/catalogue-covers/')) {
+    event.respondWith(
+      caches.open(CACHE).then(async (cache) => {
+        const cached = await cache.match(request);
+        const fresh = fetch(request).then((response) => {
+          if (response.ok) cache.put(request, response.clone());
+          return response;
+        });
+        return cached || fresh;
+      })
+    );
+    return;
+  }
 
   if (request.mode === 'navigate') {
     event.respondWith(

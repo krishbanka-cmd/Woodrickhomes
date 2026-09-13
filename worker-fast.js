@@ -21,9 +21,23 @@ async function indexedMedia(env){
   }});
 }
 
+async function cachedCatalogueCover(request,env){
+  if(!env.ASSETS||typeof env.ASSETS.fetch!=='function')return null;
+  const response=await env.ASSETS.fetch(request);
+  if(!response.ok)return response;
+  const headers=new Headers(response.headers);
+  headers.set('cache-control','public, max-age=604800, s-maxage=2592000, stale-while-revalidate=604800');
+  headers.set('x-content-type-options','nosniff');
+  return new Response(response.body,{status:response.status,statusText:response.statusText,headers});
+}
+
 export default{
   async fetch(request,env,ctx){
     const url=new URL(request.url);
+    if(request.method==='GET'&&url.pathname.startsWith('/catalogue-covers/')){
+      const response=await cachedCatalogueCover(request,env);
+      if(response)return response;
+    }
     if(isPublicMediaList(request,url)){
       try{const response=await indexedMedia(env);if(response)return response}catch{}
     }

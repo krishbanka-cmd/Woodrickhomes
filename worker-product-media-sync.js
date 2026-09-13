@@ -2,7 +2,7 @@ import app from './worker-admin-layout-polish.js';
 
 export const PUBLIC_MEDIA_INDEX_KEY='_config/public-media-index-v1.json';
 const FAST_COVER_BY_KEY={
-  'kitchen/pdf/woodrick-kitchen-catalogue.pdf':'/catalogue-covers/kitchen.webp',
+  'kitchen/pdf/woodrick-kitchen-catalogue.pdf':'/catalogue-covers/kitchen.webp?v=20260913-2',
   'hardware/pdf/godrej-lock-price-list.pdf':'/catalogue-covers/godrej.webp',
   'hardware/pdf/ipsa-catalogue-and-price-list.pdf':'/catalogue-covers/ipsa.webp',
   'door-skin/rainbow/rainbow-door-skin/pdf/1788237489087-rainbow-door-skin.pdf':'/catalogue-covers/rainbow.webp',
@@ -11,9 +11,9 @@ const FAST_COVER_BY_KEY={
   'product-sync/laminates/ristal/ristal.pdf':'/catalogue-covers/ristal-08.webp',
   'product-sync/laminates/mwud/mwud.pdf':'/catalogue-covers/mwud.webp',
   'product-sync/laminates/woodline/woodline.pdf':'/catalogue-covers/woodline-08.webp',
-  'product-sync/doors/woodline/woodline-door-skin.pdf':'/catalogue-covers/woodline-door.webp',
-  'product-sync/acrylic-laminates/woodline/woodline-acrylic.pdf':'/catalogue-covers/woodline-acrylic.webp',
-  'product-sync/louvers/woodline-louvers/woodline-louvers-8x5.pdf':'/catalogue-covers/woodline-louvers-8x5.webp',
+  'product-sync/doors/woodline/woodline-door-skin.pdf':'/catalogue-covers/woodline-door.webp?v=20260913-2',
+  'product-sync/acrylic-laminates/woodline/woodline-acrylic.pdf':'/catalogue-covers/woodline-acrylic.webp?v=20260913-2',
+  'product-sync/louvers/woodline-louvers/woodline-louvers-8x5.pdf':'/catalogue-covers/woodline-louvers-8x5.webp?v=20260913-2',
   'product-sync/laminates/ristal/ristal-solid-colour.pdf':'/catalogue-covers/ristal-solid.webp'
 };
 
