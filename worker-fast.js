@@ -14,7 +14,15 @@ async function indexedMedia(env){
   if(!env.PRODUCT_MEDIA)return null;
   const index=await env.PRODUCT_MEDIA.get(PUBLIC_MEDIA_INDEX_KEY);
   if(!index)return null;
-  return new Response(index.body,{headers:{
+  // Never serve an accidentally empty/corrupt fast index to customers.  Falling
+  // through makes the canonical R2 listing rebuild the response instead.
+  let body;
+  try{
+    body=await index.text();
+    const data=JSON.parse(body);
+    if(!Array.isArray(data.items)||data.items.length===0)return null;
+  }catch{return null}
+  return new Response(body,{headers:{
     'content-type':'application/json; charset=utf-8',
     'cache-control':'public, max-age=60, s-maxage=300, stale-while-revalidate=600',
     'x-woodrick-media-index':'fast-v1'
