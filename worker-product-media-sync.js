@@ -83,7 +83,7 @@ export async function syncAndClean(env){
 
 async function publicMediaList(env){
   const objects=await listCustomerMedia(env),items=[];
-  for(const o of objects){const m=o.customMetadata||{},title=String(m.title||'').trim();if(/\s+page\s*\d+\s*$/i.test(title))continue;const category=canonicalCategory(m.category||''),brand=m.brand||brandOf(o),catalogue=m.catalogue||catalogueOf(o),coverQuery=new URLSearchParams({source:String(m.sourceKey||''),brand,category,catalogue});items.push({key:o.key,size:o.size,uploaded:o.uploaded,url:`/api/media?key=${encodeURIComponent(o.key)}`,...m,category,brand,catalogue,coverUrl:FAST_COVER_BY_KEY[o.key]||('/api/catalogue-cover?'+coverQuery.toString())})}
+  for(const o of objects){const m=o.customMetadata||{},title=String(m.title||'').trim();if(/\s+page\s*\d+\s*$/i.test(title))continue;const category=canonicalCategory(m.category||''),brand=m.brand||brandOf(o),catalogue=m.catalogue||catalogueOf(o),source=String(m.sourceKey||''),coverQuery=new URLSearchParams({source,brand,category,catalogue}),dynamicCover=source.startsWith('library/')?('/api/catalogue-cover?'+coverQuery.toString()):'';items.push({key:o.key,size:o.size,uploaded:o.uploaded,url:`/api/media?key=${encodeURIComponent(o.key)}`,...m,category,brand,catalogue,coverUrl:FAST_COVER_BY_KEY[o.key]||dynamicCover})}
   items.sort((a,b)=>String(b.syncedAt||b.uploadedAt||b.uploaded||'').localeCompare(String(a.syncedAt||a.uploadedAt||a.uploaded||'')));
   const response=json({items,total:items.length,truncated:false,cursor:null,mode:'library-canonical-product-media-v2-fast-preview'});
   response.headers.set('cache-control','public, max-age=30, s-maxage=120, stale-while-revalidate=300');
