@@ -1,5 +1,16 @@
 import app from './worker-admin-layout-polish.js';
 
+export const PUBLIC_MEDIA_INDEX_KEY='_config/public-media-index-v1.json';
+const FAST_COVER_BY_KEY={
+  'product-sync/laminates/ristal/ristal.pdf':'/catalogue-covers/ristal-08.webp',
+  'product-sync/laminates/mwud/mwud.pdf':'/catalogue-covers/mwud.webp',
+  'product-sync/laminates/woodline/woodline.pdf':'/catalogue-covers/woodline-08.webp',
+  'product-sync/doors/woodline/woodline-door-skin.pdf':'/catalogue-covers/woodline-door.webp',
+  'product-sync/acrylic-laminates/woodline/woodline-acrylic.pdf':'/catalogue-covers/woodline-acrylic.webp',
+  'product-sync/louvers/woodline-louvers/woodline-louvers-8x5.pdf':'/catalogue-covers/woodline-louvers-8x5.webp',
+  'product-sync/laminates/ristal/ristal-solid-colour.pdf':'/catalogue-covers/ristal-solid.webp'
+};
+
 function json(data,status=200){return new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store, no-cache, must-revalidate, max-age=0'}})}
 function norm(v=''){return String(v||'').trim().toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ')}
 function slug(v=''){return String(v||'').toLowerCase().trim().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,80)||'item'}
@@ -72,11 +83,17 @@ export async function syncAndClean(env){
 
 async function publicMediaList(env){
   const objects=await listCustomerMedia(env),items=[];
-  for(const o of objects){const m=o.customMetadata||{},title=String(m.title||'').trim();if(/\s+page\s*\d+\s*$/i.test(title))continue;const category=canonicalCategory(m.category||''),brand=m.brand||brandOf(o),catalogue=m.catalogue||catalogueOf(o),coverQuery=new URLSearchParams({source:String(m.sourceKey||''),brand,category,catalogue});items.push({key:o.key,size:o.size,uploaded:o.uploaded,url:`/api/media?key=${encodeURIComponent(o.key)}`,...m,category,brand,catalogue,coverUrl:'/api/catalogue-cover?'+coverQuery.toString()})}
+  for(const o of objects){const m=o.customMetadata||{},title=String(m.title||'').trim();if(/\s+page\s*\d+\s*$/i.test(title))continue;const category=canonicalCategory(m.category||''),brand=m.brand||brandOf(o),catalogue=m.catalogue||catalogueOf(o),coverQuery=new URLSearchParams({source:String(m.sourceKey||''),brand,category,catalogue});items.push({key:o.key,size:o.size,uploaded:o.uploaded,url:`/api/media?key=${encodeURIComponent(o.key)}`,...m,category,brand,catalogue,coverUrl:FAST_COVER_BY_KEY[o.key]||('/api/catalogue-cover?'+coverQuery.toString())})}
   items.sort((a,b)=>String(b.syncedAt||b.uploadedAt||b.uploaded||'').localeCompare(String(a.syncedAt||a.uploadedAt||a.uploaded||'')));
   const response=json({items,total:items.length,truncated:false,cursor:null,mode:'library-canonical-product-media-v2-fast-preview'});
   response.headers.set('cache-control','public, max-age=30, s-maxage=120, stale-while-revalidate=300');
   return response;
+}
+
+export async function refreshPublicMediaIndex(env){
+  const response=await publicMediaList(env),body=await response.text();
+  await env.PRODUCT_MEDIA.put(PUBLIC_MEDIA_INDEX_KEY,body,{httpMetadata:{contentType:'application/json'},customMetadata:{updatedAt:new Date().toISOString(),mode:'fast-public-media-index-v1'}});
+  return body;
 }
 
 async function catalogueCover(request,env){
@@ -100,6 +117,6 @@ export default{async fetch(request,env,ctx){
     if(ct.includes('multipart/form-data')){try{const f=await request.clone().formData();libraryOriginal=String(f.get('library')||'')==='1'&&String(f.get('type')||'')==='original-pdf'}catch{}}
   }
   const response=await app.fetch(request,env,ctx);
-  if(libraryOriginal&&response.ok){try{await syncAndClean(env)}catch{}}
+  if(libraryOriginal&&response.ok){try{await syncAndClean(env);await refreshPublicMediaIndex(env)}catch{}}
   return response;
 }};
