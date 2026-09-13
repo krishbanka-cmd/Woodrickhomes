@@ -18,12 +18,25 @@ async function suggestDesigns(request,env){
   if(!await authorized(request,env))return json({error:'Admin login required'},401);
   if(!env.OPENAI_API_KEY)return json({error:'AI design detection is not configured.'},503);
   let body={};try{body=await request.json()}catch{return json({error:'Invalid request'},400)}
+  const targetDesignNo=String(body.targetDesignNo||'').trim().toUpperCase();if(targetDesignNo&&!/^[A-Z0-9._-]{2,40}$/.test(targetDesignNo))return json({error:'Invalid target Design No.'},400);
   const sourceKey=String(body.sourceKey||'');if(!sourceKey.startsWith('library/')||!sourceKey.includes('/jpg/')||sourceKey.includes('..'))return json({error:'Choose a valid catalogue page.'},400);
   const object=await env.PRODUCT_MEDIA.get(sourceKey);if(!object)return json({error:'Catalogue page was not found.'},404);
   if(String((object.customMetadata||{}).type||'')!=='jpg-page')return json({error:'Selected file is not a catalogue page.'},400);
   const buffer=await object.arrayBuffer();if(!buffer.byteLength||buffer.byteLength>10*1024*1024)return json({error:'Catalogue page is too large for AI detection.'},413);
   const contentType=(object.httpMetadata&&object.httpMetadata.contentType)||'image/jpeg',dataUrl=`data:${contentType};base64,${toBase64(buffer)}`;
-  const prompt=`You are extracting sellable building-material swatches from one catalogue page.
+  const prompt=targetDesignNo?`You are performing a second-pass precision crop for exactly one building-material SKU: ${targetDesignNo}.
+Find the clearly printed label ${targetDesignNo}, identify only the single material swatch paired with that exact label, and return exactly one result.
+
+STRICT RULES:
+1. The rectangle must be INSIDE that material surface boundary and contain only its texture.
+2. Never include an adjacent swatch, a second design, the surrounding presentation card, black/white/gold frame, margin, label, logo, QR code, shadow or room/application photo.
+3. If two swatches share one card, return only the swatch belonging to ${targetDesignNo}; never box the combined card.
+4. If the pairing or exact inner boundary is uncertain, return no result. Never guess.
+5. Set assetType exactly to "material-swatch" and confidence >= 0.9 only when the target and its single inner boundary are both clear.
+
+Coordinates x,y,w,h are fractions from 0 to 1 from the full image top-left. Return ONLY JSON:
+{"designs":[{"designNo":"${targetDesignNo}","assetType":"material-swatch","confidence":0.95,"x":0.1,"y":0.2,"w":0.3,"h":0.4}]}
+If an exact single swatch is not clear, return {"designs":[]}.`:`You are extracting sellable building-material swatches from one catalogue page.
 Return only a physical material sample/laminate swatch that can stand alone as an ecommerce or mood-board product image.
 
 STRICT RULES:
@@ -41,8 +54,8 @@ If no exact standalone swatch is clear, return {"designs":[]}.`;
   let api;try{api=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{authorization:`Bearer ${env.OPENAI_API_KEY}`,'content-type':'application/json'},body:JSON.stringify({model:'gpt-4.1',messages:[{role:'user',content:[{type:'text',text:prompt},{type:'image_url',image_url:{url:dataUrl,detail:'high'}}]}],temperature:0,max_tokens:1600,response_format:{type:'json_object'}})})}catch{return json({error:'AI detection could not connect. Please retry.'},502)}
   const response=await api.json().catch(()=>({}));if(!api.ok)return json({error:(response.error&&response.error.message)||'AI detection failed.'},502);
   let parsed={};try{parsed=JSON.parse(response.choices&&response.choices[0]&&response.choices[0].message&&response.choices[0].message.content||'{}')}catch{return json({error:'AI returned an unreadable result. Please retry.'},502)}
-  const seen=new Set(),designs=(Array.isArray(parsed.designs)?parsed.designs:[]).map(x=>({designNo:String(x&&x.designNo||'').trim().toUpperCase(),assetType:String(x&&x.assetType||'').trim().toLowerCase(),confidence:Number(x&&x.confidence),x:Number(x&&x.x),y:Number(x&&x.y),w:Number(x&&x.w),h:Number(x&&x.h)})).filter(x=>{const id=x.designNo.replace(/[^A-Z0-9]/g,'');if(x.assetType!=='material-swatch'||x.confidence<.82||/[\/,&+]/.test(x.designNo)||id.length<2||id.length>40||!/[0-9]/.test(id)||seen.has(id)||![x.x,x.y,x.w,x.h].every(Number.isFinite)||x.x<0||x.y<0||x.w<.015||x.h<.015||x.x+x.w>1.001||x.y+x.h>1.001)return false;seen.add(id);return true}).slice(0,24);
-  return json({ok:true,sourceKey,designs,mode:'ai-suggestions-require-admin-review'});
+  const seen=new Set(),designs=(Array.isArray(parsed.designs)?parsed.designs:[]).map(x=>({designNo:String(x&&x.designNo||'').trim().toUpperCase(),assetType:String(x&&x.assetType||'').trim().toLowerCase(),confidence:Number(x&&x.confidence),x:Number(x&&x.x),y:Number(x&&x.y),w:Number(x&&x.w),h:Number(x&&x.h)})).filter(x=>{const id=x.designNo.replace(/[^A-Z0-9]/g,'');if(x.assetType!=='material-swatch'||x.confidence<(targetDesignNo?0.9:0.82)||(targetDesignNo&&x.designNo!==targetDesignNo)||/[\/,&+]/.test(x.designNo)||id.length<2||id.length>40||!/[0-9]/.test(id)||seen.has(id)||![x.x,x.y,x.w,x.h].every(Number.isFinite)||x.x<0||x.y<0||x.w<.015||x.h<.015||x.x+x.w>1.001||x.y+x.h>1.001)return false;seen.add(id);return true}).slice(0,targetDesignNo?1:24);
+  return json({ok:true,sourceKey,targetDesignNo:targetDesignNo||null,designs,mode:targetDesignNo?'ai-exact-sku-second-pass':'ai-page-discovery'});
 }
 
 async function listPilot(request,env){
