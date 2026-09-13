@@ -14,7 +14,10 @@ const FAST_COVER_BY_KEY={
   'product-sync/doors/woodline/woodline-door-skin.pdf':'/catalogue-covers/woodline-door.webp?v=20260913-2',
   'product-sync/acrylic-laminates/woodline/woodline-acrylic.pdf':'/catalogue-covers/woodline-acrylic.webp?v=20260913-2',
   'product-sync/louvers/woodline-louvers/woodline-louvers-8x5.pdf':'/catalogue-covers/woodline-louvers-8x5.webp?v=20260913-2',
-  'product-sync/laminates/ristal/ristal-solid-colour.pdf':'/catalogue-covers/ristal-solid.webp'
+  'product-sync/laminates/ristal/ristal-solid-colour.pdf':'/catalogue-covers/ristal-solid.webp',
+  'shuttering-plywood/image/1787752234100-woodrick-25-kg-mr.pdf':'/catalogue-covers/woodrick-25-kg-mr.webp?v=20260913-3',
+  'louvers/image/1787636958432-woodline-led-louvers.pdf':'/catalogue-covers/woodline-led-louvers.webp?v=20260913-3',
+  'louvers/image/1787636923292-woodline-louvers-9-5x6.pdf':'/catalogue-covers/woodline-louvers-9-5x6.webp?v=20260913-3'
 };
 
 function json(data,status=200){return new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store, no-cache, must-revalidate, max-age=0'}})}
