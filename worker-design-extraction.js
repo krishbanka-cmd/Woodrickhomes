@@ -9,19 +9,45 @@ async function authorized(request,env){if(!env.ADMIN_UPLOAD_TOKEN)return false;c
 function passwordOk(request,env){return !!env.ADMIN_UPLOAD_TOKEN&&(request.headers.get('authorization')||'')===`Bearer ${env.ADMIN_UPLOAD_TOKEN}`}
 function safeNumber(v){const n=Number(v);return Number.isFinite(n)&&n>=0&&n<=1?n:null}
 function rootFor(brand,category,catalogue){return `library/${slug(brand)}/${slug(category)}/${slug(catalogue)}`}
+function extractedRootFor(brand,category,catalogue){return `library/${slug(brand)}/${slug(category)}/${slug(catalogue)}-extracted`}
 function item(o){const m=o.customMetadata||{};return{key:o.key,size:o.size,uploaded:o.uploaded,url:`/api/media?raw=1&key=${encodeURIComponent(o.key)}`,...m}}
+function toBase64(buffer){const bytes=new Uint8Array(buffer);let out='';for(let i=0;i<bytes.length;i+=0x8000)out+=String.fromCharCode(...bytes.subarray(i,Math.min(i+0x8000,bytes.length)));return btoa(out)}
+
+async function suggestDesigns(request,env){
+  if(!env.PRODUCT_MEDIA)return json({error:'Media storage is unavailable'},500);
+  if(!await authorized(request,env))return json({error:'Admin login required'},401);
+  if(!env.OPENAI_API_KEY)return json({error:'AI design detection is not configured.'},503);
+  let body={};try{body=await request.json()}catch{return json({error:'Invalid request'},400)}
+  const sourceKey=String(body.sourceKey||'');if(!sourceKey.startsWith('library/')||!sourceKey.includes('/jpg/')||sourceKey.includes('..'))return json({error:'Choose a valid catalogue page.'},400);
+  const object=await env.PRODUCT_MEDIA.get(sourceKey);if(!object)return json({error:'Catalogue page was not found.'},404);
+  if(String((object.customMetadata||{}).type||'')!=='jpg-page')return json({error:'Selected file is not a catalogue page.'},400);
+  const buffer=await object.arrayBuffer();if(!buffer.byteLength||buffer.byteLength>10*1024*1024)return json({error:'Catalogue page is too large for AI detection.'},413);
+  const contentType=(object.httpMetadata&&object.httpMetadata.contentType)||'image/jpeg',dataUrl=`data:${contentType};base64,${toBase64(buffer)}`;
+  const prompt='Inspect this building-material catalogue page. Detect every separate product design/swatches that should become its own mood-board image. For each one, copy its clearly printed Design No./SKU exactly and return a tight rectangle around the visual design (include the swatch or application image, exclude other designs). Coordinates x,y,w,h are fractions from 0 to 1 measured from the full image top-left. Never invent a SKU. Skip decorative photos or designs whose SKU cannot be read. Return ONLY JSON: {"designs":[{"designNo":"FL-405","x":0.1,"y":0.2,"w":0.3,"h":0.4}]}. If none are clear, return {"designs":[]}.';
+  let api;try{api=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{authorization:`Bearer ${env.OPENAI_API_KEY}`,'content-type':'application/json'},body:JSON.stringify({model:'gpt-4.1-mini',messages:[{role:'user',content:[{type:'text',text:prompt},{type:'image_url',image_url:{url:dataUrl,detail:'high'}}]}],temperature:0,max_tokens:1200,response_format:{type:'json_object'}})})}catch{return json({error:'AI detection could not connect. Please retry.'},502)}
+  const response=await api.json().catch(()=>({}));if(!api.ok)return json({error:(response.error&&response.error.message)||'AI detection failed.'},502);
+  let parsed={};try{parsed=JSON.parse(response.choices&&response.choices[0]&&response.choices[0].message&&response.choices[0].message.content||'{}')}catch{return json({error:'AI returned an unreadable result. Please retry.'},502)}
+  const seen=new Set(),designs=(Array.isArray(parsed.designs)?parsed.designs:[]).map(x=>({designNo:String(x&&x.designNo||'').trim().toUpperCase(),x:Number(x&&x.x),y:Number(x&&x.y),w:Number(x&&x.w),h:Number(x&&x.h)})).filter(x=>{const id=x.designNo.replace(/[^A-Z0-9]/g,'');if(id.length<2||id.length>40||!/[0-9]/.test(id)||seen.has(id)||![x.x,x.y,x.w,x.h].every(Number.isFinite)||x.x<0||x.y<0||x.w<.015||x.h<.015||x.x+x.w>1.001||x.y+x.h>1.001)return false;seen.add(id);return true}).slice(0,24);
+  return json({ok:true,sourceKey,designs,mode:'ai-suggestions-require-admin-review'});
+}
 
 async function listPilot(request,env){
   if(!env.PRODUCT_MEDIA)return json({error:'Media storage is unavailable'},500);
   if(!await authorized(request,env))return json({error:'Admin login required'},401);
-  const q=new URL(request.url).searchParams,brand=String(q.get('brand')||'Woodline').trim(),category=String(q.get('category')||'Acrylic Laminates').trim(),catalogue=String(q.get('catalogue')||'Woodline Acrylic').trim(),root=rootFor(brand,category,catalogue);
+  const q=new URL(request.url).searchParams;
+  if(q.get('mode')==='folders'){
+    const groups=new Map;let cursor;
+    for(let loop=0;loop<200;loop++){const options={prefix:'library/',limit:1000,include:['customMetadata']};if(cursor)options.cursor=cursor;const listed=await env.PRODUCT_MEDIA.list(options);for(const o of listed.objects||[]){const m=o.customMetadata||{};if(m.type!=='jpg-page')continue;const brand=String(m.brand||''),category=String(m.category||''),catalogue=String(m.catalogue||m.title||'');if(!brand||!category||!catalogue)continue;const id=[brand,category,catalogue].join('|').toLowerCase(),g=groups.get(id)||{brand,category,catalogue,pageCount:0,folder:rootFor(brand,category,catalogue),extractedFolder:extractedRootFor(brand,category,catalogue)};g.pageCount++;groups.set(id,g)}if(!listed.truncated||!listed.cursor)break;cursor=listed.cursor}
+    const folders=[...groups.values()].sort((a,b)=>a.brand.localeCompare(b.brand)||a.category.localeCompare(b.category)||a.catalogue.localeCompare(b.catalogue));return json({ok:true,folders});
+  }
+  const brand=String(q.get('brand')||'Woodline').trim(),category=String(q.get('category')||'Acrylic Laminates').trim(),catalogue=String(q.get('catalogue')||'Woodline Acrylic').trim(),root=rootFor(brand,category,catalogue),extractedRoot=extractedRootFor(brand,category,catalogue);
   const [pages,designs]=await Promise.all([
     env.PRODUCT_MEDIA.list({prefix:root+'/jpg/',limit:1000,include:['customMetadata','httpMetadata']}),
-    env.PRODUCT_MEDIA.list({prefix:root+'/designs/',limit:1000,include:['customMetadata','httpMetadata']})
+    env.PRODUCT_MEDIA.list({prefix:extractedRoot+'/designs/',limit:1000,include:['customMetadata','httpMetadata']})
   ]);
   const pageItems=(pages.objects||[]).map(item).filter(x=>x.type==='jpg-page').sort((a,b)=>Number(a.page||0)-Number(b.page||0));
   const designItems=(designs.objects||[]).map(item).filter(x=>x.type==='individual-design').sort((a,b)=>Number(a.page||0)-Number(b.page||0)||String(a.designNo||'').localeCompare(String(b.designNo||'')));
-  return json({ok:true,brand,category,catalogue,pages:pageItems,designs:designItems});
+  return json({ok:true,brand,category,catalogue,folder:root,extractedFolder:extractedRoot,pages:pageItems,designs:designItems});
 }
 
 async function saveDesign(request,env){
@@ -33,11 +59,11 @@ async function saveDesign(request,env){
   if(!file||typeof file.arrayBuffer!=='function'||!['image/webp','image/jpeg','image/png'].includes(file.type))return json({error:'A cropped JPG, PNG or WebP image is required.'},415);
   if(file.size>8*1024*1024)return json({error:'Design crop is too large.'},413);
   if(!brand||!category||!catalogue||!designNo||!page||!sourceKey||Object.values(coords).some(v=>v===null)||coords.w<=0||coords.h<=0)return json({error:'Catalogue, page, crop area and Design No. are required.'},400);
-  const root=rootFor(brand,category,catalogue);if(!sourceKey.startsWith(root+'/jpg/')||sourceKey.includes('..'))return json({error:'Invalid source catalogue page.'},400);
-  const ext=file.type==='image/png'?'png':file.type==='image/jpeg'?'jpg':'webp',key=`${root}/designs/${slug(designNo)}.${ext}`;
-  const meta={library:'1',type:'individual-design',brand,category,catalogue,title:designNo,designNo,page,sourceKey,approved:approved?'1':'0',x:String(coords.x),y:String(coords.y),w:String(coords.w),h:String(coords.h),updatedAt:new Date().toISOString(),originalName:file.name||`${designNo}.${ext}`};
+  const root=rootFor(brand,category,catalogue),extractedRoot=extractedRootFor(brand,category,catalogue);if(!sourceKey.startsWith(root+'/jpg/')||sourceKey.includes('..'))return json({error:'Invalid source catalogue page.'},400);
+  const ext=file.type==='image/png'?'png':file.type==='image/jpeg'?'jpg':'webp',key=`${extractedRoot}/designs/${slug(designNo)}.${ext}`;
+  const meta={library:'1',type:'individual-design',brand,category,catalogue,title:designNo,designNo,page,sourceKey,sourceFolder:root,extractedFolder:extractedRoot,approved:approved?'1':'0',x:String(coords.x),y:String(coords.y),w:String(coords.w),h:String(coords.h),updatedAt:new Date().toISOString(),originalName:file.name||`${designNo}.${ext}`};
   await env.PRODUCT_MEDIA.put(key,await file.arrayBuffer(),{httpMetadata:{contentType:file.type},customMetadata:meta});
-  if(previousKey&&previousKey!==key&&previousKey.startsWith(root+'/designs/')&&!previousKey.includes('..'))await env.PRODUCT_MEDIA.delete(previousKey);
+  if(previousKey&&previousKey!==key&&previousKey.startsWith(extractedRoot+'/designs/')&&!previousKey.includes('..'))await env.PRODUCT_MEDIA.delete(previousKey);
   return json({ok:true,key,url:`/api/media?raw=1&key=${encodeURIComponent(key)}`,...meta},201);
 }
 
@@ -77,6 +103,7 @@ export default{async fetch(request,env,ctx){
     if(request.method==='DELETE')return deleteDesign(request,env);
     return json({error:'Method not allowed'},405);
   }
+  if(request.method==='POST'&&url.pathname==='/api/admin-design-suggest')return suggestDesigns(request,env);
   let response=await app.fetch(request,env,ctx);
   if(request.method==='GET'&&url.pathname==='/api/media'&&String(url.searchParams.get('prefix')||'').startsWith('library/'))response=await exposeApprovedDesignsToMoodBoard(request,response);
   if(request.method==='GET'&&(url.pathname==='/admin-products/'||url.pathname==='/admin-products'||url.pathname==='/admin-products/index.html')&&(response.headers.get('content-type')||'').includes('text/html')){const html=addAdminLink(await response.text()),h=new Headers(response.headers);h.delete('content-length');return new Response(html,{status:response.status,statusText:response.statusText,headers:h})}

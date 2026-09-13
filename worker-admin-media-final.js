@@ -63,7 +63,7 @@ async function moveLibraryCatalogue(env,sourceKey,category,brand,catalogue){
     let newKey;
     if(type==='original-pdf')newKey=`${newRoot}/original/${slug(catalogue)}.pdf`;
     else if(type==='jpg-page')newKey=`${newRoot}/jpg/page-${String(page||'1').padStart(3,'0')}.jpg`;
-    else if(type==='individual-design')newKey=`${newRoot}/designs/${o.key.split('/').pop()}`;
+    else if(type==='individual-design')newKey=`${newRoot}-extracted/designs/${o.key.split('/').pop()}`;
     else newKey=`${newRoot}/${slug(type||'file')}/${o.key.split('/').pop()}`;
     const meta={...m,category,brand,catalogue,title:type==='jpg-page'?`${catalogue} page ${page||'1'}`:catalogue,editedAt:new Date().toISOString()};
     await env.PRODUCT_MEDIA.put(newKey,obj.body,{httpMetadata:o.httpMetadata||obj.httpMetadata,customMetadata:meta});
