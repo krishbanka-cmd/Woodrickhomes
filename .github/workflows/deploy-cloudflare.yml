@@ -10,6 +10,7 @@ on:
       - 'index.html'
       - 'woodrick-library.html'
       - 'woodrick-library-admin.html'
+      - 'admin-design-extraction.html'
       - 'admin-products/**'
       - 'catalogues/**'
       - 'products/**'
