@@ -49,7 +49,7 @@ async function libraryMedia(request,env){
   if(!prefix.startsWith('library/'))return app.fetch(request,env);
   try{
     const objects=await listAll(env,'');const items=objects.map(recoverItem).filter(Boolean).sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));
-    return json({items,truncated:false,cursor:null,total:items.length,mode:'library-recovery-v2'});
+    const response=json({items,truncated:false,cursor:null,total:items.length,mode:'library-recovery-v3-fast'});response.headers.set('cache-control','public, max-age=30, s-maxage=120, stale-while-revalidate=300');return response;
   }catch(err){return json({error:'Library media listing failed',detail:String(err&&err.message||err)},500)}
 }
 

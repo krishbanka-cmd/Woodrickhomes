@@ -105,7 +105,7 @@ async function handleMedia(request,env){
       }
       const headers=new Headers();obj.writeHttpMetadata(headers);headers.set('etag',obj.httpEtag);
       const responseType=(obj.httpMetadata&&obj.httpMetadata.contentType)||'';
-      headers.set('cache-control',responseType.startsWith('image/')?'no-store':'public, max-age=3600');
+      headers.set('cache-control',responseType.startsWith('image/')?'public, max-age=86400, stale-while-revalidate=604800':'public, max-age=3600');
       if(url.searchParams.get('download')==='1'){const name=(obj.customMetadata&&obj.customMetadata.originalName)||key.split('/').pop()||'download';headers.set('content-disposition',`attachment; filename="${String(name).replace(/"/g,'')}"`);}
       return new Response(obj.body,{headers});
     }
@@ -113,7 +113,7 @@ async function handleMedia(request,env){
     if(prefix==='library/'){
       const [modern,all]=await Promise.all([env.PRODUCT_MEDIA.list({limit:500,prefix:'library/',include:['customMetadata','httpMetadata']}),env.PRODUCT_MEDIA.list({limit:500,include:['customMetadata','httpMetadata']})]);
       const byKey=new Map();for(const o of modern.objects)byKey.set(o.key,mediaItem(o));for(const o of all.objects){let item=mediaItem(o);if(isLegacyLibraryItem(item)){item=normalizeLegacyLibraryItem(item);byKey.set(item.key,item);}}
-      const items=dedupeLegacyRistal([...byKey.values()]);return json({items,truncated:false,cursor:null,legacyCompatible:true,legacyDuplicatesHidden:true});
+      const items=dedupeLegacyRistal([...byKey.values()]),response=json({items,truncated:false,cursor:null,legacyCompatible:true,legacyDuplicatesHidden:true});response.headers.set('cache-control','public, max-age=30, s-maxage=120, stale-while-revalidate=300');return response;
     }
     const listed=await env.PRODUCT_MEDIA.list({limit:500,prefix,cursor,include:['customMetadata','httpMetadata']});
     const items=listed.objects.map(mediaItem).sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));return json({items,truncated:listed.truncated,cursor:listed.cursor||null});

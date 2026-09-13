@@ -49,7 +49,7 @@ async function putSyncedPdf(env,lib){
   return key;
 }
 
-async function syncAndClean(env){
+export async function syncAndClean(env){
   if(!env.PRODUCT_MEDIA)return {synced:0,deleted:0};
   let objects=await listAll(env);const libraries=objects.filter(isLibraryPdf);let synced=0,deleted=0;
   const libIds=new Map();
@@ -74,7 +74,9 @@ async function publicMediaList(env){
   const objects=await listCustomerMedia(env),items=[];
   for(const o of objects){const m=o.customMetadata||{},title=String(m.title||'').trim();if(/\s+page\s*\d+\s*$/i.test(title))continue;const category=canonicalCategory(m.category||''),brand=m.brand||brandOf(o),catalogue=m.catalogue||catalogueOf(o),coverQuery=new URLSearchParams({source:String(m.sourceKey||''),brand,category,catalogue});items.push({key:o.key,size:o.size,uploaded:o.uploaded,url:`/api/media?key=${encodeURIComponent(o.key)}`,...m,category,brand,catalogue,coverUrl:'/api/catalogue-cover?'+coverQuery.toString()})}
   items.sort((a,b)=>String(b.syncedAt||b.uploadedAt||b.uploaded||'').localeCompare(String(a.syncedAt||a.uploadedAt||a.uploaded||'')));
-  return json({items,total:items.length,truncated:false,cursor:null,mode:'library-canonical-product-media-v1'});
+  const response=json({items,total:items.length,truncated:false,cursor:null,mode:'library-canonical-product-media-v2-fast-preview'});
+  response.headers.set('cache-control','public, max-age=30, s-maxage=120, stale-while-revalidate=300');
+  return response;
 }
 
 async function catalogueCover(request,env){
@@ -99,6 +101,5 @@ export default{async fetch(request,env,ctx){
   }
   const response=await app.fetch(request,env,ctx);
   if(libraryOriginal&&response.ok){try{await syncAndClean(env)}catch{}}
-  if(request.method==='GET'&&(url.pathname==='/products/'||url.pathname==='/products'||url.pathname==='/admin-products/'||url.pathname==='/admin-products')){ctx&&ctx.waitUntil&&ctx.waitUntil(syncAndClean(env).catch(()=>{}))}
   return response;
 }};

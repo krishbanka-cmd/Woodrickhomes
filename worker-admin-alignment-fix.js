@@ -106,7 +106,7 @@ renderMedia=function(){
   var chosen=items.filter(function(x){return n(brandOf(x))===n(selectedBrand)});mediaGrid.innerHTML='<button class="hierarchy-back" type="button" id="brandBack">← ALL '+esc(activeCategory.toUpperCase())+' BRANDS</button>'+grouped(chosen).map(card).join('')
 };
 document.addEventListener('click',function(e){var bc=e.target.closest('.brand-choice');if(bc){selectedBrand=bc.dataset.brand||'';renderMedia();return}if(e.target.closest('#brandBack')){selectedBrand='';renderMedia()}},true);
-document.addEventListener('error',function(e){var img=e.target;if(!img||!img.matches||!img.matches('img.pdf-cover[data-pdf]'))return;var frame=document.createElement('iframe');frame.className='pdf-cover';frame.loading='lazy';frame.title=img.alt||'Catalogue cover';frame.src=img.dataset.pdf+'#page=1&toolbar=0&navpanes=0&scrollbar=0&view=FitH';img.replaceWith(frame)},true);
+document.addEventListener('error',function(e){var img=e.target;if(!img||!img.matches||!img.matches('img.pdf-cover[data-pdf]'))return;var fallback=document.createElement('div');fallback.className='pdf-cover-fallback';fallback.textContent='PDF CATALOGUE';img.replaceWith(fallback)},true);
 document.querySelectorAll('.media-filter,.filter-btn').forEach(function(el){el.addEventListener('click',function(){selectedBrand=''},true)});
 setTimeout(function(){try{renderMedia()}catch(e){}},500);
 })();</script>`;
@@ -114,7 +114,7 @@ setTimeout(function(){try{renderMedia()}catch(e){}},500);
 async function filterMediaResponse(request,response){
   const type=response.headers.get('content-type')||'';if(!type.includes('application/json'))return response;
   let data;try{data=await response.clone().json()}catch{return response}if(!data||!Array.isArray(data.items))return response;
-  const admin=(request.headers.get('referer')||'').includes('/admin-products');data.items=publicItems(data.items,{dedupe:!admin});data.total=data.items.length;data.mode=admin?'admin-clean-media-v2':'customer-clean-media-v2';const h=new Headers(response.headers);h.delete('content-length');h.set('cache-control','no-store, no-cache, must-revalidate, max-age=0');return new Response(JSON.stringify(data),{status:response.status,statusText:response.statusText,headers:h})
+  const admin=(request.headers.get('referer')||'').includes('/admin-products');data.items=publicItems(data.items,{dedupe:!admin});data.total=data.items.length;data.mode=admin?'admin-clean-media-v2':'customer-clean-media-v3-fast';const h=new Headers(response.headers);h.delete('content-length');h.set('cache-control',admin?'no-store, no-cache, must-revalidate, max-age=0':'public, max-age=30, s-maxage=120, stale-while-revalidate=300');return new Response(JSON.stringify(data),{status:response.status,statusText:response.statusText,headers:h})
 }
 
 export default{async fetch(request,env,ctx){
