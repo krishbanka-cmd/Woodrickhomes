@@ -23,11 +23,25 @@ async function suggestDesigns(request,env){
   if(String((object.customMetadata||{}).type||'')!=='jpg-page')return json({error:'Selected file is not a catalogue page.'},400);
   const buffer=await object.arrayBuffer();if(!buffer.byteLength||buffer.byteLength>10*1024*1024)return json({error:'Catalogue page is too large for AI detection.'},413);
   const contentType=(object.httpMetadata&&object.httpMetadata.contentType)||'image/jpeg',dataUrl=`data:${contentType};base64,${toBase64(buffer)}`;
-  const prompt='Inspect this building-material catalogue page. Detect every separate product design/swatches that should become its own mood-board image. For each one, copy its clearly printed Design No./SKU exactly and return a tight rectangle around the visual design (include the swatch or application image, exclude other designs). Coordinates x,y,w,h are fractions from 0 to 1 measured from the full image top-left. Never invent a SKU. Skip decorative photos or designs whose SKU cannot be read. Return ONLY JSON: {"designs":[{"designNo":"FL-405","x":0.1,"y":0.2,"w":0.3,"h":0.4}]}. If none are clear, return {"designs":[]}.';
-  let api;try{api=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{authorization:`Bearer ${env.OPENAI_API_KEY}`,'content-type':'application/json'},body:JSON.stringify({model:'gpt-4.1-mini',messages:[{role:'user',content:[{type:'text',text:prompt},{type:'image_url',image_url:{url:dataUrl,detail:'high'}}]}],temperature:0,max_tokens:1200,response_format:{type:'json_object'}})})}catch{return json({error:'AI detection could not connect. Please retry.'},502)}
+  const prompt=`You are extracting sellable building-material swatches from one catalogue page.
+Return only a physical material sample/laminate swatch that can stand alone as an ecommerce or mood-board product image.
+
+STRICT RULES:
+1. Crop INSIDE the material surface boundary. The crop must contain the design texture only.
+2. Exclude every surrounding black/white/gold frame, presentation card, margin, shadow, logo, QR code, caption and SKU label.
+3. Never extract a room/application photo, cover page, decorative photo, page layout or a card containing a smaller swatch.
+4. If a presentation card contains a swatch, box only the inner material/texture rectangle—not the card.
+5. Return one clearly printed SKU per swatch. A combined reference such as FL-402/M181, two SKUs joined by /, &, + or comma, is an application reference and must be skipped.
+6. Never invent or repair an unreadable SKU. Skip uncertain items.
+7. Set assetType exactly to "material-swatch" and confidence from 0 to 1. Only use confidence >= 0.82 when both SKU and inner swatch boundary are clear.
+
+Coordinates x,y,w,h are fractions from 0 to 1 from the full image top-left. Return ONLY JSON:
+{"designs":[{"designNo":"FL-405","assetType":"material-swatch","confidence":0.95,"x":0.1,"y":0.2,"w":0.3,"h":0.4}]}
+If no exact standalone swatch is clear, return {"designs":[]}.`;
+  let api;try{api=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{authorization:`Bearer ${env.OPENAI_API_KEY}`,'content-type':'application/json'},body:JSON.stringify({model:'gpt-4.1',messages:[{role:'user',content:[{type:'text',text:prompt},{type:'image_url',image_url:{url:dataUrl,detail:'high'}}]}],temperature:0,max_tokens:1600,response_format:{type:'json_object'}})})}catch{return json({error:'AI detection could not connect. Please retry.'},502)}
   const response=await api.json().catch(()=>({}));if(!api.ok)return json({error:(response.error&&response.error.message)||'AI detection failed.'},502);
   let parsed={};try{parsed=JSON.parse(response.choices&&response.choices[0]&&response.choices[0].message&&response.choices[0].message.content||'{}')}catch{return json({error:'AI returned an unreadable result. Please retry.'},502)}
-  const seen=new Set(),designs=(Array.isArray(parsed.designs)?parsed.designs:[]).map(x=>({designNo:String(x&&x.designNo||'').trim().toUpperCase(),x:Number(x&&x.x),y:Number(x&&x.y),w:Number(x&&x.w),h:Number(x&&x.h)})).filter(x=>{const id=x.designNo.replace(/[^A-Z0-9]/g,'');if(id.length<2||id.length>40||!/[0-9]/.test(id)||seen.has(id)||![x.x,x.y,x.w,x.h].every(Number.isFinite)||x.x<0||x.y<0||x.w<.015||x.h<.015||x.x+x.w>1.001||x.y+x.h>1.001)return false;seen.add(id);return true}).slice(0,24);
+  const seen=new Set(),designs=(Array.isArray(parsed.designs)?parsed.designs:[]).map(x=>({designNo:String(x&&x.designNo||'').trim().toUpperCase(),assetType:String(x&&x.assetType||'').trim().toLowerCase(),confidence:Number(x&&x.confidence),x:Number(x&&x.x),y:Number(x&&x.y),w:Number(x&&x.w),h:Number(x&&x.h)})).filter(x=>{const id=x.designNo.replace(/[^A-Z0-9]/g,'');if(x.assetType!=='material-swatch'||x.confidence<.82||/[\/,&+]/.test(x.designNo)||id.length<2||id.length>40||!/[0-9]/.test(id)||seen.has(id)||![x.x,x.y,x.w,x.h].every(Number.isFinite)||x.x<0||x.y<0||x.w<.015||x.h<.015||x.x+x.w>1.001||x.y+x.h>1.001)return false;seen.add(id);return true}).slice(0,24);
   return json({ok:true,sourceKey,designs,mode:'ai-suggestions-require-admin-review'});
 }
 
@@ -54,14 +68,14 @@ async function saveDesign(request,env){
   if(!env.PRODUCT_MEDIA)return json({error:'Media storage is unavailable'},500);
   if(!passwordOk(request,env))return json({error:'Correct admin password is required.'},401);
   let form;try{form=await request.formData()}catch{return json({error:'Invalid design upload'},400)}
-  const file=form.get('file'),brand=String(form.get('brand')||'').trim(),category=String(form.get('category')||'').trim(),catalogue=String(form.get('catalogue')||'').trim(),designNo=String(form.get('designNo')||'').trim().toUpperCase(),page=String(form.get('page')||'').trim(),sourceKey=String(form.get('sourceKey')||'').trim(),approved=String(form.get('approved')||'')==='1',previousKey=String(form.get('previousKey')||'').trim();
+  const file=form.get('file'),brand=String(form.get('brand')||'').trim(),category=String(form.get('category')||'').trim(),catalogue=String(form.get('catalogue')||'').trim(),designNo=String(form.get('designNo')||'').trim().toUpperCase(),page=String(form.get('page')||'').trim(),sourceKey=String(form.get('sourceKey')||'').trim(),approved=String(form.get('approved')||'')==='1',previousKey=String(form.get('previousKey')||'').trim(),generatedBy=String(form.get('generatedBy')||'manual')==='ai-v2'?'ai-v2':'manual';
   const coords={x:safeNumber(form.get('x')),y:safeNumber(form.get('y')),w:safeNumber(form.get('w')),h:safeNumber(form.get('h'))};
   if(!file||typeof file.arrayBuffer!=='function'||!['image/webp','image/jpeg','image/png'].includes(file.type))return json({error:'A cropped JPG, PNG or WebP image is required.'},415);
   if(file.size>8*1024*1024)return json({error:'Design crop is too large.'},413);
   if(!brand||!category||!catalogue||!designNo||!page||!sourceKey||Object.values(coords).some(v=>v===null)||coords.w<=0||coords.h<=0)return json({error:'Catalogue, page, crop area and Design No. are required.'},400);
   const root=rootFor(brand,category,catalogue),extractedRoot=extractedRootFor(brand,category,catalogue);if(!sourceKey.startsWith(root+'/jpg/')||sourceKey.includes('..'))return json({error:'Invalid source catalogue page.'},400);
   const ext=file.type==='image/png'?'png':file.type==='image/jpeg'?'jpg':'webp',key=`${extractedRoot}/designs/${slug(designNo)}.${ext}`;
-  const meta={library:'1',type:'individual-design',brand,category,catalogue,title:designNo,designNo,page,sourceKey,sourceFolder:root,extractedFolder:extractedRoot,approved:approved?'1':'0',x:String(coords.x),y:String(coords.y),w:String(coords.w),h:String(coords.h),updatedAt:new Date().toISOString(),originalName:file.name||`${designNo}.${ext}`};
+  const meta={library:'1',type:'individual-design',brand,category,catalogue,title:designNo,designNo,page,sourceKey,sourceFolder:root,extractedFolder:extractedRoot,approved:approved?'1':'0',generatedBy,x:String(coords.x),y:String(coords.y),w:String(coords.w),h:String(coords.h),updatedAt:new Date().toISOString(),originalName:file.name||`${designNo}.${ext}`};
   await env.PRODUCT_MEDIA.put(key,await file.arrayBuffer(),{httpMetadata:{contentType:file.type},customMetadata:meta});
   if(previousKey&&previousKey!==key&&previousKey.startsWith(extractedRoot+'/designs/')&&!previousKey.includes('..'))await env.PRODUCT_MEDIA.delete(previousKey);
   return json({ok:true,key,url:`/api/media?raw=1&key=${encodeURIComponent(key)}`,...meta},201);
