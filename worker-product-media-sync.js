@@ -2,6 +2,12 @@ import app from './worker-admin-layout-polish.js';
 
 export const PUBLIC_MEDIA_INDEX_KEY='_config/public-media-index-v1.json';
 const FAST_COVER_BY_KEY={
+  'kitchen/pdf/woodrick-kitchen-catalogue.pdf':'/catalogue-covers/kitchen.webp',
+  'hardware/pdf/godrej-lock-price-list.pdf':'/catalogue-covers/godrej.webp',
+  'hardware/pdf/ipsa-catalogue-and-price-list.pdf':'/catalogue-covers/ipsa.webp',
+  'door-skin/rainbow/rainbow-door-skin/pdf/1788237489087-rainbow-door-skin.pdf':'/catalogue-covers/rainbow.webp',
+  'product-sync/laminates/ristal1mm/ristal1mm.pdf':'/catalogue-covers/ristal1mm.webp',
+  'laminates/pdf/1787751962530-ristal-slim-75mm.pdf':'/catalogue-covers/ristal-slim.webp',
   'product-sync/laminates/ristal/ristal.pdf':'/catalogue-covers/ristal-08.webp',
   'product-sync/laminates/mwud/mwud.pdf':'/catalogue-covers/mwud.webp',
   'product-sync/laminates/woodline/woodline.pdf':'/catalogue-covers/woodline-08.webp',
