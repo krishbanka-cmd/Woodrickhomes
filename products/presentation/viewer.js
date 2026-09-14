@@ -1,117 +1,91 @@
+import * as pdfjsLib from './vendor/pdf.min.mjs';
+
 (() => {
   'use strict';
-  const total = 8;
-  const stage = document.getElementById('stage');
-  const page = document.getElementById('page');
-  const status = document.getElementById('status');
-  const previous = document.getElementById('previous');
-  const next = document.getElementById('next');
-  const zoom = document.getElementById('zoom');
-  const fullscreen = document.getElementById('fullscreen');
-  const cache = new Map();
-  let current = 1, generation = 0, zoomed = false, ready = false;
-  function source(n) { return '/products/presentation/woodline-louvers-v1/page-' + n + '.webp'; }
-  function load(n) {
-    if (!cache.has(n)) {
-      const job = new Promise((resolve, reject) => {
-        const image = new Image();
-        image.onload = () => resolve(image);
-        image.onerror = () => reject(new Error('Page unavailable'));
-        image.src = source(n);
-      });
-      cache.set(n, job);
-      job.catch(() => { if (cache.get(n) === job) cache.delete(n); });
-    }
-    return cache.get(n);
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '/products/presentation/vendor/pdf.worker.min.mjs';
+  const params = new URLSearchParams(location.search);
+  const key = params.get('key') || 'product-sync/louvers/woodline-louvers/woodline-louvers-8x5.pdf';
+  const inferred = decodeURIComponent(key.split('/').pop() || 'Catalogue').replace(/\.pdf$/i, '').replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  const catalogueTitle = params.get('title') || inferred;
+  const rawUrl = '/api/media?raw=1&key=' + encodeURIComponent(key);
+  const stage = document.getElementById('stage'), canvas = document.getElementById('page');
+  const status = document.getElementById('status'), previous = document.getElementById('previous');
+  const next = document.getElementById('next'), zoom = document.getElementById('zoom');
+  const fullscreen = document.getElementById('fullscreen'), context = canvas.getContext('2d', {alpha: false});
+  let pdf = null, current = 1, generation = 0, zoomed = false;
+
+  document.title = catalogueTitle + ' | Woodrick Homes';
+  document.getElementById('title').textContent = catalogueTitle;
+  document.getElementById('download').href = '/api/media?download=1&key=' + encodeURIComponent(key);
+
+  function setStatus(message, retry = false) {
+    status.replaceChildren(document.createTextNode(message));
+    if (retry) { const button = document.createElement('button'); button.textContent = 'Retry'; button.onclick = start; status.appendChild(button); }
+    status.hidden = false;
   }
-  function fit() {
-    zoomed = false;
-    stage.classList.remove('zoomed');
-    // Size against BOTH available dimensions; percentage max-height alone
-    // can resolve against an intrinsic grid row and crop portrait pages.
-    const width = page.naturalWidth, height = page.naturalHeight;
-    if (width && height) {
-      const scale = Math.min(stage.clientWidth / width, stage.clientHeight / height);
-      page.style.width = Math.max(1, Math.floor(width * scale)) + 'px';
-      page.style.height = Math.max(1, Math.floor(height * scale)) + 'px';
-    }
-    stage.scrollTop = 0; stage.scrollLeft = 0;
-    zoom.textContent = 'Zoom in'; zoom.setAttribute('aria-pressed', 'false');
+  function controls() {
+    const total = pdf ? pdf.numPages : 0;
+    previous.disabled = !pdf || current <= 1; next.disabled = !pdf || current >= total; zoom.disabled = !pdf;
+    document.getElementById('count').textContent = pdf ? current + ' / ' + total : '– / –';
+  }
+  async function render(n, preserveZoom = false) {
+    if (!pdf) return;
+    current = Math.max(1, Math.min(pdf.numPages, n));
+    const ticket = ++generation;
+    if (!preserveZoom) zoomed = false;
+    stage.classList.toggle('zoomed', zoomed); zoom.textContent = zoomed ? 'Fit page' : 'Zoom in';
+    zoom.setAttribute('aria-pressed', String(zoomed)); controls(); setStatus('Loading page…'); canvas.hidden = true;
+    try {
+      const pdfPage = await pdf.getPage(current);
+      if (ticket !== generation) return;
+      const natural = pdfPage.getViewport({scale: 1});
+      const fitScale = Math.min(Math.max(1, stage.clientWidth - 2) / natural.width, Math.max(1, stage.clientHeight - 2) / natural.height);
+      const cssScale = fitScale * (zoomed ? 2 : 1), outputScale = Math.min(devicePixelRatio || 1, 2);
+      const viewport = pdfPage.getViewport({scale: cssScale * outputScale});
+      canvas.width = Math.max(1, Math.floor(viewport.width)); canvas.height = Math.max(1, Math.floor(viewport.height));
+      canvas.style.width = Math.max(1, Math.floor(natural.width * cssScale)) + 'px';
+      canvas.style.height = Math.max(1, Math.floor(natural.height * cssScale)) + 'px';
+      await pdfPage.render({canvasContext: context, viewport}).promise;
+      if (ticket !== generation) return;
+      canvas.hidden = false; status.hidden = true; canvas.setAttribute('aria-label', catalogueTitle + ', page ' + current);
+      if (!zoomed) { stage.scrollTop = 0; stage.scrollLeft = 0; }
+      const neighbor = current < pdf.numPages ? current + 1 : current - 1;
+      if (neighbor > 0) pdf.getPage(neighbor).catch(() => {});
+    } catch (error) { if (ticket === generation) setStatus('This page could not load. Check your connection and retry. ', true); }
+  }
+  async function start() {
+    generation++; pdf = null; current = 1; controls(); setStatus('Preparing catalogue…');
+    try { pdf = await pdfjsLib.getDocument({url: rawUrl}).promise; await render(1); }
+    catch (error) { setStatus('This catalogue could not load. Check your connection and retry. ', true); }
   }
   function toggleZoom(event) {
-    if (!ready) return;
-    if (zoomed) { fit(); return; }
-    const box = page.getBoundingClientRect();
-    const x = event && event.type === 'click' && event.currentTarget === page ? (event.clientX - box.left) / box.width : .5;
-    const y = event && event.type === 'click' && event.currentTarget === page ? (event.clientY - box.top) / box.height : .5;
-    const scale = Math.max(2, Math.min(4, stage.clientWidth / box.width));
-    page.style.width = Math.round(box.width * scale) + 'px';
-    page.style.height = Math.round(box.height * scale) + 'px';
-    zoomed = true; stage.classList.add('zoomed');
-    stage.scrollLeft = x * box.width * scale - stage.clientWidth / 2;
-    stage.scrollTop = y * box.height * scale - stage.clientHeight / 2;
-    zoom.textContent = 'Fit page'; zoom.setAttribute('aria-pressed', 'true');
+    if (!pdf) return;
+    const box = canvas.getBoundingClientRect();
+    const x = event && event.currentTarget === canvas ? (event.clientX - box.left) / box.width : .5;
+    const y = event && event.currentTarget === canvas ? (event.clientY - box.top) / box.height : .5;
+    zoomed = !zoomed;
+    render(current, true).then(() => { if (zoomed) { stage.scrollLeft = x * canvas.clientWidth - stage.clientWidth / 2; stage.scrollTop = y * canvas.clientHeight - stage.clientHeight / 2; } });
   }
-  async function show(n) {
-    current = Math.max(1, Math.min(total, n));
-    const requested = current, ticket = ++generation;
-    fit(); ready = false; zoom.disabled = true;
-    page.hidden = true; page.style.visibility = 'hidden';
-    previous.disabled = current === 1; next.disabled = current === total;
-    document.getElementById('count').textContent = current + ' / ' + total;
-    status.textContent = 'Loading page…'; status.hidden = false;
-    try {
-      await load(requested);
-      if (ticket !== generation) return;
-      page.src = source(requested);
-      if (page.decode) await page.decode();
-      if (ticket !== generation) return;
-      fit();
-      page.alt = 'Woodline Louvers, page ' + requested;
-      page.hidden = false; page.style.visibility = '';
-      status.hidden = true; ready = true; zoom.disabled = false;
-      for (const neighbor of [requested + 1, requested - 1]) {
-        if (neighbor > 0 && neighbor <= total) load(neighbor).catch(() => {});
-      }
-    } catch (error) {
-      if (ticket !== generation) return;
-      status.textContent = 'This page could not load. Check your connection and retry. ';
-      const retry = document.createElement('button'); retry.textContent = 'Retry';
-      retry.onclick = () => { cache.delete(requested); show(requested); };
-      status.appendChild(retry);
-    }
-  }
-  previous.onclick = () => show(current - 1);
-  next.onclick = () => show(current + 1);
-  zoom.onclick = toggleZoom; page.onclick = toggleZoom;
+  previous.onclick = () => render(current - 1); next.onclick = () => render(current + 1);
+  zoom.onclick = toggleZoom; canvas.onclick = toggleZoom;
   document.addEventListener('keydown', event => {
     if (event.altKey || event.ctrlKey || event.metaKey || /INPUT|TEXTAREA|SELECT/.test(event.target.tagName)) return;
-    if (event.key === 'Escape') { fit(); return; }
-    if (zoomed) return;
-    if (['ArrowRight', 'PageDown', 'ArrowLeft', 'PageUp'].includes(event.key)) {
-      event.preventDefault(); show(current + (['ArrowRight', 'PageDown'].includes(event.key) ? 1 : -1));
-    }
+    if (event.key === 'Escape' && zoomed) { toggleZoom(); return; }
+    if (!zoomed && ['ArrowRight', 'PageDown', 'ArrowLeft', 'PageUp'].includes(event.key)) { event.preventDefault(); render(current + (['ArrowRight', 'PageDown'].includes(event.key) ? 1 : -1)); }
   });
-  let start = null, suppressClick = false;
-  stage.addEventListener('pointerdown', e => { if (!zoomed && e.isPrimary) start = {x:e.clientX,y:e.clientY}; });
-  stage.addEventListener('pointerup', e => {
-    if (!start) return;
-    const dx = e.clientX-start.x, dy = e.clientY-start.y; start=null;
-    if (!zoomed && Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)*1.5) {
-      suppressClick=true; show(current+(dx<0?1:-1)); setTimeout(()=>{suppressClick=false;},400);
-    }
+  let startPoint = null, suppressClick = false;
+  stage.addEventListener('pointerdown', event => { if (!zoomed && event.isPrimary) startPoint = {x:event.clientX,y:event.clientY}; });
+  stage.addEventListener('pointerup', event => {
+    if (!startPoint) return;
+    const dx = event.clientX - startPoint.x, dy = event.clientY - startPoint.y; startPoint = null;
+    if (!zoomed && Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.5) { suppressClick = true; render(current + (dx < 0 ? 1 : -1)); setTimeout(() => { suppressClick = false; }, 400); }
   });
-  stage.addEventListener('pointercancel',()=>{start=null;});
-  stage.addEventListener('click',e=>{if(suppressClick){e.stopImmediatePropagation();e.preventDefault();suppressClick=false;}},true);
+  stage.addEventListener('pointercancel', () => { startPoint = null; });
+  stage.addEventListener('click', event => { if (suppressClick) { event.stopImmediatePropagation(); event.preventDefault(); suppressClick = false; } }, true);
   fullscreen.hidden = !document.documentElement.requestFullscreen;
-  fullscreen.onclick = async () => {
-    try { if (document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen(); }
-    catch { fullscreen.textContent='Full screen unavailable'; }
-  };
-  document.addEventListener('fullscreenchange',()=>{fullscreen.textContent=document.fullscreenElement?'Exit full screen':'Full screen';fit();});
-  window.addEventListener('resize',fit);
-  if (typeof ResizeObserver !== 'undefined') {
-    new ResizeObserver(() => { if (!zoomed) fit(); }).observe(stage);
-  }
-  show(1);
+  fullscreen.onclick = async () => { try { if (document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen(); } catch { fullscreen.textContent = 'Full screen unavailable'; } };
+  document.addEventListener('fullscreenchange', () => { fullscreen.textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen'; if (pdf) render(current); });
+  let resizeTimer;
+  window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (pdf && !zoomed) render(current); }, 120); });
+  start();
 })();

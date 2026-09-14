@@ -42,13 +42,16 @@ async function cachedCatalogueCover(request,env){
 export default{
   async fetch(request,env,ctx){
     const url=new URL(request.url);
-    // Pilot presentation: only top-level views of this catalogue use the
-    // image viewer. Fetches, extraction, downloads and other PDFs stay intact.
+    // Send every customer-opened PDF through the page-at-a-time presentation.
+    // Raw reads, downloads, thumbnails and extraction requests stay intact.
     if(request.method==='GET'&&url.pathname==='/api/media'&&
-      url.searchParams.get('key')==='product-sync/louvers/woodline-louvers/woodline-louvers-8x5.pdf'&&
+      /\.pdf$/i.test(url.searchParams.get('key')||'')&&
       url.searchParams.get('raw')!=='1'&&url.searchParams.get('download')!=='1'&&
       (request.headers.get('sec-fetch-dest')==='document'||url.searchParams.get('pdfviewer')==='1')){
-      return Response.redirect(new URL('/products/presentation/',url).href,302);
+      const target=new URL('/products/presentation/',url);
+      target.searchParams.set('key',url.searchParams.get('key'));
+      if(url.searchParams.get('title'))target.searchParams.set('title',url.searchParams.get('title'));
+      return Response.redirect(target.href,302);
     }
     if((request.method==='GET'||request.method==='HEAD')&&url.pathname.startsWith('/products/presentation/')){
       return env.ASSETS.fetch(request);
