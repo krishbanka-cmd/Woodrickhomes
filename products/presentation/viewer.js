@@ -27,7 +27,14 @@
   function fit() {
     zoomed = false;
     stage.classList.remove('zoomed');
-    page.style.width = ''; page.style.height = '';
+    // Size against BOTH available dimensions; percentage max-height alone
+    // can resolve against an intrinsic grid row and crop portrait pages.
+    const width = page.naturalWidth, height = page.naturalHeight;
+    if (width && height) {
+      const scale = Math.min(stage.clientWidth / width, stage.clientHeight / height);
+      page.style.width = Math.max(1, Math.floor(width * scale)) + 'px';
+      page.style.height = Math.max(1, Math.floor(height * scale)) + 'px';
+    }
     stage.scrollTop = 0; stage.scrollLeft = 0;
     zoom.textContent = 'Zoom in'; zoom.setAttribute('aria-pressed', 'false');
   }
@@ -59,6 +66,7 @@
       page.src = source(requested);
       if (page.decode) await page.decode();
       if (ticket !== generation) return;
+      fit();
       page.alt = 'Woodline Louvers, page ' + requested;
       page.hidden = false; page.style.visibility = '';
       status.hidden = true; ready = true; zoom.disabled = false;
@@ -102,5 +110,8 @@
   };
   document.addEventListener('fullscreenchange',()=>{fullscreen.textContent=document.fullscreenElement?'Exit full screen':'Full screen';fit();});
   window.addEventListener('resize',fit);
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(() => { if (!zoomed) fit(); }).observe(stage);
+  }
   show(1);
 })();
