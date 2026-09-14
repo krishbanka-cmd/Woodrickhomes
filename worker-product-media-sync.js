@@ -106,8 +106,8 @@ export async function refreshPublicMediaIndex(env){
 }
 
 async function catalogueCover(request,env){
-  if(!env.PRODUCT_MEDIA)return new Response('Not found',{status:404});const q=new URL(request.url).searchParams,source=String(q.get('source')||''),brand=String(q.get('brand')||''),category=canonicalCategory(q.get('category')||''),catalogue=String(q.get('catalogue')||''),roots=[];
-  if(source.includes('/original/'))roots.push(source.split('/original/')[0]);if(brand&&category&&catalogue)roots.push(`library/${slug(brand)}/${slug(category)}/${slug(catalogue)}`);
+  if(!env.PRODUCT_MEDIA)return new Response('Not found',{status:404});const q=new URL(request.url).searchParams,source=String(q.get('source')||''),brand=String(q.get('brand')||''),rawCategory=String(q.get('category')||''),category=canonicalCategory(rawCategory),catalogue=String(q.get('catalogue')||''),roots=[];
+  if(source.includes('/original/'))roots.push(source.split('/original/')[0]);if(brand&&rawCategory&&catalogue)roots.push(`library/${slug(brand)}/${slug(rawCategory)}/${slug(catalogue)}`);if(brand&&category&&catalogue)roots.push(`library/${slug(brand)}/${slug(category)}/${slug(catalogue)}`);
   for(const root of [...new Set(roots)]){const listed=await env.PRODUCT_MEDIA.list({prefix:root+'/jpg/',limit:1,include:['httpMetadata']});const first=listed.objects&&listed.objects[0];if(!first)continue;const object=await env.PRODUCT_MEDIA.get(first.key);if(!object)continue;const headers=new Headers();object.writeHttpMetadata(headers);headers.set('cache-control','public, max-age=86400, stale-while-revalidate=604800');return new Response(object.body,{headers})}
   return new Response('Not found',{status:404,headers:{'cache-control':'public, max-age=300'}});
 }
