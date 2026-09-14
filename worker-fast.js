@@ -21,6 +21,16 @@ async function indexedMedia(env){
     body=await index.text();
     const data=JSON.parse(body);
     if(!Array.isArray(data.items)||data.items.length===0)return null;
+    let changed=false;
+    data.items=data.items.map(item=>{
+      const source=String(item&&item.sourceKey||'');
+      if(!source.startsWith('library/'))return item;
+      const query=new URLSearchParams({source,brand:String(item.brand||''),category:String(item.category||''),catalogue:String(item.catalogue||item.title||'')});
+      const coverUrl='/api/catalogue-cover?'+query.toString();
+      if(item.coverUrl===coverUrl)return item;
+      changed=true;return{...item,coverUrl};
+    });
+    if(changed)body=JSON.stringify(data);
   }catch{return null}
   return new Response(body,{headers:{
     'content-type':'application/json; charset=utf-8',
