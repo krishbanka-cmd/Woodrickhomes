@@ -118,7 +118,7 @@ renderMedia=function(){
 document.addEventListener('click',function(e){var bc=e.target.closest('.brand-choice');if(bc){var next=bc.dataset.brand||'';if(next&&n(next)!==n(selectedBrand)){selectedBrand=next;setBrandUrl(selectedBrand,'pushState');renderMedia()}return}if(e.target.closest('#brandBack')){if(new URLSearchParams(location.search).get('brand'))history.back();else{selectedBrand='';setBrandUrl('','replaceState');renderMedia()}}},true);
 window.addEventListener('popstate',function(){var p=new URLSearchParams(location.search);selectedBrand=p.get('brand')||'';activeCategory=p.get('category')||'all';renderMedia()});
 document.addEventListener('error',function(e){var img=e.target;if(!img||!img.matches||!img.matches('img.pdf-cover[data-pdf]'))return;var retry=img.dataset.coverFallback;if(retry){delete img.dataset.coverFallback;if(img.getAttribute('src')!==retry){img.src=retry;return}}var fallback=document.createElement('div');fallback.className='pdf-cover-fallback';fallback.textContent='PDF CATALOGUE';img.replaceWith(fallback)},true);
-document.querySelectorAll('.media-filter,.filter-btn').forEach(function(el){el.addEventListener('click',function(){selectedBrand='';setBrandUrl('','replaceState')},true)});
+document.querySelectorAll('.media-filter,.filter-btn').forEach(function(el){el.addEventListener('click',function(){selectedBrand='';setTimeout(function(){setBrandUrl('','replaceState')},0)},true)});
 ensureHierarchyHistory();setTimeout(function(){try{renderMedia()}catch(e){}},500);
 })();</script>`;
 
