@@ -85,7 +85,15 @@ export default{
     if(isPublicMediaList(request,url)){
       try{const response=await indexedMedia(env);if(response)return response}catch{}
     }
-    return app.fetch(request,env,ctx);
+    let response=await app.fetch(request,env,ctx);
+    if(request.method==='GET'&&(url.pathname==='/catalogues/'||url.pathname==='/catalogues'||url.pathname==='/catalogues/index.html')&&(response.headers.get('content-type')||'').includes('text/html')){
+      let html=await response.text();
+      const fix=`<script id="woodrick-catalogue-link-guard-v1">(function(){function repair(){document.querySelectorAll('#grid .card').forEach(function(card){var view=card.querySelector('.actions a.primary'),download=card.querySelector('.actions a[href*="download=1"]');if(!view||!download)return;try{var source=new URL(download.href,location.href),key=source.searchParams.get('key');if(!key)return;var title=((card.querySelector('h2')||{}).textContent||'Catalogue').trim(),target=new URL('/api/media',location.origin);target.searchParams.set('pdfviewer','1');target.searchParams.set('key',key);target.searchParams.set('title',title);target.searchParams.set('return','/catalogues/');view.href=target.pathname+target.search;view.target='_self';view.dataset.pdfGuard='1'}catch(e){}})}var grid=document.getElementById('grid');if(grid)new MutationObserver(repair).observe(grid,{childList:true,subtree:true});repair()})();</script>`;
+      if(!html.includes('woodrick-catalogue-link-guard-v1'))html=html.replace('</body>',fix+'\\n</body>');
+      const headers=new Headers(response.headers);headers.delete('content-length');headers.set('cache-control','no-store, no-cache, must-revalidate, max-age=0');headers.set('x-woodrick-catalogue-links','pdf-guard-v1');
+      response=new Response(html,{status:response.status,statusText:response.statusText,headers});
+    }
+    return response;
   },
   async scheduled(controller,env,ctx){
     ctx.waitUntil(Promise.all([
