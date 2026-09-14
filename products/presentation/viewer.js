@@ -19,7 +19,8 @@ import * as pdfjsLib from './vendor/pdf.min.mjs';
   const inferred = decodeURIComponent(key.split('/').pop() || 'Catalogue').replace(/\.pdf$/i, '').replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   const catalogueTitle = params.get('title') || inferred;
   const rawUrl = '/api/media?raw=1&key=' + encodeURIComponent(key);
-  const returnPath = params.get('return') || '/products/#media';
+  let rememberedReturn = ''; try { rememberedReturn = sessionStorage.getItem('woodrickCatalogueReturn') || ''; } catch {}
+  const returnPath = params.get('return') || rememberedReturn || '/products/#media';
   const safeReturn = returnPath.startsWith('/products/') || returnPath.startsWith('/products?') || returnPath.startsWith('/products#') ? returnPath : '/products/#media';
   document.getElementById('back').href = safeReturn;
   const stage = document.getElementById('stage'), canvas = document.getElementById('page');
