@@ -2,7 +2,18 @@ import * as pdfjsLib from './vendor/pdf.min.mjs';
 
 (() => {
   'use strict';
-  pdfjsLib.GlobalWorkerOptions.workerSrc = '/products/presentation/vendor/pdf.worker.min.mjs';
+  const workerReady = Promise.all([
+    '/products/presentation/vendor/pdf.worker.part-1.js',
+    '/products/presentation/vendor/pdf.worker.part-2.js',
+    '/products/presentation/vendor/pdf.worker.part-3.js',
+    '/products/presentation/vendor/pdf.worker.part-4.js'
+  ].map(async url => {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('PDF engine unavailable');
+    return response.text();
+  })).then(parts => {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob(parts, {type: 'text/javascript'}));
+  });
   const params = new URLSearchParams(location.search);
   const key = params.get('key') || 'product-sync/louvers/woodline-louvers/woodline-louvers-8x5.pdf';
   const inferred = decodeURIComponent(key.split('/').pop() || 'Catalogue').replace(/\.pdf$/i, '').replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -55,8 +66,8 @@ import * as pdfjsLib from './vendor/pdf.min.mjs';
   }
   async function start() {
     generation++; pdf = null; current = 1; controls(); setStatus('Preparing catalogue…');
-    try { pdf = await pdfjsLib.getDocument({url: rawUrl}).promise; await render(1); }
-    catch (error) { setStatus('This catalogue could not load. Check your connection and retry. ', true); }
+    try { await workerReady; pdf = await pdfjsLib.getDocument({url: rawUrl}).promise; await render(1); }
+    catch (error) { console.error('Catalogue load failed:', error); setStatus('This catalogue could not load. Check your connection and retry. ', true); }
   }
   function toggleZoom(event) {
     if (!pdf) return;
