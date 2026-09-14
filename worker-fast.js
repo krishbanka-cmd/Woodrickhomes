@@ -42,6 +42,27 @@ async function cachedCatalogueCover(request,env){
 export default{
   async fetch(request,env,ctx){
     const url=new URL(request.url);
+    // A catalogue thumbnail/page must never become a dead-end raw image.
+    // For top-level navigation only, resolve its parent original PDF and open
+    // the proper presentation viewer. Normal <img> thumbnail requests stay raw.
+    if(request.method==='GET'&&url.pathname==='/api/media'&&
+      url.searchParams.get('raw')==='1'&&
+      /^library\/.+\/jpg\/.+\.(?:jpe?g|png|webp)$/i.test(url.searchParams.get('key')||'')&&
+      request.headers.get('sec-fetch-dest')==='document'&&env.PRODUCT_MEDIA){
+      try{
+        const pageKey=url.searchParams.get('key'),root=pageKey.split('/jpg/')[0];
+        const listed=await env.PRODUCT_MEDIA.list({prefix:root+'/original/',limit:20,include:['customMetadata']});
+        const original=(listed.objects||[]).find(o=>/\.pdf$/i.test(o.key)||String((o.customMetadata||{}).type||'')==='original-pdf');
+        if(original){
+          const meta=original.customMetadata||{},target=new URL('/products/presentation/',url);
+          target.searchParams.set('key',original.key);
+          target.searchParams.set('title',meta.catalogue||meta.title||'Catalogue');
+          const referer=request.headers.get('referer')||'';
+          try{const back=new URL(referer);if(back.origin===url.origin&&(back.pathname.startsWith('/products')||back.pathname.startsWith('/woodrick-library')))target.searchParams.set('return',back.pathname+back.search+back.hash)}catch{}
+          return Response.redirect(target.href,302);
+        }
+      }catch{}
+    }
     // Send every customer-opened PDF through the page-at-a-time presentation.
     // Raw reads, downloads, thumbnails and extraction requests stay intact.
     if(request.method==='GET'&&url.pathname==='/api/media'&&
