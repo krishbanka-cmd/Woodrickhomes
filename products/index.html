@@ -115,6 +115,7 @@ document.querySelectorAll('.media-filter').forEach(link=>link.addEventListener('
 document.querySelectorAll('.filter-btn').forEach(btn=>btn.addEventListener('click',()=>{activeCategory='all';activeType=btn.dataset.filterType||'all';document.querySelectorAll('.filter-btn').forEach(b=>b.classList.toggle('active',b===btn));renderMedia()}));
 applyCategoryVisuals();
 enableCategoryCards();
+document.addEventListener('click',event=>{const link=event.target.closest('a.open-media[href*="/api/media"]');if(link)try{sessionStorage.setItem('woodrickCatalogueReturn',location.pathname+location.search+'#media')}catch(e){}},true);
 loadUploadedMedia();
 </script>
 <script>
