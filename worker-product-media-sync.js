@@ -92,7 +92,7 @@ export async function syncAndClean(env){
 
 async function publicMediaList(env){
   const objects=await listCustomerMedia(env),items=[];
-  for(const o of objects){const m=o.customMetadata||{},title=String(m.title||'').trim();if(/\s+page\s*\d+\s*$/i.test(title))continue;const category=canonicalCategory(m.category||''),brand=m.brand||brandOf(o),catalogue=m.catalogue||catalogueOf(o),source=String(m.sourceKey||''),coverQuery=new URLSearchParams({source,brand,category,catalogue}),dynamicCover='/api/catalogue-cover?'+coverQuery.toString();items.push({key:o.key,size:o.size,uploaded:o.uploaded,url:`/api/media?key=${encodeURIComponent(o.key)}`,...m,category,brand,catalogue,coverUrl:FAST_COVER_BY_KEY[o.key]||dynamicCover})}
+  for(const o of objects){const m=o.customMetadata||{},title=String(m.title||'').trim();if(/\s+page\s*\d+\s*$/i.test(title))continue;const category=canonicalCategory(m.category||''),brand=m.brand||brandOf(o),catalogue=m.catalogue||catalogueOf(o),source=String(m.sourceKey||''),coverQuery=new URLSearchParams({source,brand,category,catalogue}),dynamicCover=source.startsWith('library/')?('/api/catalogue-cover?'+coverQuery.toString()):'';items.push({key:o.key,size:o.size,uploaded:o.uploaded,url:`/api/media?key=${encodeURIComponent(o.key)}`,...m,category,brand,catalogue,coverUrl:FAST_COVER_BY_KEY[o.key]||dynamicCover})}
   items.sort((a,b)=>String(b.syncedAt||b.uploadedAt||b.uploaded||'').localeCompare(String(a.syncedAt||a.uploadedAt||a.uploaded||'')));
   const response=json({items,total:items.length,truncated:false,cursor:null,mode:'library-canonical-product-media-v2-fast-preview'});
   response.headers.set('cache-control','public, max-age=30, s-maxage=120, stale-while-revalidate=300');
@@ -106,8 +106,8 @@ export async function refreshPublicMediaIndex(env){
 }
 
 async function catalogueCover(request,env){
-  if(!env.PRODUCT_MEDIA)return new Response('Not found',{status:404});const q=new URL(request.url).searchParams,source=String(q.get('source')||''),brand=String(q.get('brand')||''),rawCategory=String(q.get('category')||''),category=canonicalCategory(rawCategory),catalogue=String(q.get('catalogue')||''),roots=[];
-  if(source.includes('/original/'))roots.push(source.split('/original/')[0]);if(brand&&rawCategory&&catalogue)roots.push(`library/${slug(brand)}/${slug(rawCategory)}/${slug(catalogue)}`);if(brand&&category&&catalogue)roots.push(`library/${slug(brand)}/${slug(category)}/${slug(catalogue)}`);
+  if(!env.PRODUCT_MEDIA)return new Response('Not found',{status:404});const q=new URL(request.url).searchParams,source=String(q.get('source')||''),brand=String(q.get('brand')||''),category=canonicalCategory(q.get('category')||''),catalogue=String(q.get('catalogue')||''),roots=[];
+  if(source.includes('/original/'))roots.push(source.split('/original/')[0]);if(brand&&category&&catalogue)roots.push(`library/${slug(brand)}/${slug(category)}/${slug(catalogue)}`);
   for(const root of [...new Set(roots)]){const listed=await env.PRODUCT_MEDIA.list({prefix:root+'/jpg/',limit:1,include:['httpMetadata']});const first=listed.objects&&listed.objects[0];if(!first)continue;const object=await env.PRODUCT_MEDIA.get(first.key);if(!object)continue;const headers=new Headers();object.writeHttpMetadata(headers);headers.set('cache-control','public, max-age=86400, stale-while-revalidate=604800');return new Response(object.body,{headers})}
   return new Response('Not found',{status:404,headers:{'cache-control':'public, max-age=300'}});
 }

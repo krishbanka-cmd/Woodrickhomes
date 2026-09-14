@@ -50,7 +50,7 @@ export default{
       (request.headers.get('sec-fetch-dest')==='document'||url.searchParams.get('pdfviewer')==='1')){
       const target=new URL('/products/presentation/',url);
       target.searchParams.set('key',url.searchParams.get('key'));
-      if(url.searchParams.get('title'))target.searchParams.set('title',url.searchParams.get('title'));if(url.searchParams.get('return'))target.searchParams.set('return',url.searchParams.get('return'));
+      if(url.searchParams.get('title'))target.searchParams.set('title',url.searchParams.get('title'));
       return Response.redirect(target.href,302);
     }
     if((request.method==='GET'||request.method==='HEAD')&&url.pathname.startsWith('/products/presentation/')){
