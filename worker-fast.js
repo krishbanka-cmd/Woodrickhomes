@@ -72,6 +72,7 @@ export default{
       const target=new URL('/products/presentation/',url);
       target.searchParams.set('key',url.searchParams.get('key'));
       if(url.searchParams.get('title'))target.searchParams.set('title',url.searchParams.get('title'));
+      if(url.searchParams.get('return'))target.searchParams.set('return',url.searchParams.get('return'));else{const referer=request.headers.get('referer')||'';try{const back=new URL(referer);if(back.origin===url.origin&&(back.pathname.startsWith('/products')||back.pathname.startsWith('/woodrick-library')))target.searchParams.set('return',back.pathname+back.search+back.hash)}catch{}}
       return Response.redirect(target.href,302);
     }
     if((request.method==='GET'||request.method==='HEAD')&&url.pathname.startsWith('/products/presentation/')){
