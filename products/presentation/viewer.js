@@ -15,7 +15,7 @@ import * as pdfjsLib from './vendor/pdf.min.mjs';
     pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob(parts, {type: 'text/javascript'}));
   });
   const params = new URLSearchParams(location.search);
-  const key = params.get('key') || 'product-sync/louvers/woodline-louvers/woodline-louvers-8x5.pdf';
+  const key = params.get('key') || '';
   const inferred = decodeURIComponent(key.split('/').pop() || 'Catalogue').replace(/\.pdf$/i, '').replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   const catalogueTitle = params.get('title') || inferred;
   const rawUrl = '/api/media?raw=1&key=' + encodeURIComponent(key);
@@ -23,6 +23,15 @@ import * as pdfjsLib from './vendor/pdf.min.mjs';
   const status = document.getElementById('status'), previous = document.getElementById('previous');
   const next = document.getElementById('next'), zoom = document.getElementById('zoom');
   const fullscreen = document.getElementById('fullscreen'), context = canvas.getContext('2d', {alpha: false});
+  if (!key) {
+    document.title = 'Choose a Catalogue | Woodrick Homes';
+    document.getElementById('title').textContent = 'Choose a Catalogue';
+    document.getElementById('download').hidden = true;
+    canvas.hidden = true; previous.disabled = true; next.disabled = true; zoom.disabled = true; fullscreen.hidden = true;
+    status.hidden = false; status.textContent = 'No catalogue was selected. Use Back to choose one from the catalogue library.';
+    document.getElementById('count').textContent = '– / –';
+    return;
+  }
   let pdf = null, current = 1, generation = 0, zoomed = false;
 
   document.title = catalogueTitle + ' | Woodrick Homes';
