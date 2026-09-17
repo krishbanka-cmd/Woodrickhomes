@@ -113,7 +113,16 @@ export default{
       return Response.redirect(target.href,302);
     }
     if((request.method==='GET'||request.method==='HEAD')&&url.pathname.startsWith('/products/presentation/')){
-      return env.ASSETS.fetch(request);
+      const asset=await env.ASSETS.fetch(request);
+      const headers=new Headers(asset.headers);
+      headers.set('cache-control','no-store, no-cache, must-revalidate, max-age=0');
+      headers.set('pragma','no-cache');
+      headers.set('expires','0');
+      if(request.method==='HEAD'||!(headers.get('content-type')||'').includes('text/html'))return new Response(asset.body,{status:asset.status,statusText:asset.statusText,headers});
+      let html=await asset.text();
+      html=html.replace('id="catalogueBack" href="/products/#media"','id="catalogueBack" href="/catalogues/"');
+      headers.delete('content-length');
+      return new Response(html,{status:asset.status,statusText:asset.statusText,headers});
     }
     if(request.method==='GET'&&url.pathname.startsWith('/catalogue-covers/')){
       const response=await cachedCatalogueCover(request,env);
