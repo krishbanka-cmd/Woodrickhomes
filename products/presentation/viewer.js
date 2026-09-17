@@ -66,8 +66,15 @@ import * as pdfjsLib from './vendor/pdf.min.mjs';
   }
   async function start() {
     generation++; pdf = null; current = 1; controls(); setStatus('Preparing catalogue…');
-    try { await workerReady; pdf = await pdfjsLib.getDocument({url: rawUrl}).promise; await render(1); }
-    catch (error) { console.error('Catalogue load failed:', error); setStatus('This catalogue could not load. Check your connection and retry. ', true); }
+    const ticket=generation;
+    const slowTimer=setTimeout(()=>{if(ticket===generation&&!pdf)setStatus('Opening the first page… Large catalogues may take a few moments.');},5000);
+    try {
+      await workerReady;
+      const task=pdfjsLib.getDocument({url:rawUrl,rangeChunkSize:262144,disableAutoFetch:true,disableStream:false});
+      task.onProgress=progress=>{if(ticket!==generation||pdf||!progress||!progress.total)return;const percent=Math.min(99,Math.round(progress.loaded/progress.total*100));setStatus('Preparing catalogue… '+percent+'%');};
+      pdf=await task.promise;clearTimeout(slowTimer);await render(1);
+    }
+    catch (error) { clearTimeout(slowTimer);console.error('Catalogue load failed:', error); setStatus('This catalogue could not load. Check your connection and retry. ', true); }
   }
   function toggleZoom(event) {
     if (!pdf) return;
