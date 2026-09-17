@@ -94,8 +94,7 @@ export default{
           const meta=original.customMetadata||{},target=new URL('/products/presentation/',url);
           target.searchParams.set('key',original.key);
           target.searchParams.set('title',meta.catalogue||meta.title||'Catalogue');
-          const referer=request.headers.get('referer')||'';
-          try{const back=new URL(referer);if(back.origin===url.origin&&(back.pathname.startsWith('/products')||back.pathname.startsWith('/woodrick-library')))target.searchParams.set('return',back.pathname+back.search+back.hash)}catch{}
+          target.searchParams.set('return','/catalogues/');
           return Response.redirect(target.href,302);
         }
       }catch{}
@@ -109,7 +108,7 @@ export default{
       const target=new URL('/products/presentation/',url);
       target.searchParams.set('key',url.searchParams.get('key'));
       if(url.searchParams.get('title'))target.searchParams.set('title',url.searchParams.get('title'));
-      if(url.searchParams.get('return'))target.searchParams.set('return',url.searchParams.get('return'));else{const referer=request.headers.get('referer')||'';try{const back=new URL(referer);if(back.origin===url.origin&&(back.pathname.startsWith('/products')||back.pathname.startsWith('/woodrick-library')))target.searchParams.set('return',back.pathname+back.search+back.hash)}catch{}}
+      target.searchParams.set('return','/catalogues/');
       return Response.redirect(target.href,302);
     }
     if((request.method==='GET'||request.method==='HEAD')&&url.pathname.startsWith('/products/presentation/')){
@@ -120,7 +119,9 @@ export default{
       headers.set('expires','0');
       if(request.method==='HEAD'||!(headers.get('content-type')||'').includes('text/html'))return new Response(asset.body,{status:asset.status,statusText:asset.statusText,headers});
       let html=await asset.text();
-      html=html.replace('id="catalogueBack" href="/products/#media"','id="catalogueBack" href="/catalogues/"');
+      html=html.replace(/id="catalogueBack" href="[^"]*"/,'id="catalogueBack" href="/catalogues/"');
+      const fixedBack='<script id="woodrick-fixed-catalogue-back">(function(){var b=document.getElementById("catalogueBack");if(!b)return;b.href="/catalogues/";b.addEventListener("click",function(e){e.preventDefault();location.href="/catalogues/";});})();<\\/script>';
+      if(!html.includes('woodrick-fixed-catalogue-back'))html=html.replace('</body>',fixedBack+'\\n</body>');
       headers.delete('content-length');
       return new Response(html,{status:asset.status,statusText:asset.statusText,headers});
     }
