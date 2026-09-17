@@ -49,9 +49,36 @@ async function cachedCatalogueCover(request,env){
   return new Response(response.body,{status:response.status,statusText:response.statusText,headers});
 }
 
+async function rangedPdf(request,url,env){
+  if(!env.PRODUCT_MEDIA)return null;
+  const key=url.searchParams.get('key')||'';
+  if(url.pathname!=='/api/media'||url.searchParams.get('raw')!=='1'||!/\.pdf$/i.test(key))return null;
+  const head=await env.PRODUCT_MEDIA.head(key);
+  if(!head)return new Response('Not found',{status:404});
+  const headers=new Headers();head.writeHttpMetadata(headers);headers.set('etag',head.httpEtag);headers.set('accept-ranges','bytes');headers.set('cache-control','public, max-age=86400, stale-while-revalidate=604800');headers.set('x-content-type-options','nosniff');
+  const range=request.headers.get('range');
+  if(request.method==='HEAD'){headers.set('content-length',String(head.size));return new Response(null,{status:200,headers})}
+  if(range){
+    const match=/^bytes=(\d+)-(\d*)$/i.exec(range.trim());
+    if(!match)return new Response('Invalid range',{status:416,headers:{'content-range':`bytes */${head.size}`}});
+    const start=Number(match[1]),requestedEnd=match[2]?Number(match[2]):Math.min(start+262143,head.size-1),end=Math.min(requestedEnd,head.size-1);
+    if(!Number.isFinite(start)||start<0||start>=head.size||end<start)return new Response('Range not satisfiable',{status:416,headers:{'content-range':`bytes */${head.size}`}});
+    const object=await env.PRODUCT_MEDIA.get(key,{range:{offset:start,length:end-start+1}});
+    if(!object)return new Response('Not found',{status:404});
+    headers.set('content-range',`bytes ${start}-${end}/${head.size}`);headers.set('content-length',String(end-start+1));
+    return new Response(object.body,{status:206,headers});
+  }
+  const object=await env.PRODUCT_MEDIA.get(key);
+  if(!object)return new Response('Not found',{status:404});
+  headers.set('content-length',String(head.size));return new Response(object.body,{status:200,headers});
+}
+
 export default{
   async fetch(request,env,ctx){
     const url=new URL(request.url);
+    if((request.method==='GET'||request.method==='HEAD')){
+      const pdf=await rangedPdf(request,url,env);if(pdf)return pdf;
+    }
     // A catalogue thumbnail/page must never become a dead-end raw image.
     // For top-level navigation only, resolve its parent original PDF and open
     // the proper presentation viewer. Normal <img> thumbnail requests stay raw.
