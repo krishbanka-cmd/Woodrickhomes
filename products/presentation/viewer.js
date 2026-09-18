@@ -19,7 +19,7 @@ import * as pdfjsLib from './vendor/pdf.min.mjs';
   const inferred = decodeURIComponent(key.split('/').pop() || 'Catalogue').replace(/\.pdf$/i, '').replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   const catalogueTitle = params.get('title') || inferred;
   const rawUrl = '/api/media?raw=1&key=' + encodeURIComponent(key);
-  const stage = document.getElementById('stage'), canvas = document.getElementById('page');
+  const stage = document.getElementById('stage'), frame = document.getElementById('pageFrame'), canvas = document.getElementById('page');
   const status = document.getElementById('status'), previous = document.getElementById('previous');
   const next = document.getElementById('next'), zoom = document.getElementById('zoom');
   const fullscreen = document.getElementById('fullscreen'), context = canvas.getContext('2d', {alpha: false});
@@ -32,7 +32,7 @@ import * as pdfjsLib from './vendor/pdf.min.mjs';
     document.getElementById('count').textContent = '– / –';
     return;
   }
-  let pdf = null, current = 1, generation = 0, zoomed = false;
+  let pdf = null, current = 1, generation = 0, zoomed = false, referenceAspect = 0;
 
   document.title = catalogueTitle + ' | Woodrick Homes';
   document.getElementById('title').textContent = catalogueTitle;
@@ -48,6 +48,15 @@ import * as pdfjsLib from './vendor/pdf.min.mjs';
     previous.disabled = !pdf || current <= 1; next.disabled = !pdf || current >= total; zoom.disabled = !pdf;
     document.getElementById('count').textContent = pdf ? current + ' / ' + total : '– / –';
   }
+  function sizeFrame() {
+    const aspect = referenceAspect || .75;
+    const availableWidth = Math.max(1, stage.clientWidth - 2), availableHeight = Math.max(1, stage.clientHeight - 2);
+    let width = Math.min(availableWidth, availableHeight * aspect), height = width / aspect;
+    if (height > availableHeight) { height = availableHeight; width = height * aspect; }
+    frame.style.width = Math.max(1, Math.floor(width)) + 'px';
+    frame.style.height = Math.max(1, Math.floor(height)) + 'px';
+    return {width, height};
+  }
   async function render(n, preserveZoom = false) {
     if (!pdf) return;
     current = Math.max(1, Math.min(pdf.numPages, n));
@@ -59,7 +68,9 @@ import * as pdfjsLib from './vendor/pdf.min.mjs';
       const pdfPage = await pdf.getPage(current);
       if (ticket !== generation) return;
       const natural = pdfPage.getViewport({scale: 1});
-      const fitScale = Math.min(Math.max(1, stage.clientWidth - 2) / natural.width, Math.max(1, stage.clientHeight - 2) / natural.height);
+      if (!referenceAspect) referenceAspect = natural.width / natural.height;
+      const frameSize = sizeFrame();
+      const fitScale = Math.min(frameSize.width / natural.width, frameSize.height / natural.height);
       const cssScale = fitScale * (zoomed ? 2 : 1), outputScale = Math.min(devicePixelRatio || 1, 2);
       const viewport = pdfPage.getViewport({scale: cssScale * outputScale});
       canvas.width = Math.max(1, Math.floor(viewport.width)); canvas.height = Math.max(1, Math.floor(viewport.height));
@@ -67,14 +78,14 @@ import * as pdfjsLib from './vendor/pdf.min.mjs';
       canvas.style.height = Math.max(1, Math.floor(natural.height * cssScale)) + 'px';
       await pdfPage.render({canvasContext: context, viewport}).promise;
       if (ticket !== generation) return;
-      canvas.hidden = false; status.hidden = true; canvas.setAttribute('aria-label', catalogueTitle + ', page ' + current);
+      frame.hidden = false; canvas.hidden = false; status.hidden = true; canvas.setAttribute('aria-label', catalogueTitle + ', page ' + current);
       if (!zoomed) { stage.scrollTop = 0; stage.scrollLeft = 0; }
       const neighbor = current < pdf.numPages ? current + 1 : current - 1;
       if (neighbor > 0) pdf.getPage(neighbor).catch(() => {});
     } catch (error) { if (ticket === generation) setStatus('This page could not load. Check your connection and retry. ', true); }
   }
   async function start() {
-    generation++; pdf = null; current = 1; controls(); setStatus('Preparing catalogue…');
+    generation++; pdf = null; current = 1; referenceAspect = 0; frame.hidden = true; controls(); setStatus('Preparing catalogue…');
     const ticket=generation;
     const slowTimer=setTimeout(()=>{if(ticket===generation&&!pdf)setStatus('Opening the first page… Large catalogues may take a few moments.');},5000);
     try {
