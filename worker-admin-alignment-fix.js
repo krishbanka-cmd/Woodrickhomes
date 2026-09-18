@@ -80,6 +80,36 @@ var root=document.getElementById('mediaList');if(root)new MutationObserver(addDe
 const productHierarchy=`
 <style id="woodrick-product-hierarchy-v2">
 .brand-choice{cursor:pointer}.brand-choice .media-preview{background:linear-gradient(135deg,#0c0c0c,#242018);color:#f0c96b;font-family:Georgia,serif;font-size:34px;font-weight:700;text-align:center;padding:0}.brand-choice .media-title{margin-bottom:4px}.hierarchy-back{display:inline-flex;margin:0 0 18px;padding:10px 14px;border:1px solid #f0c96b;background:#171717;color:#f0c96b;font-size:11px;font-weight:900;cursor:pointer}.catalogue-media-label{font-size:10px;color:#aaa;margin-top:6px}.pdf-cover{width:100%;height:100%;object-fit:contain!important;background:#f4f1eb}.pdf-cover-fallback{width:100%;height:100%;display:grid;place-items:center;background:linear-gradient(135deg,#171717,#30291d);color:#f0c96b;font:700 28px Georgia,serif}.media-preview{position:relative}.media-preview img{object-fit:contain!important;background:#f4f1eb}.cover-title{display:none!important}.media-title{line-height:1.25!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:break-word!important;word-break:normal!important;min-height:2.5em}
+
+/* Shared presentation for product categories, brands and catalogue folders. */
+#categories .card-top{background:#fff;color:#211b16;border-bottom:1px solid #ded4c3}
+#categories .card-top p{color:#6a665f}
+#categories .card-visual:after{display:none}
+#categories .enquire{background:#f6f1e8;color:#684a23;border-color:#d8c9b1}
+#media .live-grid{align-items:stretch}
+#media .media-card{display:flex;flex-direction:column;background:#fff;border-color:#ded4c3}
+#media .media-preview,#media .brand-choice .media-preview{
+  position:relative;display:flex;align-items:center;justify-content:center;
+  height:280px;min-height:280px;max-height:280px;flex:0 0 280px;
+  aspect-ratio:auto;padding:16px;overflow:hidden;background:#f2eee7;color:#684a23;
+  border-bottom:1px solid #ded4c3
+}
+#media .media-preview img,#media .media-preview img.pdf-preview,
+#media .media-preview img.pdf-cover,#media .media-preview video{
+  display:block;width:100%!important;height:100%!important;
+  max-width:100%!important;max-height:100%!important;min-width:0;min-height:0;
+  object-fit:contain!important;object-position:center;background:transparent
+}
+#media .pdf-cover-fallback{background:#f2eee7;color:#684a23;font:700 18px Arial,sans-serif}
+#media .media-info{display:flex;flex:1;flex-direction:column;padding:18px}
+#media .media-category{color:#805d2d;min-height:2.6em;line-height:1.3}
+#media .media-title{color:#211b16}
+#media .catalogue-media-label{color:#6a665f}
+#media .media-actions{margin-top:auto!important;padding-top:12px}
+#media .hierarchy-back{grid-column:1/-1;background:#fff;color:#684a23;border-color:#cdbb9a;justify-self:start;align-self:start}
+@media(max-width:620px){
+ #media .media-preview,#media .brand-choice .media-preview{height:260px;min-height:260px;max-height:260px;flex-basis:260px}
+}
 </style>
 <script id="woodrick-product-hierarchy-script-v2">(function(){
 var selectedBrand='';
