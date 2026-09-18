@@ -15,9 +15,17 @@ on:
       - 'catalogues/**'
       - 'products/**'
       - 'voice-design-assistant.html'
+      - 'design-requirements-confirmed.html'
+      - 'design-your-space.html'
+      - 'ai-auto-select.html'
+      - 'material-placement.html'
       - 'auto-layout.html'
       - 'auto-layout-result.html'
       - '3d-design-preview.html'
+      - 'manifest.webmanifest'
+      - 'offline.html'
+      - 'sw.js'
+      - 'functions/**'
       - '.github/workflows/deploy-cloudflare.yml'
   workflow_dispatch:
 
