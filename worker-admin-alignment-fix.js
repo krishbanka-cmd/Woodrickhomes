@@ -103,7 +103,11 @@ const productHierarchy=`
   box-shadow:0 6px 18px rgba(70,49,24,.18)
 }
 #media .media-preview img.pdf-cover{
-  object-fit:cover!important;object-position:center;padding:0!important
+  object-fit:cover!important;object-position:center;padding:0!important;
+  background:transparent!important;transform:scale(1.035);transform-origin:center
+}
+#media .media-preview img.pdf-cover.spread-cover{
+  object-fit:contain!important;transform:scale(1.02)
 }
 #media .media-preview video{
   display:block;width:100%!important;height:100%!important;
@@ -128,58 +132,41 @@ function n(v){return String(v||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim
 function brandOf(x){return String(x.brand||'Other').trim()||'Other'}
 function catalogueOf(x){if(typeof mediaTitle==='function')return mediaTitle(x);var value=String(x.catalogue||x.title||x.originalName||'Catalogue').replace(/\\.[a-z0-9]{2,5}$/i,'').replace(/\\s+page\\s*\\d+\\s*$/i,'').trim()||'Catalogue';return n(value)==='ris'?'Ristal':value}
 function typeLabel(t){return t==='pdf'?'PDF':t==='video'?'VIDEO':'PHOTO'}
-function smartFitPdfCover(img){
-  if(!img||img.dataset.smartFit==='done'||!img.complete||!img.naturalWidth||!img.naturalHeight)return;
-  img.dataset.smartFit='done';
-  try{
-    var nw=img.naturalWidth,nh=img.naturalHeight,maxSide=640,scale=Math.min(1,maxSide/Math.max(nw,nh));
-    var sw=Math.max(1,Math.round(nw*scale)),sh=Math.max(1,Math.round(nh*scale));
-    var sample=document.createElement('canvas');sample.width=sw;sample.height=sh;
-    var sx=sample.getContext('2d',{willReadFrequently:true});sx.drawImage(img,0,0,sw,sh);
-    var pixels=sx.getImageData(0,0,sw,sh).data,edges=[],edgeStep=Math.max(1,Math.floor(Math.max(sw,sh)/120));
-    function edgePixel(x,y){var i=(y*sw+x)*4;if(pixels[i+3]>20)edges.push([pixels[i],pixels[i+1],pixels[i+2]])}
-    for(var ex=0;ex<sw;ex+=edgeStep){edgePixel(ex,0);edgePixel(ex,Math.min(2,sh-1));edgePixel(ex,Math.max(0,sh-3));edgePixel(ex,sh-1)}
-    for(var ey=0;ey<sh;ey+=edgeStep){edgePixel(0,ey);edgePixel(Math.min(2,sw-1),ey);edgePixel(Math.max(0,sw-3),ey);edgePixel(sw-1,ey)}
-    if(!edges.length)return;
-    function median(channel){var values=edges.map(function(v){return v[channel]}).sort(function(a,b){return a-b});return values[Math.floor(values.length/2)]}
-    var bgR=median(0),bgG=median(1),bgB=median(2),brightness=(bgR+bgG+bgB)/3,chroma=Math.max(bgR,bgG,bgB)-Math.min(bgR,bgG,bgB);
-    img.dataset.edgeTone=[bgR,bgG,bgB].join(',');
-    img.style.setProperty('background-color','rgb('+bgR+','+bgG+','+bgB+')','important');
-    /* Trim only neutral light page margins. Full-bleed coloured/dark covers stay untouched. */
-    if(brightness<185||chroma>42){img.dataset.cropSkip='edge-colour';return}
-    var rowHits=new Uint16Array(sh),colHits=new Uint16Array(sw),delta=36;
-    for(var y=0;y<sh;y++)for(var x=0;x<sw;x++){
-      var i=(y*sw+x)*4,a=pixels[i+3],difference=Math.max(Math.abs(pixels[i]-bgR),Math.abs(pixels[i+1]-bgG),Math.abs(pixels[i+2]-bgB));
-      if(a>20&&difference>delta){rowHits[y]++;colHits[x]++}
-    }
-    /* Ignore sparse peripheral marks so the real cover artwork gets the same visual weight as full-bleed covers. */
-    function percentileBounds(hits){
-      var total=0;for(var hi=0;hi<hits.length;hi++)total+=hits[hi];
-      if(!total)return[-1,-1];
-      var target=total*.025,sum=0,start=0,end=hits.length-1;
-      for(start=0;start<hits.length;start++){sum+=hits[start];if(sum>=target)break}
-      sum=0;for(end=hits.length-1;end>=0;end--){sum+=hits[end];if(sum>=target)break}
-      return[start,end]
-    }
-    var yBounds=percentileBounds(rowHits),xBounds=percentileBounds(colHits);
-    var top=yBounds[0],bottom=yBounds[1],left=xBounds[0],right=xBounds[1];
-    if(right<left||bottom<top){img.dataset.cropSkip='no-content';return}
-    var pad=Math.max(4,Math.round(Math.max(right-left+1,bottom-top+1)*.035));
-    left=Math.max(0,left-pad);top=Math.max(0,top-pad);right=Math.min(sw-1,right+pad);bottom=Math.min(sh-1,bottom+pad);
-    var cw=right-left+1,ch=bottom-top+1,area=(cw*ch)/(sw*sh);
-    img.dataset.cropCandidate=area.toFixed(3);
-    if(area>.92||cw<sw*.08||ch<sh*.08){img.dataset.cropSkip='full-page';return}
-    var ratio=1/scale,srcX=Math.max(0,Math.floor(left*ratio)),srcY=Math.max(0,Math.floor(top*ratio));
-    var srcW=Math.min(nw-srcX,Math.ceil(cw*ratio)),srcH=Math.min(nh-srcY,Math.ceil(ch*ratio));
-    var outputScale=Math.min(1,1200/Math.max(srcW,srcH)),outW=Math.max(1,Math.round(srcW*outputScale)),outH=Math.max(1,Math.round(srcH*outputScale));
-    var out=document.createElement('canvas');out.width=outW;out.height=outH;
-    var ox=out.getContext('2d');ox.fillStyle='#fff';ox.fillRect(0,0,outW,outH);ox.drawImage(img,srcX,srcY,srcW,srcH,0,0,outW,outH);
-    img.dataset.cropArea=area.toFixed(3);img.src=out.toDataURL('image/webp',.9);img.classList.add('smart-cropped-cover');
-  }catch(e){img.dataset.smartFit='skipped'}
+function fitPdfCover(img){
+  if(!img||!img.naturalWidth||!img.naturalHeight)return;
+  var ratio=img.naturalWidth/img.naturalHeight;
+  img.classList.toggle('spread-cover',ratio>=1.52);
+  img.dataset.fitMode=ratio>=1.52?'spread-safe':'edge-fill';
 }
-function fitVisiblePdfCovers(root){(root||document).querySelectorAll('img.pdf-cover').forEach(function(img){img.dataset.smartFit='edge-to-edge'})}
+function fitVisiblePdfCovers(root){(root||document).querySelectorAll('img.pdf-cover').forEach(function(img){if(img.complete)fitPdfCover(img);else img.addEventListener('load',function(){fitPdfCover(img)},{once:true})})}
+var previewCoverByCatalogue={
+  'woodline acrylic':'/catalogue-covers/woodline-acrylic.webp',
+  'rainbow door skin':'/catalogue-covers/rainbow.webp',
+  'woodline door skin':'/catalogue-covers/woodline-door.webp',
+  'godrej lock catalogue price list':'/catalogue-covers/godrej.webp',
+  'godrej lock price list':'/catalogue-covers/godrej.webp',
+  'ipsa hardware catalogue price list':'/catalogue-covers/ipsa.webp',
+  'ipsa catalogue price list':'/catalogue-covers/ipsa.webp',
+  'woodrick kitchen catalogue':'/catalogue-covers/kitchen.webp',
+  'mwud futura 0 8mm laminates':'/catalogue-covers/mwud.webp',
+  'mwud':'/catalogue-covers/mwud.webp',
+  'ristal 0 82mm premium laminates':'/catalogue-covers/ristal-08.webp',
+  'ristal':'/catalogue-covers/ristal-08.webp',
+  'ristal 1mm laminates':'/catalogue-covers/ristal1mm.webp',
+  'ristal1mm':'/catalogue-covers/ristal1mm.webp',
+  'ristal slim 0 75mm laminates':'/catalogue-covers/ristal-slim.webp',
+  'ristal slim':'/catalogue-covers/ristal-slim.webp',
+  'ristal solid colour 0 92mm':'/catalogue-covers/ristal-solid.webp',
+  'ristal solid colour':'/catalogue-covers/ristal-solid.webp',
+  'woodline 0 8mm laminates':'/catalogue-covers/woodline-08.webp',
+  'woodline':'/catalogue-covers/woodline-08.webp',
+  'woodline led louvers':'/catalogue-covers/woodline-led-louvers.webp',
+  'woodline louvers 8x5':'/catalogue-covers/woodline-louvers-8x5.webp',
+  'woodline louvers 9 5x6':'/catalogue-covers/woodline-louvers-9-5x6.webp',
+  'woodrick shuttering plywood 25 kg mr':'/catalogue-covers/woodrick-25-kg-mr.webp'
+};
 var coverFallbacks={'shuttering-plywood/image/1787752234100-woodrick-25-kg-mr.pdf':'/catalogue-covers/woodrick-25-kg-mr.webp','louvers/image/1787636958432-woodline-led-louvers.pdf':'/catalogue-covers/woodline-led-louvers.webp','louvers/image/1787636923292-woodline-louvers-9-5x6.pdf':'/catalogue-covers/woodline-louvers-9-5x6.webp'};
-function coverOf(x){var src=String(x.coverUrl||coverFallbacks[x.key]||'');return src.indexOf('/catalogue-covers/')===0?src.split('?')[0]+'?v=20260913-3':src}
+function coverOf(x){var fixed=previewCoverByCatalogue[n(catalogueOf(x))],src=String(fixed||x.coverUrl||coverFallbacks[x.key]||'');return src.indexOf('/catalogue-covers/')===0?src.split('?')[0]+'?v=20260920-4':src}
 function grouped(items){var g={};items.forEach(function(x){var k=n(x.category)+'|'+n(brandOf(x))+'|'+n(catalogueOf(x));if(!g[k])g[k]={category:x.category||'Uncategorised',brand:brandOf(x),catalogue:catalogueOf(x),items:[]};g[k].items.push(x)});return Object.values(g)}
 function card(g){
   var image=g.items.find(function(x){return mediaType(x)==='image'}),pdf=g.items.find(function(x){return mediaType(x)==='pdf'}),video=g.items.find(function(x){return mediaType(x)==='video'}),preview='',cover=pdf?coverOf(pdf):'';
