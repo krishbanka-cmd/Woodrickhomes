@@ -141,6 +141,7 @@ function smartFitPdfCover(img){
     function median(channel){var values=edges.map(function(v){return v[channel]}).sort(function(a,b){return a-b});return values[Math.floor(values.length/2)]}
     var bgR=median(0),bgG=median(1),bgB=median(2),brightness=(bgR+bgG+bgB)/3,chroma=Math.max(bgR,bgG,bgB)-Math.min(bgR,bgG,bgB);
     img.dataset.edgeTone=[bgR,bgG,bgB].join(',');
+    img.style.backgroundColor='rgb('+bgR+','+bgG+','+bgB+')';
     /* Trim only neutral light page margins. Full-bleed coloured/dark covers stay untouched. */
     if(brightness<185||chroma>42){img.dataset.cropSkip='edge-colour';return}
     var rowHits=new Uint16Array(sh),colHits=new Uint16Array(sw),delta=36;
@@ -148,12 +149,17 @@ function smartFitPdfCover(img){
       var i=(y*sw+x)*4,a=pixels[i+3],difference=Math.max(Math.abs(pixels[i]-bgR),Math.abs(pixels[i+1]-bgG),Math.abs(pixels[i+2]-bgB));
       if(a>20&&difference>delta){rowHits[y]++;colHits[x]++}
     }
-    /* Require a meaningful run of pixels so JPEG/WebP noise cannot pin the crop to an outer edge. */
-    var rowMin=Math.max(5,Math.round(sw*.018)),colMin=Math.max(5,Math.round(sh*.018));
-    var top=0;while(top<sh&&rowHits[top]<rowMin)top++;
-    var bottom=sh-1;while(bottom>=0&&rowHits[bottom]<rowMin)bottom--;
-    var left=0;while(left<sw&&colHits[left]<colMin)left++;
-    var right=sw-1;while(right>=0&&colHits[right]<colMin)right--;
+    /* Ignore the outer 0.75% of detected ink so crop marks and compression dots do not pin an edge. */
+    function percentileBounds(hits){
+      var total=0;for(var hi=0;hi<hits.length;hi++)total+=hits[hi];
+      if(!total)return[-1,-1];
+      var target=total*.0075,sum=0,start=0,end=hits.length-1;
+      for(start=0;start<hits.length;start++){sum+=hits[start];if(sum>=target)break}
+      sum=0;for(end=hits.length-1;end>=0;end--){sum+=hits[end];if(sum>=target)break}
+      return[start,end]
+    }
+    var yBounds=percentileBounds(rowHits),xBounds=percentileBounds(colHits);
+    var top=yBounds[0],bottom=yBounds[1],left=xBounds[0],right=xBounds[1];
     if(right<left||bottom<top){img.dataset.cropSkip='no-content';return}
     var pad=Math.max(4,Math.round(Math.max(right-left+1,bottom-top+1)*.035));
     left=Math.max(0,left-pad);top=Math.max(0,top-pad);right=Math.min(sw-1,right+pad);bottom=Math.min(sh-1,bottom+pad);
