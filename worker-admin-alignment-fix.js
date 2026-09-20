@@ -140,8 +140,9 @@ function smartFitPdfCover(img){
     if(!edges.length)return;
     function median(channel){var values=edges.map(function(v){return v[channel]}).sort(function(a,b){return a-b});return values[Math.floor(values.length/2)]}
     var bgR=median(0),bgG=median(1),bgB=median(2),brightness=(bgR+bgG+bgB)/3,chroma=Math.max(bgR,bgG,bgB)-Math.min(bgR,bgG,bgB);
+    img.dataset.edgeTone=[bgR,bgG,bgB].join(',');
     /* Trim only neutral light page margins. Full-bleed coloured/dark covers stay untouched. */
-    if(brightness<185||chroma>42)return;
+    if(brightness<185||chroma>42){img.dataset.cropSkip='edge-colour';return}
     var rowHits=new Uint16Array(sh),colHits=new Uint16Array(sw),delta=36;
     for(var y=0;y<sh;y++)for(var x=0;x<sw;x++){
       var i=(y*sw+x)*4,a=pixels[i+3],difference=Math.max(Math.abs(pixels[i]-bgR),Math.abs(pixels[i+1]-bgG),Math.abs(pixels[i+2]-bgB));
@@ -153,11 +154,12 @@ function smartFitPdfCover(img){
     var bottom=sh-1;while(bottom>=0&&rowHits[bottom]<rowMin)bottom--;
     var left=0;while(left<sw&&colHits[left]<colMin)left++;
     var right=sw-1;while(right>=0&&colHits[right]<colMin)right--;
-    if(right<left||bottom<top)return;
+    if(right<left||bottom<top){img.dataset.cropSkip='no-content';return}
     var pad=Math.max(4,Math.round(Math.max(right-left+1,bottom-top+1)*.035));
     left=Math.max(0,left-pad);top=Math.max(0,top-pad);right=Math.min(sw-1,right+pad);bottom=Math.min(sh-1,bottom+pad);
     var cw=right-left+1,ch=bottom-top+1,area=(cw*ch)/(sw*sh);
-    if(area>.92||cw<sw*.08||ch<sh*.08)return;
+    img.dataset.cropCandidate=area.toFixed(3);
+    if(area>.92||cw<sw*.08||ch<sh*.08){img.dataset.cropSkip='full-page';return}
     var ratio=1/scale,srcX=Math.max(0,Math.floor(left*ratio)),srcY=Math.max(0,Math.floor(top*ratio));
     var srcW=Math.min(nw-srcX,Math.ceil(cw*ratio)),srcH=Math.min(nh-srcY,Math.ceil(ch*ratio));
     var outputScale=Math.min(1,1200/Math.max(srcW,srcH)),outW=Math.max(1,Math.round(srcW*outputScale)),outH=Math.max(1,Math.round(srcH*outputScale));
