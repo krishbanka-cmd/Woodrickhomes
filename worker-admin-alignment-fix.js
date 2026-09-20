@@ -131,7 +131,7 @@ function card(g){
 renderMedia=function(){
   var items=uploadedMedia.filter(function(x){return (activeCategory==='all'||n(x.category)===n(activeCategory))&&(activeType==='all'||mediaType(x)===activeType)});
   var groups=grouped(items);
-  var count=activeType==='pdf'?groups.length:items.length,label=activeType==='pdf'?'catalogue':activeType==='image'?'photo':activeType==='video'?'video':'media item';liveStatus.textContent=(activeCategory==='all'?'All categories':activeCategory)+' · '+(activeType==='all'?'All media':activeType.toUpperCase())+' · '+count+' '+label+(count===1?'':'s');
+  var pdfCount=grouped(items.filter(function(x){return mediaType(x)==='pdf'})).length,photoCount=items.filter(function(x){return mediaType(x)==='image'}).length,videoCount=items.filter(function(x){return mediaType(x)==='video'}).length,count=activeType==='pdf'?groups.length:items.length,label=activeType==='pdf'?'catalogue':activeType==='image'?'photo':activeType==='video'?'video':'media item';liveStatus.textContent=(activeCategory==='all'?'All categories':activeCategory)+' · '+(activeType==='all'?(pdfCount+' catalogues · '+photoCount+' photos · '+videoCount+' video'+(videoCount===1?'':'s')+' · '+items.length+' total media'):(activeType.toUpperCase()+' · '+count+' '+label+(count===1?'':'s')));
   if(!items.length){
     if(uploadedMedia.length&&(activeCategory!=='all'||activeType!=='all')){activeCategory='all';activeType='all';selectedBrand='';document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.toggle('active',b.dataset.filterType==='all')});return renderMedia()}
     liveStatus.textContent='Loading latest media…';mediaGrid.innerHTML='<div class="empty-media">Preparing Woodrick product media…</div>';return
