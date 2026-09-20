@@ -142,12 +142,13 @@ function smartFitPdfCover(img){
     var bgR=median(0),bgG=median(1),bgB=median(2),brightness=(bgR+bgG+bgB)/3,chroma=Math.max(bgR,bgG,bgB)-Math.min(bgR,bgG,bgB);
     /* Trim only neutral light page margins. Full-bleed coloured/dark covers stay untouched. */
     if(brightness<185||chroma>42)return;
-    var rowHits=new Uint16Array(sh),colHits=new Uint16Array(sw),delta=22;
+    var rowHits=new Uint16Array(sh),colHits=new Uint16Array(sw),delta=36;
     for(var y=0;y<sh;y++)for(var x=0;x<sw;x++){
       var i=(y*sw+x)*4,a=pixels[i+3],difference=Math.max(Math.abs(pixels[i]-bgR),Math.abs(pixels[i+1]-bgG),Math.abs(pixels[i+2]-bgB));
       if(a>20&&difference>delta){rowHits[y]++;colHits[x]++}
     }
-    var rowMin=Math.max(2,Math.round(sw*.006)),colMin=Math.max(2,Math.round(sh*.006));
+    /* Require a meaningful run of pixels so JPEG/WebP noise cannot pin the crop to an outer edge. */
+    var rowMin=Math.max(5,Math.round(sw*.018)),colMin=Math.max(5,Math.round(sh*.018));
     var top=0;while(top<sh&&rowHits[top]<rowMin)top++;
     var bottom=sh-1;while(bottom>=0&&rowHits[bottom]<rowMin)bottom--;
     var left=0;while(left<sw&&colHits[left]<colMin)left++;
