@@ -137,6 +137,14 @@ function fitPdfCover(img){
   var ratio=img.naturalWidth/img.naturalHeight;
   img.classList.toggle('spread-cover',ratio>=1.52);
   img.dataset.fitMode=ratio>=1.52?'spread-safe':'edge-fill';
+  var src=String(img.getAttribute('src')||''),stage=
+    src.indexOf('woodline-acrylic')>=0?'#d5b28c':
+    src.indexOf('/mwud.')>=0?'#b2b1a3':
+    src.indexOf('ristal-08')>=0?'#18395d':
+    src.indexOf('ristal1mm')>=0?'#245a50':
+    src.indexOf('ristal-solid')>=0?'#c8c8c7':
+    src.indexOf('woodline-08')>=0?'#f6a18f':'';
+  if(ratio>=1.52&&stage)img.style.setProperty('background-color',stage,'important');
 }
 function fitVisiblePdfCovers(root){(root||document).querySelectorAll('img.pdf-cover').forEach(function(img){if(img.complete)fitPdfCover(img);else img.addEventListener('load',function(){fitPdfCover(img)},{once:true})})}
 var previewCoverByCatalogue={
