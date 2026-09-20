@@ -149,11 +149,11 @@ function smartFitPdfCover(img){
       var i=(y*sw+x)*4,a=pixels[i+3],difference=Math.max(Math.abs(pixels[i]-bgR),Math.abs(pixels[i+1]-bgG),Math.abs(pixels[i+2]-bgB));
       if(a>20&&difference>delta){rowHits[y]++;colHits[x]++}
     }
-    /* Ignore the outer 0.75% of detected ink so crop marks and compression dots do not pin an edge. */
+    /* Ignore sparse peripheral marks so the real cover artwork gets the same visual weight as full-bleed covers. */
     function percentileBounds(hits){
       var total=0;for(var hi=0;hi<hits.length;hi++)total+=hits[hi];
       if(!total)return[-1,-1];
-      var target=total*.0075,sum=0,start=0,end=hits.length-1;
+      var target=total*.025,sum=0,start=0,end=hits.length-1;
       for(start=0;start<hits.length;start++){sum+=hits[start];if(sum>=target)break}
       sum=0;for(end=hits.length-1;end>=0;end--){sum+=hits[end];if(sum>=target)break}
       return[start,end]
