@@ -139,7 +139,7 @@ function catalogueOf(x){if(typeof mediaTitle==='function')return mediaTitle(x);v
 function typeLabel(t){return t==='pdf'?'PDF':t==='video'?'VIDEO':'PHOTO'}
 function fitPdfCover(img){
   if(!img||!img.naturalWidth||!img.naturalHeight)return;
-  var ratio=img.naturalWidth/img.naturalHeight,src=String(img.getAttribute('src')||''),artworkSafe=/godrej|louvers/i.test(src),spread=ratio>=1.52&&!artworkSafe;
+  var ratio=img.naturalWidth/img.naturalHeight,src=String(img.getAttribute('src')||''),artworkSafe=/godrej|ipsa|louvers/i.test(src),spread=ratio>=1.52&&!artworkSafe;
   img.classList.toggle('spread-cover',spread);
   img.classList.toggle('artwork-safe-cover',artworkSafe);
   img.dataset.fitMode=artworkSafe?'artwork-safe':spread?'spread-safe':'edge-fill';
@@ -151,6 +151,7 @@ function fitPdfCover(img){
     src.indexOf('ristal-solid')>=0?'#c8c8c7':
     src.indexOf('woodline-08')>=0?'#f6a18f':
     src.indexOf('godrej')>=0?'#eee8f1':
+    src.indexOf('ipsa')>=0?'#020810':
     src.indexOf('louvers')>=0?'#d5b993':'';
   if((spread||artworkSafe)&&stage)img.style.setProperty('background-color',stage,'important');
 }
