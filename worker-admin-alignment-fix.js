@@ -90,8 +90,8 @@ const productHierarchy=`
 #media .media-card{display:flex;flex-direction:column;background:#fff;border-color:#ded4c3}
 #media .media-preview,#media .brand-choice .media-preview{
   position:relative;display:flex;align-items:center;justify-content:center;
-  height:280px;min-height:280px;max-height:280px;flex:0 0 280px;
-  aspect-ratio:auto;padding:14px;overflow:hidden;background:#ddd3c4;color:#684a23;
+  height:225px;min-height:225px;max-height:225px;flex:0 0 225px;
+  aspect-ratio:auto;padding:10px;overflow:hidden;background:#ddd3c4;color:#684a23;
   border-bottom:1px solid #ded4c3
 }
 #media .media-preview img,#media .media-preview img.pdf-preview,
@@ -109,6 +109,9 @@ const productHierarchy=`
 #media .media-preview img.pdf-cover.spread-cover{
   object-fit:contain!important;transform:scale(1.02)
 }
+#media .media-preview img.pdf-cover.artwork-safe-cover{
+  object-fit:contain!important;transform:scale(1.01)
+}
 #media .media-preview video{
   display:block;width:100%!important;height:100%!important;
   max-width:100%!important;max-height:100%!important;min-width:0;min-height:0;
@@ -116,14 +119,16 @@ const productHierarchy=`
   background:#171717;border:1px solid #cbbda8;box-shadow:0 6px 18px rgba(70,49,24,.18)
 }
 #media .pdf-cover-fallback{width:100%;height:100%;box-sizing:border-box;background:#fff;color:#684a23;border:1px solid #cbbda8;box-shadow:0 6px 18px rgba(70,49,24,.18);font:700 18px Arial,sans-serif}
-#media .media-info{display:flex;flex:1;flex-direction:column;padding:18px}
-#media .media-category{color:#805d2d;min-height:2.6em;line-height:1.3}
-#media .media-title{color:#211b16}
+#media .media-info{display:flex;flex:1;flex-direction:column;padding:14px}
+#media .media-category{color:#805d2d;min-height:2.35em;line-height:1.2}
+#media .media-title{color:#211b16;font-size:clamp(18px,1.55vw,22px);line-height:1.16!important;min-height:2.32em}
 #media .catalogue-media-label{color:#6a665f}
-#media .media-actions{margin-top:auto!important;padding-top:12px}
+#media .media-actions{margin-top:auto!important;padding-top:8px}
+#media .media-actions .open-media{padding:10px 13px!important}
 #media .hierarchy-back{grid-column:1/-1;background:#fff;color:#684a23;border-color:#cdbb9a;justify-self:start;align-self:start}
 @media(max-width:620px){
- #media .media-preview,#media .brand-choice .media-preview{height:260px;min-height:260px;max-height:260px;flex-basis:260px}
+ #media .media-preview,#media .brand-choice .media-preview{height:210px;min-height:210px;max-height:210px;flex-basis:210px}
+ #media .media-info{padding:13px}
 }
 </style>
 <script id="woodrick-product-hierarchy-script-v2">(function(){
@@ -134,17 +139,20 @@ function catalogueOf(x){if(typeof mediaTitle==='function')return mediaTitle(x);v
 function typeLabel(t){return t==='pdf'?'PDF':t==='video'?'VIDEO':'PHOTO'}
 function fitPdfCover(img){
   if(!img||!img.naturalWidth||!img.naturalHeight)return;
-  var ratio=img.naturalWidth/img.naturalHeight;
-  img.classList.toggle('spread-cover',ratio>=1.52);
-  img.dataset.fitMode=ratio>=1.52?'spread-safe':'edge-fill';
-  var src=String(img.getAttribute('src')||''),stage=
+  var ratio=img.naturalWidth/img.naturalHeight,src=String(img.getAttribute('src')||''),artworkSafe=/godrej|louvers/i.test(src),spread=ratio>=1.52&&!artworkSafe;
+  img.classList.toggle('spread-cover',spread);
+  img.classList.toggle('artwork-safe-cover',artworkSafe);
+  img.dataset.fitMode=artworkSafe?'artwork-safe':spread?'spread-safe':'edge-fill';
+  var stage=
     src.indexOf('woodline-acrylic')>=0?'#d5b28c':
     src.indexOf('/mwud.')>=0?'#b2b1a3':
     src.indexOf('ristal-08')>=0?'#18395d':
     src.indexOf('ristal1mm')>=0?'#245a50':
     src.indexOf('ristal-solid')>=0?'#c8c8c7':
-    src.indexOf('woodline-08')>=0?'#f6a18f':'';
-  if(ratio>=1.52&&stage)img.style.setProperty('background-color',stage,'important');
+    src.indexOf('woodline-08')>=0?'#f6a18f':
+    src.indexOf('godrej')>=0?'#eee8f1':
+    src.indexOf('louvers')>=0?'#d5b993':'';
+  if((spread||artworkSafe)&&stage)img.style.setProperty('background-color',stage,'important');
 }
 function fitVisiblePdfCovers(root){(root||document).querySelectorAll('img.pdf-cover').forEach(function(img){if(img.complete)fitPdfCover(img);else img.addEventListener('load',function(){fitPdfCover(img)},{once:true})})}
 var previewCoverByCatalogue={
@@ -174,7 +182,7 @@ var previewCoverByCatalogue={
   'woodrick shuttering plywood 25 kg mr':'/catalogue-covers/woodrick-25-kg-mr.webp'
 };
 var coverFallbacks={'shuttering-plywood/image/1787752234100-woodrick-25-kg-mr.pdf':'/catalogue-covers/woodrick-25-kg-mr.webp','louvers/image/1787636958432-woodline-led-louvers.pdf':'/catalogue-covers/woodline-led-louvers.webp','louvers/image/1787636923292-woodline-louvers-9-5x6.pdf':'/catalogue-covers/woodline-louvers-9-5x6.webp'};
-function coverOf(x){var fixed=previewCoverByCatalogue[n(catalogueOf(x))],src=String(fixed||x.coverUrl||coverFallbacks[x.key]||'');return src.indexOf('/catalogue-covers/')===0?src.split('?')[0]+'?v=20260920-4':src}
+function coverOf(x){var fixed=previewCoverByCatalogue[n(catalogueOf(x))],src=String(fixed||x.coverUrl||coverFallbacks[x.key]||'');return src.indexOf('/catalogue-covers/')===0?src.split('?')[0]+'?v=20260920-5':src}
 function grouped(items){var g={};items.forEach(function(x){var k=n(x.category)+'|'+n(brandOf(x))+'|'+n(catalogueOf(x));if(!g[k])g[k]={category:x.category||'Uncategorised',brand:brandOf(x),catalogue:catalogueOf(x),items:[]};g[k].items.push(x)});return Object.values(g)}
 function card(g){
   var image=g.items.find(function(x){return mediaType(x)==='image'}),pdf=g.items.find(function(x){return mediaType(x)==='pdf'}),video=g.items.find(function(x){return mediaType(x)==='video'}),preview='',cover=pdf?coverOf(pdf):'';
