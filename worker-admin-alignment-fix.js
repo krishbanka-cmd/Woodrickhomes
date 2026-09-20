@@ -141,7 +141,7 @@ function smartFitPdfCover(img){
     function median(channel){var values=edges.map(function(v){return v[channel]}).sort(function(a,b){return a-b});return values[Math.floor(values.length/2)]}
     var bgR=median(0),bgG=median(1),bgB=median(2),brightness=(bgR+bgG+bgB)/3,chroma=Math.max(bgR,bgG,bgB)-Math.min(bgR,bgG,bgB);
     img.dataset.edgeTone=[bgR,bgG,bgB].join(',');
-    img.style.backgroundColor='rgb('+bgR+','+bgG+','+bgB+')';
+    img.style.setProperty('background-color','rgb('+bgR+','+bgG+','+bgB+')','important');
     /* Trim only neutral light page margins. Full-bleed coloured/dark covers stay untouched. */
     if(brightness<185||chroma>42){img.dataset.cropSkip='edge-colour';return}
     var rowHits=new Uint16Array(sh),colHits=new Uint16Array(sw),delta=36;
