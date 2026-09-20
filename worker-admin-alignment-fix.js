@@ -102,6 +102,9 @@ const productHierarchy=`
   padding:4px;background:#fff!important;border:1px solid #cbbda8;
   box-shadow:0 6px 18px rgba(70,49,24,.18)
 }
+#media .media-preview img.pdf-cover{
+  object-fit:cover!important;object-position:center;padding:0!important
+}
 #media .media-preview video{
   display:block;width:100%!important;height:100%!important;
   max-width:100%!important;max-height:100%!important;min-width:0;min-height:0;
@@ -174,7 +177,7 @@ function smartFitPdfCover(img){
     img.dataset.cropArea=area.toFixed(3);img.src=out.toDataURL('image/webp',.9);img.classList.add('smart-cropped-cover');
   }catch(e){img.dataset.smartFit='skipped'}
 }
-function fitVisiblePdfCovers(root){(root||document).querySelectorAll('img.pdf-cover').forEach(function(img){if(img.complete)smartFitPdfCover(img);else img.addEventListener('load',function(){smartFitPdfCover(img)},{once:true})})}
+function fitVisiblePdfCovers(root){(root||document).querySelectorAll('img.pdf-cover').forEach(function(img){img.dataset.smartFit='edge-to-edge'})}
 var coverFallbacks={'shuttering-plywood/image/1787752234100-woodrick-25-kg-mr.pdf':'/catalogue-covers/woodrick-25-kg-mr.webp','louvers/image/1787636958432-woodline-led-louvers.pdf':'/catalogue-covers/woodline-led-louvers.webp','louvers/image/1787636923292-woodline-louvers-9-5x6.pdf':'/catalogue-covers/woodline-louvers-9-5x6.webp'};
 function coverOf(x){var src=String(x.coverUrl||coverFallbacks[x.key]||'');return src.indexOf('/catalogue-covers/')===0?src.split('?')[0]+'?v=20260913-3':src}
 function grouped(items){var g={};items.forEach(function(x){var k=n(x.category)+'|'+n(brandOf(x))+'|'+n(catalogueOf(x));if(!g[k])g[k]={category:x.category||'Uncategorised',brand:brandOf(x),catalogue:catalogueOf(x),items:[]};g[k].items.push(x)});return Object.values(g)}
