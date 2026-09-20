@@ -90,7 +90,7 @@ const productHierarchy=`
 #media .media-card{display:flex;flex-direction:column;background:#fff;border-color:#ded4c3}
 #media .media-preview,#media .brand-choice .media-preview{
   position:relative;display:flex;align-items:center;justify-content:center;
-  height:225px;min-height:225px;max-height:225px;flex:0 0 225px;
+  height:280px;min-height:280px;max-height:280px;flex:0 0 280px;
   aspect-ratio:auto;padding:10px;overflow:hidden;background:#ddd3c4;color:#684a23;
   border-bottom:1px solid #ded4c3
 }
@@ -119,16 +119,16 @@ const productHierarchy=`
   background:#171717;border:1px solid #cbbda8;box-shadow:0 6px 18px rgba(70,49,24,.18)
 }
 #media .pdf-cover-fallback{width:100%;height:100%;box-sizing:border-box;background:#fff;color:#684a23;border:1px solid #cbbda8;box-shadow:0 6px 18px rgba(70,49,24,.18);font:700 18px Arial,sans-serif}
-#media .media-info{display:flex;flex:1;flex-direction:column;padding:14px}
-#media .media-category{color:#805d2d;min-height:2.35em;line-height:1.2}
-#media .media-title{color:#211b16;font-size:clamp(18px,1.55vw,22px);line-height:1.16!important;min-height:2.32em}
-#media .catalogue-media-label{color:#6a665f}
-#media .media-actions{margin-top:auto!important;padding-top:8px}
-#media .media-actions .open-media{padding:10px 13px!important}
+#media .media-info{display:flex;flex:0 0 150px;height:150px;box-sizing:border-box;flex-direction:column;padding:10px 14px 12px}
+#media .media-category{color:#805d2d;min-height:0;line-height:1.15}
+#media .media-title{color:#211b16;font-size:clamp(18px,1.55vw,22px);line-height:1.12!important;min-height:0;margin:6px 0}
+#media .catalogue-media-label{color:#6a665f;margin-top:0}
+#media .media-actions{margin-top:5px!important;padding-top:0}
+#media .media-actions .open-media{padding:8px 11px!important}
 #media .hierarchy-back{grid-column:1/-1;background:#fff;color:#684a23;border-color:#cdbb9a;justify-self:start;align-self:start}
 @media(max-width:620px){
- #media .media-preview,#media .brand-choice .media-preview{height:210px;min-height:210px;max-height:210px;flex-basis:210px}
- #media .media-info{padding:13px}
+ #media .media-preview,#media .brand-choice .media-preview{height:260px;min-height:260px;max-height:260px;flex-basis:260px}
+ #media .media-info{flex-basis:146px;height:146px;padding:10px 12px}
 }
 </style>
 <script id="woodrick-product-hierarchy-script-v2">(function(){
