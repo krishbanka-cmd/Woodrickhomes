@@ -119,7 +119,7 @@ const productHierarchy=`
   background:#171717;border:1px solid #cbbda8;box-shadow:0 6px 18px rgba(70,49,24,.18)
 }
 #media .pdf-cover-fallback{width:100%;height:100%;box-sizing:border-box;background:#fff;color:#684a23;border:1px solid #cbbda8;box-shadow:0 6px 18px rgba(70,49,24,.18);font:700 18px Arial,sans-serif}
-#media .media-info{display:flex;flex:0 0 150px;height:150px;box-sizing:border-box;flex-direction:column;padding:10px 14px 12px}
+#media .media-info{display:flex;flex:0 0 136px;height:136px;box-sizing:border-box;flex-direction:column;padding:10px 14px}
 #media .media-category{color:#805d2d;min-height:0;line-height:1.15}
 #media .media-title{color:#211b16;font-size:clamp(18px,1.55vw,22px);line-height:1.12!important;min-height:0;margin:6px 0}
 #media .catalogue-media-label{color:#6a665f;margin-top:0}
