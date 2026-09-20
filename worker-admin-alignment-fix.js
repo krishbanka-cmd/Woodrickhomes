@@ -133,21 +133,36 @@ function smartFitPdfCover(img){
     var sw=Math.max(1,Math.round(nw*scale)),sh=Math.max(1,Math.round(nh*scale));
     var sample=document.createElement('canvas');sample.width=sw;sample.height=sh;
     var sx=sample.getContext('2d',{willReadFrequently:true});sx.drawImage(img,0,0,sw,sh);
-    var pixels=sx.getImageData(0,0,sw,sh).data,left=sw,top=sh,right=-1,bottom=-1;
+    var pixels=sx.getImageData(0,0,sw,sh).data,edges=[],edgeStep=Math.max(1,Math.floor(Math.max(sw,sh)/120));
+    function edgePixel(x,y){var i=(y*sw+x)*4;if(pixels[i+3]>20)edges.push([pixels[i],pixels[i+1],pixels[i+2]])}
+    for(var ex=0;ex<sw;ex+=edgeStep){edgePixel(ex,0);edgePixel(ex,Math.min(2,sh-1));edgePixel(ex,Math.max(0,sh-3));edgePixel(ex,sh-1)}
+    for(var ey=0;ey<sh;ey+=edgeStep){edgePixel(0,ey);edgePixel(Math.min(2,sw-1),ey);edgePixel(Math.max(0,sw-3),ey);edgePixel(sw-1,ey)}
+    if(!edges.length)return;
+    function median(channel){var values=edges.map(function(v){return v[channel]}).sort(function(a,b){return a-b});return values[Math.floor(values.length/2)]}
+    var bgR=median(0),bgG=median(1),bgB=median(2),brightness=(bgR+bgG+bgB)/3,chroma=Math.max(bgR,bgG,bgB)-Math.min(bgR,bgG,bgB);
+    /* Trim only neutral light page margins. Full-bleed coloured/dark covers stay untouched. */
+    if(brightness<185||chroma>42)return;
+    var rowHits=new Uint16Array(sh),colHits=new Uint16Array(sw),delta=22;
     for(var y=0;y<sh;y++)for(var x=0;x<sw;x++){
-      var i=(y*sw+x)*4,r=pixels[i],g=pixels[i+1],b=pixels[i+2],a=pixels[i+3];
-      if(a>20&&(r<245||g<245||b<245)){if(x<left)left=x;if(x>right)right=x;if(y<top)top=y;if(y>bottom)bottom=y}
+      var i=(y*sw+x)*4,a=pixels[i+3],difference=Math.max(Math.abs(pixels[i]-bgR),Math.abs(pixels[i+1]-bgG),Math.abs(pixels[i+2]-bgB));
+      if(a>20&&difference>delta){rowHits[y]++;colHits[x]++}
     }
+    var rowMin=Math.max(2,Math.round(sw*.006)),colMin=Math.max(2,Math.round(sh*.006));
+    var top=0;while(top<sh&&rowHits[top]<rowMin)top++;
+    var bottom=sh-1;while(bottom>=0&&rowHits[bottom]<rowMin)bottom--;
+    var left=0;while(left<sw&&colHits[left]<colMin)left++;
+    var right=sw-1;while(right>=0&&colHits[right]<colMin)right--;
     if(right<left||bottom<top)return;
     var pad=Math.max(4,Math.round(Math.max(right-left+1,bottom-top+1)*.035));
     left=Math.max(0,left-pad);top=Math.max(0,top-pad);right=Math.min(sw-1,right+pad);bottom=Math.min(sh-1,bottom+pad);
     var cw=right-left+1,ch=bottom-top+1,area=(cw*ch)/(sw*sh);
-    if(area>.9)return;
+    if(area>.92||cw<sw*.08||ch<sh*.08)return;
     var ratio=1/scale,srcX=Math.max(0,Math.floor(left*ratio)),srcY=Math.max(0,Math.floor(top*ratio));
     var srcW=Math.min(nw-srcX,Math.ceil(cw*ratio)),srcH=Math.min(nh-srcY,Math.ceil(ch*ratio));
-    var out=document.createElement('canvas');out.width=srcW;out.height=srcH;
-    var ox=out.getContext('2d');ox.fillStyle='#fff';ox.fillRect(0,0,srcW,srcH);ox.drawImage(img,srcX,srcY,srcW,srcH,0,0,srcW,srcH);
-    img.src=out.toDataURL('image/webp',.9);img.classList.add('smart-cropped-cover');
+    var outputScale=Math.min(1,1200/Math.max(srcW,srcH)),outW=Math.max(1,Math.round(srcW*outputScale)),outH=Math.max(1,Math.round(srcH*outputScale));
+    var out=document.createElement('canvas');out.width=outW;out.height=outH;
+    var ox=out.getContext('2d');ox.fillStyle='#fff';ox.fillRect(0,0,outW,outH);ox.drawImage(img,srcX,srcY,srcW,srcH,0,0,outW,outH);
+    img.dataset.cropArea=area.toFixed(3);img.src=out.toDataURL('image/webp',.9);img.classList.add('smart-cropped-cover');
   }catch(e){img.dataset.smartFit='skipped'}
 }
 function fitVisiblePdfCovers(root){(root||document).querySelectorAll('img.pdf-cover').forEach(function(img){if(img.complete)smartFitPdfCover(img);else img.addEventListener('load',function(){smartFitPdfCover(img)},{once:true})})}
