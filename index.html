@@ -606,6 +606,94 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
 <style id="woodrick-selfhost-logo-fix-20260921">
 .hero-brand-mark img{background:transparent!important}
 </style>
+
+<style id="woodrick-brand-rail-readability-20260921">
+/* Brand rail readability pass: brighter rail, larger artwork, readable names on every card */
+.hero-brand-dock{
+  background:#fffdf8!important;
+  border-top:1px solid #dfc78f!important;
+  box-shadow:0 -10px 30px rgba(0,0,0,.14)!important;
+}
+.hero-brand-dock-inner{
+  width:min(1340px,97%)!important;
+  grid-template-columns:132px minmax(0,1fr)!important;
+}
+.hero-brand-title{
+  min-height:108px!important;
+  background:linear-gradient(145deg,#090909,#17130d)!important;
+  color:#f1d17a!important;
+  font-size:10.5px!important;
+  line-height:1.4!important;
+  letter-spacing:.12em!important;
+  padding:12px 14px!important;
+}
+.hero-brand-marquee{
+  background:#fffdf8!important;
+  padding:9px 10px!important;
+}
+.hero-brand-group{gap:10px!important;padding-right:10px!important}
+.hero-brand-mark{
+  min-width:176px!important;
+  width:176px!important;
+  height:90px!important;
+  padding:7px 12px!important;
+  background:#fff!important;
+  border:1px solid #dfd3bf!important;
+  box-shadow:0 5px 16px rgba(39,31,20,.10)!important;
+}
+.hero-brand-mark img{
+  max-width:148px!important;
+  max-height:57px!important;
+  filter:none!important;
+  opacity:1!important;
+}
+.hero-brand-mark[data-brand="UltraTech"] img{max-width:145px!important;max-height:56px!important}
+.hero-brand-mark[data-brand="Birla Opus"] img{max-width:150px!important;max-height:56px!important}
+.hero-brand-mark[data-brand="Asian Paints"] img{
+  width:auto!important;
+  max-width:150px!important;
+  max-height:56px!important;
+}
+.brand-name-fallback{
+  display:block!important;
+  margin-top:4px!important;
+  color:#2d2923!important;
+  font-family:Arial,Helvetica,sans-serif!important;
+  font-size:11.5px!important;
+  line-height:1.05!important;
+  font-weight:800!important;
+  letter-spacing:.015em!important;
+  text-align:center!important;
+}
+.hero-brand-track{animation-duration:46s!important}
+
+@media(max-width:850px){
+  .hero-brand-title{
+    min-height:32px!important;height:32px!important;
+    font-size:8.5px!important;line-height:1.2!important;
+    padding:6px 12px!important;
+  }
+  .hero-brand-mark{
+    min-width:150px!important;width:150px!important;height:82px!important;
+    padding:6px 10px!important;
+  }
+  .hero-brand-mark img{max-width:126px!important;max-height:47px!important}
+  .hero-brand-mark[data-brand="UltraTech"] img{max-width:126px!important;max-height:47px!important}
+  .hero-brand-mark[data-brand="Birla Opus"] img{max-width:128px!important;max-height:48px!important}
+  .hero-brand-mark[data-brand="Asian Paints"] img{
+    width:auto!important;max-width:130px!important;max-height:49px!important;
+  }
+  .brand-name-fallback{font-size:10.5px!important;margin-top:3px!important}
+}
+@media(max-width:520px){
+  .hero-brand-mark{
+    min-width:146px!important;width:146px!important;height:80px!important;
+  }
+  .hero-brand-mark img{max-width:123px!important;max-height:46px!important}
+  .hero-brand-mark[data-brand="Asian Paints"] img{max-width:126px!important;max-height:47px!important}
+}
+</style>
+
 </head>
 <body>
 <div class="topbar"><div class="container"><span>Welcome to Woodrick Homes</span><span>Mon–Sat · 10:00 AM–8:00 PM   |   Premium Building Materials &amp; Interior Solutions</span></div></div>
@@ -650,9 +738,9 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
       <div class="hero-brand-marquee" aria-label="Swipe to see all brands on mobile">
         <div class="hero-brand-track">
           <div class="hero-brand-group">
-            <div class="hero-brand-mark" data-brand="UltraTech"><img src="https://upload.wikimedia.org/wikipedia/commons/1/18/UltraTech_logo.jpg" alt="UltraTech Cement logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">UltraTech</span></div>
-            <div class="hero-brand-mark" data-brand="Birla Opus"><img src="assets/brand-logos/birla-opus-real.svg" alt="Birla Opus logo" loading="eager" decoding="async"><span class="brand-name-fallback">Birla Opus</span></div>
-            <div class="hero-brand-mark" data-brand="Asian Paints"><img src="assets/brand-logos/asian-paints-real.svg" alt="Asian Paints logo" loading="eager" decoding="async"><span class="brand-name-fallback">Asian Paints</span></div>
+            <div class="hero-brand-mark" data-brand="UltraTech"><img src="assets/brand-logos/ultratech.svg" alt="UltraTech Cement logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">UltraTech</span></div>
+            <div class="hero-brand-mark" data-brand="Birla Opus"><img src="assets/brand-logos/birla-opus.svg" alt="Birla Opus logo" loading="eager" decoding="async"><span class="brand-name-fallback">Birla Opus</span></div>
+            <div class="hero-brand-mark" data-brand="Asian Paints"><img src="assets/brand-logos/asian-paints.svg" alt="Asian Paints logo" loading="eager" decoding="async"><span class="brand-name-fallback">Asian Paints</span></div>
             <div class="hero-brand-mark" data-brand="Supreme"><img src="assets/brand-logos/supreme-real.png" alt="Supreme Industries logo" loading="eager" decoding="async"><span class="brand-name-fallback">Supreme</span></div>
             <div class="hero-brand-mark" data-brand="CenturyPly"><img src="https://upload.wikimedia.org/wikipedia/commons/1/16/Centuryply.png" data-fallback="https://delhisales.in/brand_image/1396010809.jpg" alt="CenturyPly logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">CenturyPly</span></div>
             <div class="hero-brand-mark" data-brand="Greenpanel"><img src="assets/brand-logos/greenpanel-real.svg" alt="Greenpanel logo" loading="eager" decoding="async"><span class="brand-name-fallback">Greenpanel</span></div>
@@ -667,9 +755,9 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
             <div class="hero-brand-mark" data-brand="EBCO"><img src="https://www.sainiworld.in/cdn/shop/collections/ebco_logo.jpg?v=1667629036" alt="EBCO logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">EBCO</span></div>
           </div>
           <div class="hero-brand-group" aria-hidden="true">
-            <div class="hero-brand-mark" data-brand="UltraTech"><img src="https://upload.wikimedia.org/wikipedia/commons/1/18/UltraTech_logo.jpg" alt="UltraTech Cement logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">UltraTech</span></div>
-            <div class="hero-brand-mark" data-brand="Birla Opus"><img src="assets/brand-logos/birla-opus-real.svg" alt="Birla Opus logo" loading="eager" decoding="async"><span class="brand-name-fallback">Birla Opus</span></div>
-            <div class="hero-brand-mark" data-brand="Asian Paints"><img src="assets/brand-logos/asian-paints-real.svg" alt="Asian Paints logo" loading="eager" decoding="async"><span class="brand-name-fallback">Asian Paints</span></div>
+            <div class="hero-brand-mark" data-brand="UltraTech"><img src="assets/brand-logos/ultratech.svg" alt="UltraTech Cement logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">UltraTech</span></div>
+            <div class="hero-brand-mark" data-brand="Birla Opus"><img src="assets/brand-logos/birla-opus.svg" alt="Birla Opus logo" loading="eager" decoding="async"><span class="brand-name-fallback">Birla Opus</span></div>
+            <div class="hero-brand-mark" data-brand="Asian Paints"><img src="assets/brand-logos/asian-paints.svg" alt="Asian Paints logo" loading="eager" decoding="async"><span class="brand-name-fallback">Asian Paints</span></div>
             <div class="hero-brand-mark" data-brand="Supreme"><img src="assets/brand-logos/supreme-real.png" alt="Supreme Industries logo" loading="eager" decoding="async"><span class="brand-name-fallback">Supreme</span></div>
             <div class="hero-brand-mark" data-brand="CenturyPly"><img src="https://upload.wikimedia.org/wikipedia/commons/1/16/Centuryply.png" data-fallback="https://delhisales.in/brand_image/1396010809.jpg" alt="CenturyPly logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">CenturyPly</span></div>
             <div class="hero-brand-mark" data-brand="Greenpanel"><img src="assets/brand-logos/greenpanel-real.svg" alt="Greenpanel logo" loading="eager" decoding="async"><span class="brand-name-fallback">Greenpanel</span></div>
