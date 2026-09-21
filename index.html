@@ -250,6 +250,52 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
 #products-services .ws-tab.active{background:#171717;color:#e1bd68;border-color:#171717}
 @media(max-width:520px){#products-services .ws-tabs{grid-template-columns:1fr 1fr;gap:8px}.ws-tab{padding:12px 10px;font-size:11px}}
 </style>
+
+<style id="woodrick-hero-brand-slider-20260921">
+/* Review-safe hero slideshow + front-page brand positioning */
+.hero{background:#080807!important;overflow:hidden}
+.hero-slides{position:absolute;inset:0;z-index:-2;pointer-events:none}
+.hero-slide{position:absolute;inset:0;opacity:0;transform:scale(1.035);transition:opacity .9s ease,transform 6.5s ease;background-image:linear-gradient(90deg,rgba(5,5,4,.88) 0%,rgba(8,8,7,.62) 45%,rgba(8,8,7,.24) 100%),var(--hero-image);background-position:center;background-size:cover;background-repeat:no-repeat}
+.hero-slide.is-active{opacity:1;transform:scale(1)}
+.hero-content{position:relative;z-index:2}
+.hero-slide-dots{position:absolute;z-index:4;right:max(4%,28px);bottom:34px;display:flex;gap:9px}
+.hero-slide-dot{width:34px;height:3px;border:0;padding:0;background:rgba(255,255,255,.38);cursor:pointer;transition:.25s}
+.hero-slide-dot.is-active{background:#e3c787;width:52px}
+.hero-slide-dot:focus-visible{outline:2px solid #e3c787;outline-offset:5px}
+
+.hero-brand-dock{padding:0;background:#f8f5ee;border-top:1px solid #dfd5c4;border-bottom:1px solid #dfd5c4;overflow:hidden}
+.hero-brand-dock-inner{width:min(1400px,100%);margin:auto;display:grid;grid-template-columns:190px minmax(0,1fr);align-items:stretch}
+.hero-brand-title{display:flex;align-items:center;padding:18px 22px;background:#11100e;color:#e3c787;font-size:10px;line-height:1.45;letter-spacing:.18em;font-weight:800;text-transform:uppercase}
+.hero-brand-marquee{overflow:hidden;position:relative;background:#fff}
+.hero-brand-marquee:before,.hero-brand-marquee:after{content:"";position:absolute;top:0;bottom:0;width:55px;z-index:2;pointer-events:none}
+.hero-brand-marquee:before{left:0;background:linear-gradient(90deg,#fff,rgba(255,255,255,0))}
+.hero-brand-marquee:after{right:0;background:linear-gradient(270deg,#fff,rgba(255,255,255,0))}
+.hero-brand-track{display:flex;width:max-content;animation:woodrickBrandRail 34s linear infinite;will-change:transform}
+.hero-brand-marquee:hover .hero-brand-track{animation-play-state:paused}
+.hero-brand-group{display:flex;align-items:center;flex-shrink:0}
+.hero-brand-mark{min-width:170px;height:78px;padding:0 23px;border-right:1px solid #ece6dc;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#1c1a17;font-family:Arial,sans-serif;font-weight:900;font-size:16px;letter-spacing:-.02em;white-space:nowrap}
+.hero-brand-mark small{display:block;margin-top:3px;color:#9a793f;font-size:8px;letter-spacing:.14em;font-weight:800;text-transform:uppercase}
+@keyframes woodrickBrandRail{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+@media(max-width:850px){
+ .hero-slide-dots{bottom:22px;right:20px}
+ .hero-brand-dock-inner{grid-template-columns:1fr}
+ .hero-brand-title{justify-content:center;text-align:center;padding:10px 16px}
+ .hero-brand-mark{min-width:145px;height:66px;padding:0 17px;font-size:14px}
+}
+@media(max-width:520px){
+ .hero-slide{background-position:62% center}
+ .hero-slide-dots{right:14px;bottom:16px}
+ .hero-slide-dot{width:24px}.hero-slide-dot.is-active{width:36px}
+ .hero-brand-mark{min-width:132px;height:62px;font-size:13px}
+ .hero-brand-mark small{font-size:7px}
+}
+@media(prefers-reduced-motion:reduce){
+ .hero-slide{transition:none;transform:none}
+ .hero-brand-track{animation:none}
+}
+</style>
+
 </head>
 <body>
 <div class="topbar"><div class="container"><span>Welcome to Woodrick Homes</span><span>Mon–Sat · 10:00 AM–8:00 PM   |   Premium Building Materials &amp; Interior Solutions</span></div></div>
@@ -264,7 +310,18 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
 </div>
 </header>
 <main>
+
 <section class="hero" id="home">
+<div class="hero-slides" aria-hidden="true">
+  <div class="hero-slide is-active" style="--hero-image:url('https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=2200&q=90')"></div>
+  <div class="hero-slide" style="--hero-image:url('https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=2200&q=90')"></div>
+  <div class="hero-slide" style="--hero-image:url('https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=2200&q=90')"></div>
+</div>
+<div class="hero-slide-dots" aria-label="Hero slides">
+  <button class="hero-slide-dot is-active" type="button" aria-label="Show slide 1" data-hero-slide="0"></button>
+  <button class="hero-slide-dot" type="button" aria-label="Show slide 2" data-hero-slide="1"></button>
+  <button class="hero-slide-dot" type="button" aria-label="Show slide 3" data-hero-slide="2"></button>
+</div>
 <div class="hero-modular">MODULAR KITCHEN • DESIGN • INSTALLATION</div>
 <div class="hero-kitchen-visual">
 <span class="hero-kitchen-chip">Premium Modular Kitchens</span>
@@ -279,7 +336,45 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
 <div class="trust"><span>Trusted Brands</span><span>Premium Quality</span><span>Expert Guidance</span></div>
 <div class="premium-proof"><div><strong>One Destination</strong><small>Building + Interiors</small></div><div><strong>Curated Range</strong><small>Trusted Brands</small></div><div><strong>Expert Support</strong><small>From Selection to Site</small></div></div>
 
+
 </div>
+</section>
+<section class="hero-brand-dock" aria-label="Trusted brand partners">
+  <div class="hero-brand-dock-inner">
+    <div class="hero-brand-title">Trusted brands.<br/>One destination.</div>
+    <div class="hero-brand-marquee">
+      <div class="hero-brand-track">
+        <div class="hero-brand-group">
+          <div class="hero-brand-mark">ULTRATECH<small>Cement</small></div>
+          <div class="hero-brand-mark">BIRLA opus<small>Paints</small></div>
+          <div class="hero-brand-mark">asianpaints<small>Paints &amp; Finishes</small></div>
+          <div class="hero-brand-mark">Griham<small>by Supreme</small></div>
+          <div class="hero-brand-mark">CENTURYPLY<small>Plywood</small></div>
+          <div class="hero-brand-mark">Greenpanel<small>Panels</small></div>
+          <div class="hero-brand-mark">Nilkamal<small>Furniture Solutions</small></div>
+          <div class="hero-brand-mark">Godrej<small>Locks</small></div>
+          <div class="hero-brand-mark">HETTICH<small>Hardware</small></div>
+          <div class="hero-brand-mark">WOODLINE<small>Decorative Surfaces</small></div>
+          <div class="hero-brand-mark">MWUD<small>Laminates</small></div>
+          <div class="hero-brand-mark">RISTAL<small>Laminates</small></div>
+        </div>
+        <div class="hero-brand-group" aria-hidden="true">
+          <div class="hero-brand-mark">ULTRATECH<small>Cement</small></div>
+          <div class="hero-brand-mark">BIRLA opus<small>Paints</small></div>
+          <div class="hero-brand-mark">asianpaints<small>Paints &amp; Finishes</small></div>
+          <div class="hero-brand-mark">Griham<small>by Supreme</small></div>
+          <div class="hero-brand-mark">CENTURYPLY<small>Plywood</small></div>
+          <div class="hero-brand-mark">Greenpanel<small>Panels</small></div>
+          <div class="hero-brand-mark">Nilkamal<small>Furniture Solutions</small></div>
+          <div class="hero-brand-mark">Godrej<small>Locks</small></div>
+          <div class="hero-brand-mark">HETTICH<small>Hardware</small></div>
+          <div class="hero-brand-mark">WOODLINE<small>Decorative Surfaces</small></div>
+          <div class="hero-brand-mark">MWUD<small>Laminates</small></div>
+          <div class="hero-brand-mark">RISTAL<small>Laminates</small></div>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>
 <section class="about" id="about"><div class="container about-grid">
 <div class="about-img"></div>
@@ -619,5 +714,36 @@ function submitForm(e){
  form.reset();
 }
 </script>
+
+<script id="woodrick-hero-brand-slider-script">
+(function(){
+  var slides=Array.prototype.slice.call(document.querySelectorAll('.hero-slide'));
+  var dots=Array.prototype.slice.call(document.querySelectorAll('.hero-slide-dot'));
+  if(slides.length<2) return;
+  var current=0, timer=null;
+  function show(index){
+    current=(index+slides.length)%slides.length;
+    slides.forEach(function(slide,i){slide.classList.toggle('is-active',i===current)});
+    dots.forEach(function(dot,i){dot.classList.toggle('is-active',i===current);dot.setAttribute('aria-current',i===current?'true':'false')});
+  }
+  function start(){
+    stop();
+    timer=setInterval(function(){show(current+1)},5200);
+  }
+  function stop(){if(timer){clearInterval(timer);timer=null}}
+  dots.forEach(function(dot){
+    dot.addEventListener('click',function(){show(Number(dot.getAttribute('data-hero-slide'))||0);start()});
+  });
+  var hero=document.querySelector('.hero');
+  if(hero){
+    hero.addEventListener('mouseenter',stop);
+    hero.addEventListener('mouseleave',start);
+    hero.addEventListener('focusin',stop);
+    hero.addEventListener('focusout',start);
+  }
+  show(0); start();
+})();
+</script>
+
 </body>
 </html>
