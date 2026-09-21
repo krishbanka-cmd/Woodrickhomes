@@ -1207,9 +1207,9 @@ function submitForm(e){
 
 <script id="woodrick-brand-rail-registry-20260921">
 (function(){
-  /* Single source of truth for the hero brand rail.
-     Add/update a brand here once; desktop + mobile/duplicate marquee render from the same entry. */
-  window.WOODRICK_BRAND_RAIL = [
+  /* Fallback list keeps the hero stable if the live brand API is temporarily unavailable.
+     Normal operation reads the admin-managed /api/brands registry. */
+  var fallbackBrands = [
     {brand:'UltraTech',label:'UltraTech Cement',alt:'UltraTech Cement logo',src:'https://www.ultratechcement.com/content/dam/ultratechcementwebsite/solutions/3d-corporate-logo-full.jpg',fallback:'assets/brand-logos/ultratech.svg'},
     {brand:'Birla Opus',label:'Birla Opus Paints',alt:'Birla Opus Paints logo',src:'https://assets.birlaopus.com/is/image/grasimindustries/footer-opus-logo-resize?dpr=off&ts=1740568574949',fallback:'assets/brand-logos/birla-opus.svg'},
     {brand:'Asian Paints',label:'Asian Paints',alt:'Asian Paints logo',src:'https://www.asianpaints.com/media_1c958864309c45699aabc2a96ceec44f7a9a6343d.avif?format=avif&optimize=medium&width=750',fallback:'assets/brand-logos/asian-paints.svg'},
@@ -1227,50 +1227,69 @@ function submitForm(e){
     {brand:'EBCO',label:'EBCO',alt:'EBCO logo',src:'https://www.sainiworld.in/cdn/shop/collections/ebco_logo.jpg?v=1667629036'}
   ];
 
+  window.WOODRICK_BRAND_RAIL=fallbackBrands.slice();
+
   function makeBrandCard(item){
     var card=document.createElement('div');
     card.className='hero-brand-mark';
-    card.dataset.brand=item.brand;
+    card.dataset.brand=item.brand||item.label||'Brand';
 
-    var img=document.createElement('img');
-    img.src=item.src;
-    img.alt=item.alt || (item.label+' logo');
-    img.loading='eager';
-    img.decoding='async';
-    if(item.fallback) img.dataset.fallback=item.fallback;
-    img.addEventListener('error',function(){
-      if(this.dataset.fallback && !this.dataset.tried){
-        this.dataset.tried='1';
-        this.src=this.dataset.fallback;
-      }else{
-        card.classList.add('logo-unavailable');
-        this.style.display='none';
-      }
-    });
+    if(item.src){
+      var img=document.createElement('img');
+      img.src=item.src;
+      img.alt=item.alt || ((item.label||item.brand||'Brand')+' logo');
+      img.loading='eager';
+      img.decoding='async';
+      if(item.fallback) img.dataset.fallback=item.fallback;
+      img.addEventListener('error',function(){
+        if(this.dataset.fallback && !this.dataset.tried){
+          this.dataset.tried='1';
+          this.src=this.dataset.fallback;
+        }else{
+          card.classList.add('logo-unavailable');
+          this.style.display='none';
+        }
+      });
+      card.appendChild(img);
+    }else{
+      card.classList.add('logo-unavailable');
+    }
 
     var label=document.createElement('span');
     label.className='brand-name-fallback';
-    label.textContent=item.label;
-
-    card.appendChild(img);
+    label.textContent=item.label||item.brand||'Brand';
     card.appendChild(label);
     return card;
   }
 
-  function renderHeroBrandRail(){
+  function renderHeroBrandRail(items){
     var groups=document.querySelectorAll('.hero-brand-track > .hero-brand-group');
-    if(!groups.length) return;
+    if(!groups.length)return;
+    var list=Array.isArray(items)&&items.length?items:fallbackBrands;
+    window.WOODRICK_BRAND_RAIL=list;
     groups.forEach(function(group,index){
       group.replaceChildren();
-      window.WOODRICK_BRAND_RAIL.forEach(function(item){group.appendChild(makeBrandCard(item));});
-      if(index>0) group.setAttribute('aria-hidden','true');
+      list.forEach(function(item){group.appendChild(makeBrandCard(item));});
+      if(index>0)group.setAttribute('aria-hidden','true');
     });
   }
 
+  async function syncHeroBrandRail(){
+    renderHeroBrandRail(fallbackBrands);
+    try{
+      var r=await fetch('/api/brands?_='+Date.now(),{cache:'no-store',headers:{'cache-control':'no-cache'}});
+      if(!r.ok)throw new Error('Brand API '+r.status);
+      var d=await r.json();
+      if(Array.isArray(d.items)&&d.items.length)renderHeroBrandRail(d.items);
+    }catch(e){
+      /* Keep fallback rail visible if API/network is unavailable. */
+    }
+  }
+
   if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',renderHeroBrandRail,{once:true});
+    document.addEventListener('DOMContentLoaded',syncHeroBrandRail,{once:true});
   }else{
-    renderHeroBrandRail();
+    syncHeroBrandRail();
   }
 })();
 </script>
