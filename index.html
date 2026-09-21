@@ -833,13 +833,13 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
   --brand-logo-w:154px;--brand-logo-h:66px;
 }
 .hero-brand-mark[data-brand="Woodline"] img{
-  width:150px!important;
-  height:66px!important;
-  max-width:none!important;
-  max-height:none!important;
-  object-fit:cover!important;
-  object-position:50% 57%!important;
-  transform:scale(1.08)!important;
+  width:146px!important;
+  height:58px!important;
+  max-width:146px!important;
+  max-height:58px!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  transform:none!important;
   filter:contrast(1.22) saturate(1.08)!important;
 }
 .hero-brand-mark[data-brand="UltraTech"]{
@@ -855,8 +855,8 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
 }
 .hero-brand-mark[data-brand="EBCO"]{--brand-logo-w:136px;--brand-logo-h:61px}
 .hero-brand-mark[data-brand="EBCO"] img{transform:scale(1.13)!important;filter:contrast(1.25)!important}
-.hero-brand-mark[data-brand="Supreme"]{--brand-logo-w:154px;--brand-logo-h:64px}
-.hero-brand-mark[data-brand="Supreme"] img{filter:contrast(1.30) saturate(1.03)!important}
+.hero-brand-mark[data-brand="Supreme"]{--brand-logo-w:148px;--brand-logo-h:58px}
+.hero-brand-mark[data-brand="Supreme"] img{object-fit:contain!important;object-position:center!important;filter:contrast(1.30) saturate(1.03)!important}
 .hero-brand-mark[data-brand="CenturyPly"]{--brand-logo-w:148px;--brand-logo-h:59px}
 .hero-brand-mark[data-brand="CenturyPly"] img{transform:scale(1.06)!important;filter:contrast(1.22) saturate(1.08)!important}
 .hero-brand-mark[data-brand="Greenpanel"]{--brand-logo-w:148px;--brand-logo-h:59px}
@@ -892,9 +892,10 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
     padding:5px 7px!important;
   }
   .hero-brand-mark[data-brand="Woodline"] img{
-    width:136px!important;height:60px!important;
-    object-position:50% 57%!important;
-    transform:scale(1.08)!important;
+    width:130px!important;height:52px!important;
+    max-width:130px!important;max-height:52px!important;
+    object-position:center!important;
+    transform:none!important;
   }
   .hero-brand-mark[data-brand="UltraTech"] img{
     width:68px!important;height:68px!important;
@@ -910,10 +911,37 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
 }
 @media(max-width:520px){
   .hero-brand-mark{min-width:142px!important;width:142px!important;height:72px!important}
-  .hero-brand-mark[data-brand="Woodline"] img{width:132px!important;height:58px!important}
+  .hero-brand-mark[data-brand="Woodline"] img{width:126px!important;height:49px!important;max-width:126px!important;max-height:49px!important}
   .hero-brand-mark[data-brand="UltraTech"] img{
     width:65px!important;height:65px!important;max-width:65px!important;max-height:65px!important;
   }
+}
+</style>
+
+<style id="woodrick-brand-rail-safe-area-20260921">
+/* Keep the complete logo inside a safe area and make every product descriptor readable. */
+.hero-brand-mark{height:96px!important;padding:7px 8px 6px!important;justify-content:center!important;overflow:hidden!important}
+.hero-brand-mark img{flex:0 1 auto!important;margin:0 auto 4px!important}
+.hero-brand-tagline{
+  display:block!important;
+  width:100%!important;
+  min-height:15px!important;
+  color:#423526!important;
+  font:800 11px/1.18 Arial,Helvetica,sans-serif!important;
+  letter-spacing:.025em!important;
+  text-align:center!important;
+  white-space:normal!important;
+  overflow:visible!important;
+}
+.hero-brand-mark[data-brand="Woodline"] img,
+.hero-brand-mark[data-brand="Supreme"] img{object-fit:contain!important;object-position:center!important}
+@media(max-width:850px){
+  .hero-brand-mark{height:90px!important;padding:6px 7px 5px!important}
+  .hero-brand-tagline{font-size:10.5px!important;line-height:1.15!important;min-height:13px!important}
+}
+@media(max-width:520px){
+  .hero-brand-mark{height:88px!important}
+  .hero-brand-tagline{font-size:10px!important}
 }
 </style>
 </head>
@@ -1379,10 +1407,10 @@ function submitForm(e){
   /* Fallback list keeps the hero stable if the live brand API is temporarily unavailable.
      Normal operation reads the admin-managed /api/brands registry. */
   var fallbackBrands = [
-    {brand:'UltraTech',label:'UltraTech Cement',alt:'UltraTech Cement logo',src:'https://www.ultratechcement.com/content/dam/ultratechcementwebsite/solutions/3d-corporate-logo-full.jpg',fallback:'assets/brand-logos/ultratech.svg'},
-    {brand:'Birla Opus',label:'Birla Opus Paints',alt:'Birla Opus Paints logo',src:'https://assets.birlaopus.com/is/image/grasimindustries/footer-opus-logo-resize?dpr=off&ts=1740568574949',fallback:'assets/brand-logos/birla-opus.svg'},
-    {brand:'Asian Paints',label:'Asian Paints',alt:'Asian Paints logo',src:'https://www.asianpaints.com/media_1c958864309c45699aabc2a96ceec44f7a9a6343d.avif?format=avif&optimize=medium&width=750',fallback:'assets/brand-logos/asian-paints.svg'},
-    {brand:'Supreme',label:'Supreme',alt:'Supreme Industries logo',src:'assets/brand-logos/supreme-real.png'},
+    {brand:'UltraTech',label:'UltraTech Cement',tagline:'Cement & Building Solutions',alt:'UltraTech Cement logo',src:'https://www.ultratechcement.com/content/dam/ultratechcementwebsite/solutions/3d-corporate-logo-full.jpg',fallback:'assets/brand-logos/ultratech.svg'},
+    {brand:'Birla Opus',label:'Birla Opus Paints',tagline:'Paints',alt:'Birla Opus Paints logo',src:'https://assets.birlaopus.com/is/image/grasimindustries/footer-opus-logo-resize?dpr=off&ts=1740568574949',fallback:'assets/brand-logos/birla-opus.svg'},
+    {brand:'Asian Paints',label:'Asian Paints',tagline:'Paints & Finishes',alt:'Asian Paints logo',src:'https://www.asianpaints.com/media_1c958864309c45699aabc2a96ceec44f7a9a6343d.avif?format=avif&optimize=medium&width=750',fallback:'assets/brand-logos/asian-paints.svg'},
+    {brand:'Supreme',label:'Supreme',tagline:'uPVC Doors & Windows',alt:'Supreme Industries logo',src:'assets/brand-logos/supreme-real.png'},
     {brand:'CenturyPly',label:'CenturyPly',alt:'CenturyPly logo',src:'https://upload.wikimedia.org/wikipedia/commons/1/16/Centuryply.png',fallback:'https://delhisales.in/brand_image/1396010809.jpg'},
     {brand:'Greenpanel',label:'Greenpanel',alt:'Greenpanel logo',src:'assets/brand-logos/greenpanel-real.svg'},
     {brand:'Nilkamal',label:'Nilkamal',alt:'Nilkamal logo',src:'assets/brand-logos/nilkamal-real.png'},
@@ -1391,10 +1419,18 @@ function submitForm(e){
     {brand:'Greenply',label:'Greenply',alt:'Greenply Plywood logo',src:'https://cdn.shopify.com/s/files/1/0634/6283/4312/files/plywood-suppliers-and-manufacturers-in-the-world-3.jpg?v=1748284691'},
     {brand:'Merino',label:'Merino',alt:'Merino Laminates logo',src:'https://3adeal.com/images/thumbnails/904/500/detailed/5/merino_logo.png?t=1736319929'},
     {brand:'Ristal',label:'Ristal',alt:'Ristal Laminates logo',src:'https://www.ristallam.com/ristal-img/logo.png'},
-    {brand:'Woodline',label:'Woodline',alt:'Woodline Laminates logo',src:'https://qliqo.in/get_image_services.php?id=1845'},
+    {brand:'Woodline',label:'Woodline',tagline:'Laminates · Louvers · Veneers',alt:'Woodline Laminates logo',src:'https://qliqo.in/get_image_services.php?id=1845'},
     {brand:'MWUD',label:'MWUD',alt:'MWUD logo',src:'https://mwud.in/assets/images/resources/logo-1.png'},
     {brand:'EBCO',label:'EBCO',alt:'EBCO logo',src:'https://www.sainiworld.in/cdn/shop/collections/ebco_logo.jpg?v=1667629036'}
   ];
+
+  var brandTaglines={
+    'centuryply':'Plywood & Panels','greenpanel':'MDF · HDHMR · Panels','nilkamal':'Furniture Solutions',
+    'godrej':'Locks & Security','hettich':'Furniture Hardware','greenply':'Plywood & Panels',
+    'merino':'Laminates & Surfaces','ristal':'Decorative Laminates','mwud':'Decorative Laminates',
+    'ebco':'Furniture Hardware','ultratech':'Cement & Building Solutions','birla opus':'Paints',
+    'asian paints':'Paints & Finishes','supreme':'uPVC Doors & Windows','woodline':'Laminates · Louvers · Veneers'
+  };
 
   window.WOODRICK_BRAND_RAIL=fallbackBrands.slice();
 
@@ -1427,6 +1463,15 @@ function submitForm(e){
     label.className='brand-name-fallback';
     label.textContent=item.label||item.brand||'Brand';
     card.appendChild(label);
+
+    var brandKey=String(item.brand||item.label||'').trim().toLowerCase();
+    var tagline=item.tagline||item.productLine||item.product_line||item.category||item.description||brandTaglines[brandKey]||'';
+    if(tagline){
+      var descriptor=document.createElement('span');
+      descriptor.className='hero-brand-tagline';
+      descriptor.textContent=tagline;
+      card.appendChild(descriptor);
+    }
     return card;
   }
 
