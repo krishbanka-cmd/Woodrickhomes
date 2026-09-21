@@ -482,21 +482,104 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
 </style>
 
 
-<style id="woodrick-local-brand-assets-20260921">
+
+<style id="woodrick-real-logo-rail-v2-20260921">
+/* Real brand artwork, larger premium cards, consistent visual scale */
+.hero-brand-dock{
+  background:#f6f2ea!important;
+  border-top:1px solid rgba(199,163,89,.42)!important;
+  box-shadow:0 -8px 30px rgba(0,0,0,.12)!important;
+}
+.hero-brand-dock-inner{
+  width:min(1320px,96%)!important;
+  grid-template-columns:116px minmax(0,1fr)!important;
+  gap:0!important;
+}
+.hero-brand-title{
+  min-height:102px!important;
+  background:#0f0e0c!important;
+  color:#e0bc69!important;
+  font-size:8px!important;
+  letter-spacing:.16em!important;
+  line-height:1.35!important;
+}
+.hero-brand-marquee{
+  background:#f6f2ea!important;
+  padding:9px 10px!important;
+}
+.hero-brand-group{
+  gap:10px!important;
+  padding-right:10px!important;
+}
+.hero-brand-mark{
+  min-width:168px!important;
+  width:168px!important;
+  height:84px!important;
+  padding:10px 14px!important;
+  border:1px solid #ddd5c7!important;
+  border-radius:8px!important;
+  background:#fff!important;
+  box-shadow:0 4px 14px rgba(31,26,19,.07)!important;
+  overflow:hidden!important;
+  position:relative!important;
+}
 .hero-brand-mark img{
   display:block!important;
   width:auto!important;
   height:auto!important;
-  max-width:118px!important;
-  max-height:52px!important;
+  max-width:136px!important;
+  max-height:58px!important;
   object-fit:contain!important;
+  object-position:center!important;
+  filter:none!important;
+  opacity:1!important;
 }
+.hero-brand-mark[data-brand="UltraTech"] img{max-height:62px!important}
+.hero-brand-mark[data-brand="Birla Opus"] img{max-width:145px!important;max-height:64px!important}
+.hero-brand-mark[data-brand="Asian Paints"] img{max-width:142px!important;max-height:55px!important}
+.hero-brand-mark[data-brand="Hettich"] img{max-width:135px!important;max-height:58px!important}
+.hero-brand-mark[data-brand="Woodline"] img{max-width:128px!important;max-height:64px!important}
+.hero-brand-mark[data-brand="MWUD"] img{max-width:120px!important;max-height:64px!important}
+.brand-name-fallback{
+  display:none!important;
+  font-family:Arial,Helvetica,sans-serif!important;
+  font-size:16px!important;
+  font-weight:800!important;
+  color:#222!important;
+  letter-spacing:.01em!important;
+}
+.hero-brand-mark.logo-unavailable .brand-name-fallback{display:block!important}
+.hero-brand-track{animation:woodrickBoxBrands 44s linear infinite!important}
+
 @media(max-width:850px){
-  .hero-brand-mark img{max-width:96px!important;max-height:40px!important}
-  .hero-brand-marquee{cursor:grab!important}
+  .hero-brand-title{
+    height:30px!important;min-height:30px!important;
+    padding:5px 12px!important;font-size:6.8px!important;
+  }
+  .hero-brand-marquee{
+    padding:8px 10px 10px!important;
+    overflow-x:auto!important;
+    scroll-snap-type:x mandatory!important;
+    -webkit-overflow-scrolling:touch!important;
+  }
+  .hero-brand-track{animation:none!important;transform:none!important}
+  .hero-brand-group[aria-hidden="true"]{display:none!important}
+  .hero-brand-mark{
+    min-width:142px!important;width:142px!important;height:76px!important;
+    padding:8px 10px!important;
+  }
+  .hero-brand-mark img{max-width:118px!important;max-height:50px!important}
+  .hero-brand-mark[data-brand="Birla Opus"] img{max-width:124px!important;max-height:54px!important}
+  .hero-brand-mark[data-brand="Asian Paints"] img{max-width:122px!important;max-height:48px!important}
+  .hero-brand-mark[data-brand="Woodline"] img{max-width:112px!important;max-height:55px!important}
+  .hero-brand-mark[data-brand="MWUD"] img{max-width:104px!important;max-height:55px!important}
+  .brand-name-fallback{font-size:14px!important}
 }
 @media(max-width:520px){
-  .hero-brand-mark img{max-width:90px!important;max-height:38px!important}
+  .hero-brand-mark{
+    min-width:134px!important;width:134px!important;height:72px!important;
+  }
+  .hero-brand-mark img{max-width:112px!important;max-height:47px!important}
 }
 </style>
 
@@ -544,38 +627,38 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
       <div class="hero-brand-marquee" aria-label="Swipe to see all brands on mobile">
         <div class="hero-brand-track">
           <div class="hero-brand-group">
-            <div class="hero-brand-mark" data-brand="ULTRATECH"><img src="assets/brand-logos/ultratech.svg" alt="UltraTech Cement logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="BIRLA OPUS"><img src="assets/brand-logos/birla-opus.svg" alt="Birla Opus logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="ASIAN PAINTS"><img src="assets/brand-logos/asian-paints.svg" alt="Asian Paints logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="SUPREME"><img src="assets/brand-logos/supreme.svg" alt="Supreme logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="CENTURYPLY"><img src="assets/brand-logos/centuryply.svg" alt="CenturyPly logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="GREENPANEL"><img src="assets/brand-logos/greenpanel.svg" alt="Greenpanel logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="NILKAMAL"><img src="assets/brand-logos/nilkamal.svg" alt="Nilkamal logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="GODREJ"><img src="assets/brand-logos/godrej.svg" alt="Godrej logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="HETTICH"><img src="assets/brand-logos/hettich.svg" alt="Hettich logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="GREENPLY"><img src="assets/brand-logos/greenply.svg" alt="Greenply logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="MERINO"><img src="assets/brand-logos/merino.svg" alt="Merino logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="RISTAL"><img src="assets/brand-logos/ristal.svg" alt="Ristal logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="WOODLINE"><img src="assets/brand-logos/woodline.svg" alt="Woodline logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="MWUD"><img src="assets/brand-logos/mwud.svg" alt="MWUD logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="EBCO"><img src="assets/brand-logos/ebco.svg" alt="EBCO logo" loading="eager" decoding="async"></div>
+            <div class="hero-brand-mark" data-brand="UltraTech"><img src="https://upload.wikimedia.org/wikipedia/commons/1/18/UltraTech_logo.jpg" alt="UltraTech Cement logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">UltraTech</span></div>
+            <div class="hero-brand-mark" data-brand="Birla Opus"><img src="https://s7ap1.scene7.com/is/image/grasimindustries/footer-opus-logo?dpr=off&ts=1710308188640" data-fallback="https://assets.birlaopus.com/is/image/grasimindustries/footer-opus-logo-resize?dpr=off&ts=1740568574949" alt="Birla Opus Paints logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">Birla Opus</span></div>
+            <div class="hero-brand-mark" data-brand="Asian Paints"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Asian_Paints_Logo.svg/960px-Asian_Paints_Logo.svg.png" data-fallback="https://upload.wikimedia.org/wikipedia/commons/e/e3/Asian_Paints_Logo.svg" alt="Asian Paints logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">Asian Paints</span></div>
+            <div class="hero-brand-mark" data-brand="Supreme"><img src="https://companieslogo.com/img/orig/SUPREMEIND.NS_BIG-76f22b5c.png?t=1744865028" data-fallback="https://upload.wikimedia.org/wikipedia/commons/a/a1/Supreme_Industries_logo.svg" alt="Supreme Industries logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">Supreme</span></div>
+            <div class="hero-brand-mark" data-brand="CenturyPly"><img src="https://upload.wikimedia.org/wikipedia/commons/1/16/Centuryply.png" data-fallback="https://delhisales.in/brand_image/1396010809.jpg" alt="CenturyPly logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">CenturyPly</span></div>
+            <div class="hero-brand-mark" data-brand="Greenpanel"><img src="https://companieslogo.com/img/orig/GREENPANEL.NS_BIG-0a656a3b.png" alt="Greenpanel logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">Greenpanel</span></div>
+            <div class="hero-brand-mark" data-brand="Nilkamal"><img src="https://cdn.shopify.com/s/files/1/1844/9185/files/Nilkamal_Plastics_logo.svg_76311036-82c6-4a7a-adad-2eba05709996.png?v=1489494971" data-fallback="https://images.yourstory.com/cs/images/companies/820273192486042944852295707717942166421504n-1643366879318.jpg" alt="Nilkamal logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">Nilkamal</span></div>
+            <div class="hero-brand-mark" data-brand="Godrej"><img src="https://wosa.in/images/brand-logos/godrej-logo.jpg" alt="Godrej logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">Godrej</span></div>
+            <div class="hero-brand-mark" data-brand="Hettich"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Logo_of_Hettich_%28company%29.svg/1280px-Logo_of_Hettich_%28company%29.svg.png" data-fallback="https://upload.wikimedia.org/wikipedia/commons/1/15/Logo_of_Hettich_%28company%29.svg" alt="Hettich logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">Hettich</span></div>
+            <div class="hero-brand-mark" data-brand="Greenply"><img src="https://cdn.shopify.com/s/files/1/0634/6283/4312/files/plywood-suppliers-and-manufacturers-in-the-world-3.jpg?v=1748284691" alt="Greenply Plywood logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">Greenply</span></div>
+            <div class="hero-brand-mark" data-brand="Merino"><img src="https://3adeal.com/images/thumbnails/904/500/detailed/5/merino_logo.png?t=1736319929" alt="Merino Laminates logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">Merino</span></div>
+            <div class="hero-brand-mark" data-brand="Ristal"><img src="https://www.ristallam.com/ristal-img/logo.png" alt="Ristal Laminates logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">Ristal</span></div>
+            <div class="hero-brand-mark" data-brand="Woodline"><img src="https://qliqo.in/get_image_services.php?id=1845" alt="Woodline Laminates logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">Woodline</span></div>
+            <div class="hero-brand-mark" data-brand="MWUD"><img src="https://mwud.in/assets/images/resources/logo-1.png" alt="MWUD logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">MWUD</span></div>
+            <div class="hero-brand-mark" data-brand="EBCO"><img src="https://www.sainiworld.in/cdn/shop/collections/ebco_logo.jpg?v=1667629036" alt="EBCO logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">EBCO</span></div>
           </div>
           <div class="hero-brand-group" aria-hidden="true">
-            <div class="hero-brand-mark" data-brand="ULTRATECH"><img src="assets/brand-logos/ultratech.svg" alt="UltraTech Cement logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="BIRLA OPUS"><img src="assets/brand-logos/birla-opus.svg" alt="Birla Opus logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="ASIAN PAINTS"><img src="assets/brand-logos/asian-paints.svg" alt="Asian Paints logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="SUPREME"><img src="assets/brand-logos/supreme.svg" alt="Supreme logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="CENTURYPLY"><img src="assets/brand-logos/centuryply.svg" alt="CenturyPly logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="GREENPANEL"><img src="assets/brand-logos/greenpanel.svg" alt="Greenpanel logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="NILKAMAL"><img src="assets/brand-logos/nilkamal.svg" alt="Nilkamal logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="GODREJ"><img src="assets/brand-logos/godrej.svg" alt="Godrej logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="HETTICH"><img src="assets/brand-logos/hettich.svg" alt="Hettich logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="GREENPLY"><img src="assets/brand-logos/greenply.svg" alt="Greenply logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="MERINO"><img src="assets/brand-logos/merino.svg" alt="Merino logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="RISTAL"><img src="assets/brand-logos/ristal.svg" alt="Ristal logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="WOODLINE"><img src="assets/brand-logos/woodline.svg" alt="Woodline logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="MWUD"><img src="assets/brand-logos/mwud.svg" alt="MWUD logo" loading="eager" decoding="async"></div>
-            <div class="hero-brand-mark" data-brand="EBCO"><img src="assets/brand-logos/ebco.svg" alt="EBCO logo" loading="eager" decoding="async"></div>
+            <div class="hero-brand-mark" data-brand="UltraTech"><img src="https://upload.wikimedia.org/wikipedia/commons/1/18/UltraTech_logo.jpg" alt="UltraTech Cement logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">UltraTech</span></div>
+            <div class="hero-brand-mark" data-brand="Birla Opus"><img src="https://s7ap1.scene7.com/is/image/grasimindustries/footer-opus-logo?dpr=off&ts=1710308188640" data-fallback="https://assets.birlaopus.com/is/image/grasimindustries/footer-opus-logo-resize?dpr=off&ts=1740568574949" alt="Birla Opus Paints logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">Birla Opus</span></div>
+            <div class="hero-brand-mark" data-brand="Asian Paints"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Asian_Paints_Logo.svg/960px-Asian_Paints_Logo.svg.png" data-fallback="https://upload.wikimedia.org/wikipedia/commons/e/e3/Asian_Paints_Logo.svg" alt="Asian Paints logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">Asian Paints</span></div>
+            <div class="hero-brand-mark" data-brand="Supreme"><img src="https://companieslogo.com/img/orig/SUPREMEIND.NS_BIG-76f22b5c.png?t=1744865028" data-fallback="https://upload.wikimedia.org/wikipedia/commons/a/a1/Supreme_Industries_logo.svg" alt="Supreme Industries logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">Supreme</span></div>
+            <div class="hero-brand-mark" data-brand="CenturyPly"><img src="https://upload.wikimedia.org/wikipedia/commons/1/16/Centuryply.png" data-fallback="https://delhisales.in/brand_image/1396010809.jpg" alt="CenturyPly logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">CenturyPly</span></div>
+            <div class="hero-brand-mark" data-brand="Greenpanel"><img src="https://companieslogo.com/img/orig/GREENPANEL.NS_BIG-0a656a3b.png" alt="Greenpanel logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">Greenpanel</span></div>
+            <div class="hero-brand-mark" data-brand="Nilkamal"><img src="https://cdn.shopify.com/s/files/1/1844/9185/files/Nilkamal_Plastics_logo.svg_76311036-82c6-4a7a-adad-2eba05709996.png?v=1489494971" data-fallback="https://images.yourstory.com/cs/images/companies/820273192486042944852295707717942166421504n-1643366879318.jpg" alt="Nilkamal logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">Nilkamal</span></div>
+            <div class="hero-brand-mark" data-brand="Godrej"><img src="https://wosa.in/images/brand-logos/godrej-logo.jpg" alt="Godrej logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">Godrej</span></div>
+            <div class="hero-brand-mark" data-brand="Hettich"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Logo_of_Hettich_%28company%29.svg/1280px-Logo_of_Hettich_%28company%29.svg.png" data-fallback="https://upload.wikimedia.org/wikipedia/commons/1/15/Logo_of_Hettich_%28company%29.svg" alt="Hettich logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">Hettich</span></div>
+            <div class="hero-brand-mark" data-brand="Greenply"><img src="https://cdn.shopify.com/s/files/1/0634/6283/4312/files/plywood-suppliers-and-manufacturers-in-the-world-3.jpg?v=1748284691" alt="Greenply Plywood logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">Greenply</span></div>
+            <div class="hero-brand-mark" data-brand="Merino"><img src="https://3adeal.com/images/thumbnails/904/500/detailed/5/merino_logo.png?t=1736319929" alt="Merino Laminates logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">Merino</span></div>
+            <div class="hero-brand-mark" data-brand="Ristal"><img src="https://www.ristallam.com/ristal-img/logo.png" alt="Ristal Laminates logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">Ristal</span></div>
+            <div class="hero-brand-mark" data-brand="Woodline"><img src="https://qliqo.in/get_image_services.php?id=1845" alt="Woodline Laminates logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">Woodline</span></div>
+            <div class="hero-brand-mark" data-brand="MWUD"><img src="https://mwud.in/assets/images/resources/logo-1.png" alt="MWUD logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">MWUD</span></div>
+            <div class="hero-brand-mark" data-brand="EBCO"><img src="https://www.sainiworld.in/cdn/shop/collections/ebco_logo.jpg?v=1667629036" alt="EBCO logo" loading="eager" decoding="async" onerror="if(this.dataset.fallback&&!this.dataset.tried){this.dataset.tried='1';this.src=this.dataset.fallback}else{this.closest('.hero-brand-mark').classList.add('logo-unavailable');this.style.display='none'}"><span class="brand-name-fallback">EBCO</span></div>
           </div>
         </div>
       </div>
