@@ -747,6 +747,154 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
 }
 </style>
 
+
+<style id="woodrick-brand-rail-final-audit-20260921">
+/* Final audited hero brand rail:
+   logo-first presentation; text appears only when a logo is unavailable. */
+.hero-brand-dock{
+  background:#fffdf9!important;
+  border-top:1px solid #dfd2bd!important;
+  box-shadow:0 -8px 24px rgba(35,28,18,.10)!important;
+}
+.hero-brand-dock-inner{
+  width:min(1360px,98%)!important;
+  grid-template-columns:126px minmax(0,1fr)!important;
+}
+.hero-brand-title{
+  min-height:96px!important;
+  padding:10px 12px!important;
+  font-size:10px!important;
+  line-height:1.35!important;
+  letter-spacing:.11em!important;
+}
+.hero-brand-marquee{
+  background:#fffdf9!important;
+  padding:7px 10px!important;
+  overflow:hidden!important;
+}
+.hero-brand-group{
+  gap:9px!important;
+  padding-right:9px!important;
+  align-items:center!important;
+}
+.hero-brand-mark{
+  min-width:168px!important;
+  width:168px!important;
+  height:82px!important;
+  padding:8px 10px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  flex-direction:column!important;
+  overflow:hidden!important;
+  background:#fff!important;
+  border:1px solid #e1d6c5!important;
+  box-shadow:0 4px 12px rgba(36,29,21,.07)!important;
+}
+.hero-brand-mark img{
+  display:block!important;
+  width:auto!important;
+  height:auto!important;
+  max-width:var(--brand-logo-w,140px)!important;
+  max-height:var(--brand-logo-h,56px)!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  margin:auto!important;
+  filter:none!important;
+  opacity:1!important;
+}
+
+/* Do not repeat a brand name beneath a readable wordmark/logo. */
+.hero-brand-mark .brand-name-fallback{
+  display:none!important;
+}
+.hero-brand-mark.logo-unavailable .brand-name-fallback,
+.hero-brand-mark[data-force-label="1"] .brand-name-fallback{
+  display:block!important;
+  margin:0!important;
+  color:#26211b!important;
+  font-family:Arial,Helvetica,sans-serif!important;
+  font-size:14px!important;
+  line-height:1.15!important;
+  font-weight:800!important;
+  text-align:center!important;
+  white-space:normal!important;
+}
+
+/* Per-brand optical sizing from the full video audit. */
+.hero-brand-mark[data-brand="UltraTech"]{--brand-logo-w:104px;--brand-logo-h:64px}
+.hero-brand-mark[data-brand="Birla Opus"]{--brand-logo-w:148px;--brand-logo-h:58px}
+.hero-brand-mark[data-brand="Asian Paints"]{--brand-logo-w:150px;--brand-logo-h:58px}
+.hero-brand-mark[data-brand="Supreme"]{--brand-logo-w:158px;--brand-logo-h:64px}
+.hero-brand-mark[data-brand="CenturyPly"]{--brand-logo-w:145px;--brand-logo-h:56px}
+.hero-brand-mark[data-brand="Greenpanel"]{--brand-logo-w:145px;--brand-logo-h:56px}
+.hero-brand-mark[data-brand="Nilkamal"]{--brand-logo-w:140px;--brand-logo-h:56px}
+.hero-brand-mark[data-brand="Godrej"]{--brand-logo-w:142px;--brand-logo-h:56px}
+.hero-brand-mark[data-brand="Hettich"]{--brand-logo-w:142px;--brand-logo-h:54px}
+.hero-brand-mark[data-brand="Greenply"]{--brand-logo-w:142px;--brand-logo-h:54px}
+.hero-brand-mark[data-brand="Merino"]{--brand-logo-w:134px;--brand-logo-h:55px}
+.hero-brand-mark[data-brand="Ristal"]{--brand-logo-w:148px;--brand-logo-h:58px}
+.hero-brand-mark[data-brand="Woodline"]{--brand-logo-w:154px;--brand-logo-h:62px}
+.hero-brand-mark[data-brand="MWUD"]{--brand-logo-w:132px;--brand-logo-h:58px}
+.hero-brand-mark[data-brand="EBCO"]{--brand-logo-w:122px;--brand-logo-h:54px}
+
+/* Keep a small breathing margin on the first and last visible card. */
+.hero-brand-group > .hero-brand-mark:first-child{margin-left:2px!important}
+.hero-brand-group > .hero-brand-mark:last-child{margin-right:2px!important}
+
+@media(max-width:850px){
+  .hero-brand-dock-inner{
+    width:100%!important;
+    grid-template-columns:1fr!important;
+  }
+  .hero-brand-title{
+    min-height:32px!important;
+    height:32px!important;
+    padding:6px 12px!important;
+    font-size:8.5px!important;
+  }
+  .hero-brand-marquee{
+    padding:6px 8px 8px!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    -webkit-overflow-scrolling:touch!important;
+    scrollbar-width:none!important;
+  }
+  .hero-brand-marquee::-webkit-scrollbar{display:none!important}
+  .hero-brand-mark{
+    min-width:148px!important;
+    width:148px!important;
+    height:74px!important;
+    padding:6px 8px!important;
+  }
+  .hero-brand-mark[data-brand="UltraTech"]{--brand-logo-w:88px;--brand-logo-h:54px}
+  .hero-brand-mark[data-brand="Birla Opus"]{--brand-logo-w:128px;--brand-logo-h:49px}
+  .hero-brand-mark[data-brand="Asian Paints"]{--brand-logo-w:132px;--brand-logo-h:50px}
+  .hero-brand-mark[data-brand="Supreme"]{--brand-logo-w:138px;--brand-logo-h:54px}
+  .hero-brand-mark[data-brand="CenturyPly"]{--brand-logo-w:128px;--brand-logo-h:48px}
+  .hero-brand-mark[data-brand="Greenpanel"]{--brand-logo-w:128px;--brand-logo-h:48px}
+  .hero-brand-mark[data-brand="Nilkamal"]{--brand-logo-w:124px;--brand-logo-h:48px}
+  .hero-brand-mark[data-brand="Godrej"]{--brand-logo-w:124px;--brand-logo-h:48px}
+  .hero-brand-mark[data-brand="Hettich"]{--brand-logo-w:124px;--brand-logo-h:47px}
+  .hero-brand-mark[data-brand="Greenply"]{--brand-logo-w:124px;--brand-logo-h:47px}
+  .hero-brand-mark[data-brand="Merino"]{--brand-logo-w:118px;--brand-logo-h:47px}
+  .hero-brand-mark[data-brand="Ristal"]{--brand-logo-w:130px;--brand-logo-h:50px}
+  .hero-brand-mark[data-brand="Woodline"]{--brand-logo-w:136px;--brand-logo-h:53px}
+  .hero-brand-mark[data-brand="MWUD"]{--brand-logo-w:116px;--brand-logo-h:50px}
+  .hero-brand-mark[data-brand="EBCO"]{--brand-logo-w:108px;--brand-logo-h:47px}
+  .hero-brand-mark.logo-unavailable .brand-name-fallback,
+  .hero-brand-mark[data-force-label="1"] .brand-name-fallback{
+    font-size:12px!important;
+  }
+}
+@media(max-width:520px){
+  .hero-brand-mark{
+    min-width:144px!important;
+    width:144px!important;
+    height:72px!important;
+  }
+}
+</style>
 </head>
 <body>
 <div class="topbar"><div class="container"><span>Welcome to Woodrick Homes</span><span>Mon–Sat · 10:00 AM–8:00 PM   |   Premium Building Materials &amp; Interior Solutions</span></div></div>
@@ -1246,8 +1394,7 @@ function submitForm(e){
           this.dataset.tried='1';
           this.src=this.dataset.fallback;
         }else{
-          card.classList.add('logo-unavailable');
-          this.style.display='none';
+          card.classList.add('logo-unavailable');this.style.display='none';
         }
       });
       card.appendChild(img);
