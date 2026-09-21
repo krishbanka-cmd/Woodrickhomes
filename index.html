@@ -296,6 +296,78 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
 }
 </style>
 
+
+<style id="woodrick-hero-logo-overlay-20260921">
+/* Keep trusted-brand logos visible in the first viewport */
+.hero{
+  height:calc(100svh - 34px);
+  min-height:760px;
+  max-height:860px;
+  padding-bottom:0;
+}
+.hero .hero-content{padding-bottom:118px}
+.hero-brand-dock{
+  position:absolute!important;
+  left:0;right:0;bottom:0;
+  z-index:7;
+  padding:0!important;
+  background:rgba(255,255,255,.97)!important;
+  border-top:1px solid rgba(227,199,135,.45)!important;
+  border-bottom:0!important;
+  box-shadow:0 -10px 35px rgba(0,0,0,.16);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+.hero-brand-dock-inner{width:100%!important;max-width:none!important;grid-template-columns:170px minmax(0,1fr)!important}
+.hero-brand-title{
+  min-height:84px;
+  padding:14px 18px!important;
+  background:linear-gradient(135deg,#0c0c0b,#1a1712)!important;
+  color:#e3c787!important;
+  justify-content:center;
+  text-align:center;
+}
+.hero-brand-marquee{background:#fff!important}
+.hero-brand-mark{
+  min-width:160px!important;
+  height:84px!important;
+  padding:10px 20px!important;
+  background:#fff;
+}
+.hero-brand-mark img{
+  display:block;
+  max-width:118px;
+  max-height:46px;
+  width:auto;
+  height:auto;
+  object-fit:contain;
+  filter:none;
+}
+.hero-brand-fallback{display:none;font-family:Arial,sans-serif;font-weight:900;font-size:15px;color:#1c1a17}
+.hero-brand-fallback small{display:block;margin-top:3px;color:#9a793f;font-size:8px;letter-spacing:.14em;text-transform:uppercase}
+@media(max-width:850px){
+  .hero{height:calc(100svh - 34px);min-height:720px;max-height:820px}
+  .hero .hero-content{padding-bottom:105px}
+  .hero-brand-dock-inner{grid-template-columns:1fr!important}
+  .hero-brand-title{
+    position:absolute;left:12px;top:-28px;z-index:4;
+    min-height:0;padding:6px 10px!important;border-radius:2px;
+    font-size:8px;line-height:1;letter-spacing:.14em;
+  }
+  .hero-brand-title br{display:none}
+  .hero-brand-mark{min-width:140px!important;height:72px!important;padding:8px 14px!important}
+  .hero-brand-mark img{max-width:102px;max-height:38px}
+}
+@media(max-width:520px){
+  .hero{height:calc(100svh - 34px);min-height:700px;max-height:790px}
+  .hero .hero-content{padding-top:165px!important;padding-bottom:94px}
+  .hero .premium-proof{display:none}
+  .hero .trust{margin-top:22px}
+  .hero-brand-mark{min-width:126px!important;height:66px!important;padding:7px 12px!important}
+  .hero-brand-mark img{max-width:92px;max-height:34px}
+}
+</style>
+
 </head>
 <body>
 <div class="topbar"><div class="container"><span>Welcome to Woodrick Homes</span><span>Mon–Sat · 10:00 AM–8:00 PM   |   Premium Building Materials &amp; Interior Solutions</span></div></div>
@@ -339,42 +411,40 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
 
 </div>
 </section>
-<section class="hero-brand-dock" aria-label="Trusted brand partners">
+<div class="hero-brand-dock" aria-label="Trusted brand partners">
   <div class="hero-brand-dock-inner">
     <div class="hero-brand-title">Trusted brands.<br/>One destination.</div>
     <div class="hero-brand-marquee">
       <div class="hero-brand-track">
+        
         <div class="hero-brand-group">
-          <div class="hero-brand-mark">ULTRATECH<small>Cement</small></div>
-          <div class="hero-brand-mark">BIRLA opus<small>Paints</small></div>
-          <div class="hero-brand-mark">asianpaints<small>Paints &amp; Finishes</small></div>
-          <div class="hero-brand-mark">Griham<small>by Supreme</small></div>
-          <div class="hero-brand-mark">CENTURYPLY<small>Plywood</small></div>
-          <div class="hero-brand-mark">Greenpanel<small>Panels</small></div>
-          <div class="hero-brand-mark">Nilkamal<small>Furniture Solutions</small></div>
-          <div class="hero-brand-mark">Godrej<small>Locks</small></div>
-          <div class="hero-brand-mark">HETTICH<small>Hardware</small></div>
-          <div class="hero-brand-mark">WOODLINE<small>Decorative Surfaces</small></div>
-          <div class="hero-brand-mark">MWUD<small>Laminates</small></div>
-          <div class="hero-brand-mark">RISTAL<small>Laminates</small></div>
+          <div class="hero-brand-mark"><img src="https://logo.clearbit.com/ultratechcement.com" alt="UltraTech Cement logo" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="hero-brand-fallback">ULTRATECH<small>Cement</small></span></div>
+          <div class="hero-brand-mark"><img src="https://logo.clearbit.com/birlaopus.com" alt="Birla Opus logo" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="hero-brand-fallback">BIRLA OPUS<small>Paints</small></span></div>
+          <div class="hero-brand-mark"><img src="https://logo.clearbit.com/asianpaints.com" alt="Asian Paints logo" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="hero-brand-fallback">ASIAN PAINTS<small>Paints &amp; Finishes</small></span></div>
+          <div class="hero-brand-mark"><img src="https://logo.clearbit.com/supreme.co.in" alt="Supreme logo" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="hero-brand-fallback">SUPREME<small>uPVC Solutions</small></span></div>
+          <div class="hero-brand-mark"><img src="https://logo.clearbit.com/centuryply.com" alt="CenturyPly logo" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="hero-brand-fallback">CENTURYPLY<small>Plywood</small></span></div>
+          <div class="hero-brand-mark"><img src="https://logo.clearbit.com/greenpanel.com" alt="Greenpanel logo" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="hero-brand-fallback">GREENPANEL<small>Panels</small></span></div>
+          <div class="hero-brand-mark"><img src="https://logo.clearbit.com/nilkamal.com" alt="Nilkamal logo" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="hero-brand-fallback">NILKAMAL<small>Furniture</small></span></div>
+          <div class="hero-brand-mark"><img src="https://logo.clearbit.com/godrej.com" alt="Godrej logo" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="hero-brand-fallback">GODREJ<small>Locks</small></span></div>
+          <div class="hero-brand-mark"><img src="https://logo.clearbit.com/hettich.com" alt="Hettich logo" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="hero-brand-fallback">HETTICH<small>Hardware</small></span></div>
         </div>
+
         <div class="hero-brand-group" aria-hidden="true">
-          <div class="hero-brand-mark">ULTRATECH<small>Cement</small></div>
-          <div class="hero-brand-mark">BIRLA opus<small>Paints</small></div>
-          <div class="hero-brand-mark">asianpaints<small>Paints &amp; Finishes</small></div>
-          <div class="hero-brand-mark">Griham<small>by Supreme</small></div>
-          <div class="hero-brand-mark">CENTURYPLY<small>Plywood</small></div>
-          <div class="hero-brand-mark">Greenpanel<small>Panels</small></div>
-          <div class="hero-brand-mark">Nilkamal<small>Furniture Solutions</small></div>
-          <div class="hero-brand-mark">Godrej<small>Locks</small></div>
-          <div class="hero-brand-mark">HETTICH<small>Hardware</small></div>
-          <div class="hero-brand-mark">WOODLINE<small>Decorative Surfaces</small></div>
-          <div class="hero-brand-mark">MWUD<small>Laminates</small></div>
-          <div class="hero-brand-mark">RISTAL<small>Laminates</small></div>
+          <div class="hero-brand-mark"><img src="https://logo.clearbit.com/ultratechcement.com" alt="UltraTech Cement logo" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="hero-brand-fallback">ULTRATECH<small>Cement</small></span></div>
+          <div class="hero-brand-mark"><img src="https://logo.clearbit.com/birlaopus.com" alt="Birla Opus logo" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="hero-brand-fallback">BIRLA OPUS<small>Paints</small></span></div>
+          <div class="hero-brand-mark"><img src="https://logo.clearbit.com/asianpaints.com" alt="Asian Paints logo" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="hero-brand-fallback">ASIAN PAINTS<small>Paints &amp; Finishes</small></span></div>
+          <div class="hero-brand-mark"><img src="https://logo.clearbit.com/supreme.co.in" alt="Supreme logo" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="hero-brand-fallback">SUPREME<small>uPVC Solutions</small></span></div>
+          <div class="hero-brand-mark"><img src="https://logo.clearbit.com/centuryply.com" alt="CenturyPly logo" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="hero-brand-fallback">CENTURYPLY<small>Plywood</small></span></div>
+          <div class="hero-brand-mark"><img src="https://logo.clearbit.com/greenpanel.com" alt="Greenpanel logo" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="hero-brand-fallback">GREENPANEL<small>Panels</small></span></div>
+          <div class="hero-brand-mark"><img src="https://logo.clearbit.com/nilkamal.com" alt="Nilkamal logo" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="hero-brand-fallback">NILKAMAL<small>Furniture</small></span></div>
+          <div class="hero-brand-mark"><img src="https://logo.clearbit.com/godrej.com" alt="Godrej logo" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="hero-brand-fallback">GODREJ<small>Locks</small></span></div>
+          <div class="hero-brand-mark"><img src="https://logo.clearbit.com/hettich.com" alt="Hettich logo" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="hero-brand-fallback">HETTICH<small>Hardware</small></span></div>
         </div>
+      </div>
       </div>
     </div>
   </div>
+</div>
 </section>
 <section class="about" id="about"><div class="container about-grid">
 <div class="about-img"></div>
