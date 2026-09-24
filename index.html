@@ -1145,6 +1145,67 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
 <script>document.querySelectorAll('.ws-tab').forEach(function(b){b.onclick=function(){document.querySelectorAll('.ws-tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.ws-panel').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(b.dataset.tab).classList.add('active')}});document.querySelectorAll('[data-open-services]').forEach(function(x){x.addEventListener('click',function(){setTimeout(function(){var b=document.querySelector('[data-tab="ws-services"]');if(b)b.click()},50)})});</script><section class="why"><div class="container"><div class="section-head"><div class="kicker">Why Choose Woodrick Homes?</div><h2>Quality You Can Build On.</h2><p>From material selection to final purchase, we keep quality and service at the center.</p></div>
 <div class="why-grid"><div class="why-item"><div class="why-icon">✦</div><h3>Premium Quality</h3><p>Materials selected for strength and durability.</p></div><div class="why-item"><div class="why-icon">◇</div><h3>Trusted Brands</h3><p>Partnered with leading brands.</p></div><div class="why-item"><div class="why-icon">♙</div><h3>Expert Guidance</h3><p>Right advice for the right solution.</p></div><div class="why-item"><div class="why-icon">⌘</div><h3>Complete Solutions</h3><p>From materials to interior solutions.</p></div><div class="why-item"><div class="why-icon">✓</div><h3>Reliable Service</h3><p>Professional support whenever you need it.</p></div>
 </div></div></section>
+<style id="woodrick-compact-brand-grid-20260924">
+/* Compact logo-first cards for the full Brands We Work With section. */
+.trusted-brands-premium{padding:72px 0 68px!important}
+.trusted-grid{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:12px!important}
+.trusted-card{
+  min-height:164px!important;
+  padding:14px 12px 12px!important;
+  justify-content:flex-start!important;
+  border-radius:10px!important;
+  box-shadow:0 9px 22px rgba(0,0,0,.18)!important;
+}
+.trusted-card:hover{transform:translateY(-4px)!important;box-shadow:0 14px 28px rgba(0,0,0,.25)!important}
+.trusted-logo{
+  height:58px!important;flex-shrink:0!important;
+  width:100%!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  margin:0 0 6px!important;
+  overflow:visible!important;
+}
+.trusted-logo img{
+  display:block!important;
+  width:auto!important;
+  height:auto!important;
+  max-width:min(142px,100%)!important;
+  max-height:54px!important;
+  object-fit:contain!important;
+  object-position:center!important;
+}
+.trusted-logo .trusted-logo-fallback{
+  display:flex;
+  min-height:48px;
+  align-items:center;
+  justify-content:center;
+  color:#171717;
+  font:900 20px/1 Arial,Helvetica,sans-serif;
+  text-align:center;
+}
+.trusted-logo .trusted-logo-fallback small{font-size:8px!important;margin-top:5px!important}
+.trusted-name{font-size:15px!important;line-height:1.15!important;margin:3px 0 5px!important}
+.trusted-desc{font-size:13px!important;line-height:1.35!important;min-height:30px!important}
+.trusted-card[data-library-brand]::after{font-size:11px!important;margin-top:6px!important;line-height:1!important}
+.trusted-accent{margin-top:auto!important}
+@media(max-width:1180px){.trusted-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}}
+@media(max-width:850px){
+  .trusted-brands-premium{padding:58px 0 52px!important}
+  .trusted-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important}
+  .trusted-card{min-height:156px!important;padding:12px 9px 10px!important}
+  .trusted-logo{height:54px!important}
+  .trusted-logo img{max-width:min(124px,100%)!important;max-height:49px!important}
+}
+@media(max-width:620px){
+  .trusted-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}
+  .trusted-card{min-height:148px!important;padding:11px 8px 9px!important}
+  .trusted-logo{height:50px!important;margin-bottom:4px!important}
+  .trusted-logo img{max-width:min(116px,100%)!important;max-height:45px!important}
+  .trusted-name{font-size:14px!important}
+  .trusted-desc{font-size:13px!important;min-height:28px!important}
+}
+</style>
 <section class="trusted-brands-premium" id="brands">
 <div class="container">
 <div class="trusted-head">
@@ -1307,6 +1368,52 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
 </div>
 </div>
 </section>
+<script id="woodrick-trusted-brand-logos-20260924">
+(function(){
+  var logos={
+    'UltraTech Cement':"https://www.ultratechcement.com/content/dam/ultratechcementwebsite/solutions/3d-corporate-logo-full.jpg",
+    'UltraTech Building Solutions':"https://www.ultratechcement.com/content/dam/ultratechcementwebsite/solutions/3d-corporate-logo-full.jpg",
+    'Birla Opus Paints':"https://assets.birlaopus.com/is/image/grasimindustries/footer-opus-logo-resize?dpr=off&ts=1740568574949",
+    'Asian Paints':'assets/brand-logos/asian-paints-real.svg',
+    'Griham by Supreme':'assets/brand-logos/supreme-real.png',
+    'Varmora Tiles':'assets/brand-logos/varmora.png',
+    'Senator':'assets/brand-logos/senator.png',
+    'CenturyPly':"https://upload.wikimedia.org/wikipedia/commons/1/16/Centuryply.png",
+    'Greenply':"https://cdn.shopify.com/s/files/1/0634/6283/4312/files/plywood-suppliers-and-manufacturers-in-the-world-3.jpg?v=1748284691",
+    'Green HDHMR':'assets/brand-logos/greenpanel-real.svg',
+    'Ristal Laminates':"https://www.ristallam.com/ristal-img/logo.png",
+    'Merino':"https://3adeal.com/images/thumbnails/904/500/detailed/5/merino_logo.png?t=1736319929",
+    'Royale Touche':'assets/brand-logos/royale-touche.png',
+    'Woodline':"https://qliqo.in/get_image_services.php?id=1845",
+    'MWUD':"https://mwud.in/assets/images/resources/logo-1.png",
+    'Greenpanel':'assets/brand-logos/greenpanel-real.svg',
+    'Nilkamal':'assets/brand-logos/nilkamal-real.png',
+    'Godrej Locks':'assets/brand-logos/godrej-real.svg',
+    'Hettich Hardware':"https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Logo_of_Hettich_%28company%29.svg/1280px-Logo_of_Hettich_%28company%29.svg.png",
+    'Ebco Hardware':"https://www.sainiworld.in/cdn/shop/collections/ebco_logo.jpg?v=1667629036",
+    'Philips Lighting':'assets/brand-logos/philips-lighting.png',
+    'Supreme uPVC':'assets/brand-logos/supreme-real.png',
+    'Birla Putty':'assets/brand-logos/birla-white.png'
+  };
+  document.querySelectorAll('#brands .trusted-card').forEach(function(card){
+    var nameNode=card.querySelector('.trusted-name');
+    var logoNode=card.querySelector('.trusted-logo');
+    if(!nameNode||!logoNode)return;
+    var name=nameNode.textContent.trim();
+    var fallback=logoNode.innerHTML;
+    if(!logos[name])return;
+    var img=document.createElement('img');
+    img.src=logos[name];
+    img.alt=name+' logo';
+    img.loading='lazy';
+    img.decoding='async';
+    img.addEventListener('error',function(){
+      logoNode.innerHTML='<span class="trusted-logo-fallback">'+fallback+'</span>';
+    },{once:true});
+    logoNode.replaceChildren(img);
+  });
+})();
+</script>
 <section class="modular-showcase" id="modular-kitchen-showcase">
 <div class="container">
 <div class="modular-showcase-head">
