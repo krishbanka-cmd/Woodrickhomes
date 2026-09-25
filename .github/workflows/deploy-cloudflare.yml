@@ -14,6 +14,8 @@ on:
       - 'admin-products/**'
       - 'catalogues/**'
       - 'products/**'
+      - 'brands/**'
+      - 'assets/**'
       - 'voice-design-assistant.html'
       - 'design-requirements-confirmed.html'
       - 'design-your-space.html'
