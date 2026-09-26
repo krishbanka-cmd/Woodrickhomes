@@ -3,7 +3,17 @@
 .catalogue-tile .catalogue-cover,#media .catalogue-tile .catalogue-cover{box-sizing:border-box;display:flex;align-items:center;justify-content:center;position:relative;flex:0 0 280px;width:100%;height:280px;min-height:280px;max-height:280px;aspect-ratio:auto;padding:10px;overflow:hidden;background:#ddd3c4;border-bottom:1px solid #ded4c3}
 .catalogue-tile .catalogue-cover img,#media .catalogue-tile .catalogue-cover img{display:block;box-sizing:border-box;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important;object-position:center;padding:4px!important;background:#fff!important;border:1px solid #cbbda8;box-shadow:0 6px 18px rgba(70,49,24,.18);transform:none!important}
 .catalogue-tile .catalogue-cover .cover-fallback,.catalogue-tile .catalogue-cover .pdfmark,.catalogue-tile .catalogue-cover .pdf-cover-fallback{box-sizing:border-box;width:100%;height:100%;display:grid;place-items:center;background:#fff;color:#684a23;padding:18px;text-align:center}
-.catalogue-tile .catalogue-details,#media .catalogue-tile .catalogue-details{box-sizing:border-box;display:flex;flex:1;flex-direction:column;min-height:144px;height:auto;padding:12px 14px;color:#211b16}
+.catalogue-tile .catalogue-details,#media .catalogue-tile .catalogue-details{box-sizing:border-box;display:flex;flex:1;flex-direction:column;min-height:136px;height:auto;padding:12px 14px;color:#211b16}
+/* Match the existing Products cover mat; preserve the Products card layout. */
+.catalogue-tile .catalogue-cover img[src*="/ipsa.webp"]{background-color:#020810!important}
+.catalogue-tile .catalogue-cover img[src*="/godrej.webp"]{background-color:#eee8f1!important}
+.catalogue-tile .catalogue-cover img[src*="/woodline-acrylic.webp"]{background-color:#d5b28c!important}
+.catalogue-tile .catalogue-cover img[src*="/mwud.webp"]{background-color:#b2b1a3!important}
+.catalogue-tile .catalogue-cover img[src*="/ristal-08.webp"]{background-color:#18395d!important}
+.catalogue-tile .catalogue-cover img[src*="/ristal1mm.webp"]{background-color:#245a50!important}
+.catalogue-tile .catalogue-cover img[src*="/ristal-solid.webp"]{background-color:#c8c8c7!important}
+.catalogue-tile .catalogue-cover img[src*="/woodline-08.webp"]{background-color:#f6a18f!important}
+.catalogue-tile .catalogue-cover img[src*="/woodline-led-louvers.webp"],.catalogue-tile .catalogue-cover img[src*="/woodline-louvers-"]{background-color:#d5b993!important}
 .catalogue-tile .catalogue-eyebrow,#media .catalogue-tile .catalogue-eyebrow{font:900 10px/1.35 Arial,sans-serif;letter-spacing:1px;text-transform:uppercase;color:#805d2d;min-height:0}
 .catalogue-tile .catalogue-name,#media .catalogue-tile .catalogue-name{font:500 clamp(18px,1.55vw,22px)/1.15 Georgia,serif;min-height:0;margin:6px 0;overflow-wrap:anywhere;color:#211b16}
 .catalogue-tile .catalogue-subline,#media .catalogue-tile .catalogue-subline{font:12px/1.4 Arial,sans-serif;color:#6a665f;margin:0 0 8px;min-height:0}
