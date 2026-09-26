@@ -132,12 +132,15 @@ const productHierarchy=`
 }
 </style>
 <script id="woodrick-product-hierarchy-script-v2">(function(){
-var selectedBrand='';
+var sourceParams=new URLSearchParams(location.search),selectedBrand=sourceParams.get('brand')||'';
+if(sourceParams.get('category'))activeCategory=sourceParams.get('category');
+if(['all','image','pdf','video'].includes(sourceParams.get('type')))activeType=sourceParams.get('type');
+document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.toggle('active',b.dataset.filterType===activeType)});
 function n(v){return String(v||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()}
-function brandOf(x){return String(x.brand||'Other').trim()||'Other'}
+function brandOf(x){var name=String(x.brand||'Other').trim()||'Other';return /^ristal\\s*1\\s*mm$/i.test(name)||/^ristal1mm$/i.test(name)?'Ristal':/^mwud$/i.test(name)?'MWUD':name}
 function catalogueOf(x){if(typeof mediaTitle==='function')return mediaTitle(x);var value=String(x.catalogue||x.title||x.originalName||'Catalogue').replace(/\\.[a-z0-9]{2,5}$/i,'').replace(/\\s+page\\s*\\d+\\s*$/i,'').trim()||'Catalogue';return n(value)==='ris'?'Ristal':value}
 function typeLabel(t){return t==='pdf'?'CATALOGUE · PDF':t==='video'?'VIDEO':'PHOTO'}
-function catalogueLink(x,title){return '/api/media?pdfviewer=1&key='+encodeURIComponent(x.key)+'&title='+encodeURIComponent(title)+'&return='+encodeURIComponent('/products/#media')}
+function catalogueLink(x,title){var params=new URLSearchParams;if(activeCategory!=='all')params.set('category',activeCategory);if(activeType!=='all')params.set('type',activeType);if(selectedBrand)params.set('brand',selectedBrand);var back='/products/'+(params.size?'?'+params.toString():'')+'#media';return '/api/media?pdfviewer=1&key='+encodeURIComponent(x.key)+'&title='+encodeURIComponent(title)+'&return='+encodeURIComponent(back)}
 function fitPdfCover(img){
   if(!img||!img.naturalWidth||!img.naturalHeight)return;
   var ratio=img.naturalWidth/img.naturalHeight,src=String(img.getAttribute('src')||''),artworkSafe=/godrej|ipsa|louvers/i.test(src),spread=ratio>=1.52&&!artworkSafe;
