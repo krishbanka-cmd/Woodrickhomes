@@ -136,6 +136,20 @@ var sourceParams=new URLSearchParams(location.search),selectedBrand=sourceParams
 if(sourceParams.get('category'))activeCategory=sourceParams.get('category');
 if(['all','image','pdf','video'].includes(sourceParams.get('type')))activeType=sourceParams.get('type');
 document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.toggle('active',b.dataset.filterType===activeType)});
+// Product categories are inserted while the page loads. The browser's first
+// #media jump can land among those cards before their final height is known.
+var returnScrollScheduled=false;
+function restoreMediaPosition(){
+  var section=document.getElementById('media');if(!section)return;
+  var nav=document.getElementById('woodrickGlobalNav');
+  var offset=(nav?nav.getBoundingClientRect().height:0)+12;
+  window.scrollTo({top:Math.max(0,window.scrollY+section.getBoundingClientRect().top-offset),behavior:'instant'});
+}
+function scheduleMediaReturn(){
+  if(location.hash!=='#media'||returnScrollScheduled)return;
+  returnScrollScheduled=true;
+  [60,420,1300].forEach(function(delay){setTimeout(restoreMediaPosition,delay)});
+}
 function n(v){return String(v||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()}
 function brandOf(x){var name=String(x.brand||'Other').trim()||'Other';return /^ristal\\s*1\\s*mm$/i.test(name)||/^ristal1mm$/i.test(name)?'Ristal':/^mwud$/i.test(name)?'MWUD':name}
 function catalogueOf(x){if(typeof mediaTitle==='function')return mediaTitle(x);var value=String(x.catalogue||x.title||x.originalName||'Catalogue').replace(/\\.[a-z0-9]{2,5}$/i,'').replace(/\\s+page\\s*\\d+\\s*$/i,'').trim()||'Catalogue';return n(value)==='ris'?'Ristal':value}
@@ -202,13 +216,13 @@ renderMedia=function(){
   var groups=grouped(items);
   var pdfCount=grouped(items.filter(function(x){return mediaType(x)==='pdf'})).length,photoCount=items.filter(function(x){return mediaType(x)==='image'}).length,videoCount=items.filter(function(x){return mediaType(x)==='video'}).length,count=activeType==='pdf'?groups.length:items.length,label=activeType==='pdf'?'catalogue':activeType==='image'?'photo':activeType==='video'?'video':'media item';liveStatus.textContent=(activeCategory==='all'?'All categories':activeCategory)+' · '+(activeType==='all'?(pdfCount+' catalogues · '+photoCount+' photos · '+videoCount+' video'+(videoCount===1?'':'s')+' · '+items.length+' total media'):(activeType.toUpperCase()+' · '+count+' '+label+(count===1?'':'s')));
   if(!items.length){
-    if(uploadedMedia.length){liveStatus.textContent=(activeCategory==='all'?'Products':activeCategory)+' · No '+(activeType==='pdf'?'catalogues':activeType==='video'?'videos':activeType==='image'?'photos':'media')+' available yet';mediaGrid.innerHTML='<div class="empty-media">No matching media in this category yet. Choose another section above.</div>';return}
+    if(uploadedMedia.length){liveStatus.textContent=(activeCategory==='all'?'Products':activeCategory)+' · No '+(activeType==='pdf'?'catalogues':activeType==='video'?'videos':activeType==='image'?'photos':'media')+' available yet';mediaGrid.innerHTML='<div class="empty-media">No matching media in this category yet. Choose another section above.</div>';scheduleMediaReturn();return}
     liveStatus.textContent='Loading latest media…';mediaGrid.innerHTML='<div class="empty-media">Preparing Woodrick product media…</div>';return
   }
-  if(activeCategory==='all'){mediaGrid.innerHTML=groups.map(card).join('');fitVisiblePdfCovers(mediaGrid);return}
-  if(!selectedBrand){var brands={};items.forEach(function(x){var b=brandOf(x);(brands[b]||(brands[b]=[])).push(x)});mediaGrid.innerHTML=Object.keys(brands).sort().map(function(b){var bg=grouped(brands[b]);var first=bg[0],thumb='';if(first){var im=first.items.find(function(x){return mediaType(x)==='image'}),pd=first.items.find(function(x){return mediaType(x)==='pdf'}),pc=pd?coverOf(pd):'';if(im)thumb='<img loading="eager" decoding="async" fetchpriority="high" src="'+mediaUrl(im)+'" alt="'+esc(b)+'">';else if(pd&&pc)thumb='<img class="pdf-cover" loading="eager" decoding="async" fetchpriority="high" src="'+esc(pc)+'" data-pdf="'+esc(mediaUrl(pd))+'" alt="'+esc(b)+'">';else if(pd)thumb='<div class="pdf-cover-fallback">PDF</div>'}return '<article class="media-card brand-choice" data-brand="'+esc(b)+'"><div class="media-preview">'+(thumb||esc(b))+'<div class="cover-title">'+esc(b)+'</div></div><div class="media-info"><div class="media-category">'+esc(activeCategory)+'</div><div class="media-title">'+esc(b)+'</div><div class="catalogue-media-label">'+bg.length+' catalogue'+(bg.length===1?'':'s')+'</div><div class="media-actions" style="margin-top:12px"><button class="open-media" type="button">VIEW CATALOGUES</button></div></div></article>'}).join('');fitVisiblePdfCovers(mediaGrid);return}
+  if(activeCategory==='all'){mediaGrid.innerHTML=groups.map(card).join('');fitVisiblePdfCovers(mediaGrid);scheduleMediaReturn();return}
+  if(!selectedBrand){var brands={};items.forEach(function(x){var b=brandOf(x);(brands[b]||(brands[b]=[])).push(x)});mediaGrid.innerHTML=Object.keys(brands).sort().map(function(b){var bg=grouped(brands[b]);var first=bg[0],thumb='';if(first){var im=first.items.find(function(x){return mediaType(x)==='image'}),pd=first.items.find(function(x){return mediaType(x)==='pdf'}),pc=pd?coverOf(pd):'';if(im)thumb='<img loading="eager" decoding="async" fetchpriority="high" src="'+mediaUrl(im)+'" alt="'+esc(b)+'">';else if(pd&&pc)thumb='<img class="pdf-cover" loading="eager" decoding="async" fetchpriority="high" src="'+esc(pc)+'" data-pdf="'+esc(mediaUrl(pd))+'" alt="'+esc(b)+'">';else if(pd)thumb='<div class="pdf-cover-fallback">PDF</div>'}return '<article class="media-card brand-choice" data-brand="'+esc(b)+'"><div class="media-preview">'+(thumb||esc(b))+'<div class="cover-title">'+esc(b)+'</div></div><div class="media-info"><div class="media-category">'+esc(activeCategory)+'</div><div class="media-title">'+esc(b)+'</div><div class="catalogue-media-label">'+bg.length+' catalogue'+(bg.length===1?'':'s')+'</div><div class="media-actions" style="margin-top:12px"><button class="open-media" type="button">VIEW CATALOGUES</button></div></div></article>'}).join('');fitVisiblePdfCovers(mediaGrid);scheduleMediaReturn();return}
   var chosen=items.filter(function(x){return n(brandOf(x))===n(selectedBrand)});mediaGrid.innerHTML='<button class="hierarchy-back" type="button" id="brandBack">← ALL '+esc(activeCategory.toUpperCase())+' BRANDS</button>'+grouped(chosen).map(card).join('')
-  fitVisiblePdfCovers(mediaGrid)
+  fitVisiblePdfCovers(mediaGrid);scheduleMediaReturn()
 };
 document.addEventListener('click',function(e){var bc=e.target.closest('.brand-choice');if(bc){selectedBrand=bc.dataset.brand||'';renderMedia();return}if(e.target.closest('#brandBack')){selectedBrand='';renderMedia()}},true);
 document.addEventListener('error',function(e){var img=e.target;if(!img||!img.matches||!img.matches('img.pdf-cover[data-pdf]'))return;var fallback=document.createElement('div');fallback.className='pdf-cover-fallback';fallback.textContent='PDF CATALOGUE';img.replaceWith(fallback)},true);
