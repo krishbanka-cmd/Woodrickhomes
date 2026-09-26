@@ -293,6 +293,22 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
   transform:scale(1.02)!important;transition:opacity .8s ease,transform 6s ease!important
 }
 .hero-slide.is-active{opacity:1!important;transform:scale(1)!important}
+/* Keep the four interior scenes crisp; shade only the center behind the headline. */
+.hero-slide[data-scene]{
+  background-image:linear-gradient(90deg,rgba(10,8,7,.06) 0%,rgba(10,8,7,.23) 28%,rgba(10,8,7,.55) 45%,rgba(10,8,7,.52) 64%,rgba(10,8,7,.03) 84%),var(--hero-image)!important;
+  filter:contrast(1.08) saturate(1.12)!important;
+  transform:none!important;transition:opacity .8s ease!important;
+}
+.hero-slide[data-scene="Tiled bathroom"]{background-position:center 60%!important}
+.hero-slide[data-scene="Home office"]{background-position:center 55%!important}
+.hero-slide[data-scene="Bedroom"]{background-position:center 55%!important}
+.hero-slide[data-scene="Drawing and dining"]{background-position:center 55%!important}
+@media(max-width:850px){
+  .hero-slide[data-scene]{
+    background-image:linear-gradient(90deg,rgba(10,8,7,.43),rgba(10,8,7,.52) 56%,rgba(10,8,7,.24)),var(--hero-image)!important;
+  }
+}
+@media(prefers-reduced-motion:reduce){.hero-slide[data-scene]{transition:none!important}}
 
 .hero-modular{
   position:absolute!important;left:max(4%,24px)!important;top:106px!important;z-index:6!important;
@@ -967,13 +983,13 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
     <div class="hero-slide is-active" style="--hero-image:url('https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=2200&q=90')"></div>
     <div class="hero-slide" style="--hero-image:url('https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=2200&q=90')"></div>
     <div class="hero-slide" style="--hero-image:url('https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=2200&q=90')"></div>
-    <div class="hero-slide" style="--hero-image:url('https://images.unsplash.com/photo-1744869524920-f0efc925b82f?auto=format&fit=crop&w=1800&q=82')" data-scene="Tiled bathroom"></div>
-    <div class="hero-slide" style="--hero-image:url('https://images.unsplash.com/photo-1776482128000-14cda1ad9e3f?auto=format&fit=crop&w=1800&q=82')" data-scene="Home office"></div>
-    <div class="hero-slide" style="--hero-image:url('https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=1800&q=82')" data-scene="Bedroom"></div>
-    <div class="hero-slide" style="--hero-image:url('https://images.unsplash.com/photo-1758448755894-7c179263f94d?auto=format&fit=crop&w=1800&q=82')" data-scene="Drawing and dining"></div>
+    <div class="hero-slide" style="--hero-image:url('https://images.unsplash.com/photo-1754447628644-b2dc91ce3237?auto=format&fit=crop&w=2200&q=90')" data-scene="Tiled bathroom"></div>
+    <div class="hero-slide" style="--hero-image:url('https://images.unsplash.com/photo-1598928428433-1077478561d6?auto=format&fit=crop&w=2200&q=90')" data-scene="Home office"></div>
+    <div class="hero-slide" style="--hero-image:url('https://images.unsplash.com/photo-1758448755969-8791367cf5c5?auto=format&fit=crop&w=2200&q=90')" data-scene="Bedroom"></div>
+    <div class="hero-slide" style="--hero-image:url('https://images.unsplash.com/photo-1758448755894-7c179263f94d?auto=format&fit=crop&w=2200&q=90')" data-scene="Drawing and dining"></div>
   </div>
 
-  <div class="hero-modular">MODULAR KITCHEN • DESIGN • INSTALLATION</div>
+  <div class="hero-modular">INTERIORS • BUILDING MATERIALS • DESIGN</div>
 
   <div class="container hero-content">
     <div class="kicker">Premium Building Materials &amp; Interior Solutions</div>
