@@ -163,17 +163,10 @@ function fitPdfCover(img){
   img.classList.toggle('spread-cover',spread);
   img.classList.toggle('artwork-safe-cover',artworkSafe);
   img.dataset.fitMode=artworkSafe?'artwork-safe':spread?'spread-safe':'edge-fill';
-  var stage=
-    src.indexOf('woodline-acrylic')>=0?'#d5b28c':
-    src.indexOf('/mwud.')>=0?'#b2b1a3':
-    src.indexOf('ristal-08')>=0?'#18395d':
-    src.indexOf('ristal1mm')>=0?'#245a50':
-    src.indexOf('ristal-solid')>=0?'#c8c8c7':
-    src.indexOf('woodline-08')>=0?'#f6a18f':
-    src.indexOf('godrej')>=0?'#eee8f1':
-    src.indexOf('ipsa')>=0?'#020810':
-    src.indexOf('louvers')>=0?'#d5b993':'';
-  if((spread||artworkSafe)&&stage)img.style.setProperty('background-color',stage,'important');
+  // The shared card stylesheet supplies the same white mat on every page.
+  // A PDF-specific inline stage colour made portrait covers such as IPSA
+  // appear much larger in Products than in the complete catalogue index.
+  img.style.removeProperty('background-color');
 }
 function fitVisiblePdfCovers(root){(root||document).querySelectorAll('img.pdf-cover').forEach(function(img){if(img.complete)fitPdfCover(img);else img.addEventListener('load',function(){fitPdfCover(img)},{once:true})})}
 function coverOf(x){return WoodrickCatalogue.cover(x)}
