@@ -78,6 +78,8 @@ var root=document.getElementById('mediaList');if(root)new MutationObserver(addDe
 })();</script>`;
 
 const productHierarchy=`
+<link rel="stylesheet" href="/assets/catalogue-presentation.css?v=1">
+<script src="/assets/catalogue-presentation.js?v=1"></script>
 <style id="woodrick-product-hierarchy-v2">
 .brand-choice{cursor:pointer}.brand-choice .media-preview{background:linear-gradient(135deg,#0c0c0c,#242018);color:#f0c96b;font-family:Georgia,serif;font-size:34px;font-weight:700;text-align:center;padding:0}.brand-choice .media-title{margin-bottom:4px}.hierarchy-back{display:inline-flex;margin:0 0 18px;padding:10px 14px;border:1px solid #f0c96b;background:#171717;color:#f0c96b;font-size:11px;font-weight:900;cursor:pointer}.catalogue-media-label{font-size:10px;color:#aaa;margin-top:6px}.pdf-cover{width:100%;height:100%;object-fit:contain!important;background:#f4f1eb}.pdf-cover-fallback{width:100%;height:100%;display:grid;place-items:center;background:linear-gradient(135deg,#171717,#30291d);color:#f0c96b;font:700 28px Georgia,serif}.media-preview{position:relative}.media-preview img{object-fit:contain!important;background:#f4f1eb}.cover-title{display:none!important}.media-title{line-height:1.25!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:break-word!important;word-break:normal!important;min-height:2.5em}
 
@@ -174,42 +176,15 @@ function fitPdfCover(img){
   if((spread||artworkSafe)&&stage)img.style.setProperty('background-color',stage,'important');
 }
 function fitVisiblePdfCovers(root){(root||document).querySelectorAll('img.pdf-cover').forEach(function(img){if(img.complete)fitPdfCover(img);else img.addEventListener('load',function(){fitPdfCover(img)},{once:true})})}
-var previewCoverByCatalogue={
-  'woodline acrylic':'/catalogue-covers/woodline-acrylic.webp',
-  'rainbow door skin':'/catalogue-covers/rainbow.webp',
-  'woodline door skin':'/catalogue-covers/woodline-door.webp',
-  'godrej lock catalogue price list':'/catalogue-covers/godrej.webp',
-  'godrej lock price list':'/catalogue-covers/godrej.webp',
-  'ipsa hardware catalogue price list':'/catalogue-covers/ipsa.webp',
-  'ipsa catalogue price list':'/catalogue-covers/ipsa.webp',
-  'woodrick kitchen catalogue':'/catalogue-covers/kitchen.webp',
-  'mwud futura 0 8mm laminates':'/catalogue-covers/mwud.webp',
-  'mwud':'/catalogue-covers/mwud.webp',
-  'ristal 0 82mm premium laminates':'/catalogue-covers/ristal-08.webp',
-  'ristal':'/catalogue-covers/ristal-08.webp',
-  'ristal 1mm laminates':'/catalogue-covers/ristal1mm.webp',
-  'ristal1mm':'/catalogue-covers/ristal1mm.webp',
-  'ristal slim 0 75mm laminates':'/catalogue-covers/ristal-slim.webp',
-  'ristal slim':'/catalogue-covers/ristal-slim.webp',
-  'ristal solid colour 0 92mm':'/catalogue-covers/ristal-solid.webp',
-  'ristal solid colour':'/catalogue-covers/ristal-solid.webp',
-  'woodline 0 8mm laminates':'/catalogue-covers/woodline-08.webp',
-  'woodline':'/catalogue-covers/woodline-08.webp',
-  'woodline led louvers':'/catalogue-covers/woodline-led-louvers.webp',
-  'woodline louvers 8x5':'/catalogue-covers/woodline-louvers-8x5.webp',
-  'woodline louvers 9 5x6':'/catalogue-covers/woodline-louvers-9-5x6.webp',
-  'woodrick shuttering plywood 25 kg mr':'/catalogue-covers/woodrick-25-kg-mr.webp'
-};
-var coverFallbacks={'shuttering-plywood/image/1787752234100-woodrick-25-kg-mr.pdf':'/catalogue-covers/woodrick-25-kg-mr.webp','louvers/image/1787636958432-woodline-led-louvers.pdf':'/catalogue-covers/woodline-led-louvers.webp','louvers/image/1787636923292-woodline-louvers-9-5x6.pdf':'/catalogue-covers/woodline-louvers-9-5x6.webp'};
-function coverOf(x){var fixed=previewCoverByCatalogue[n(catalogueOf(x))],src=String(fixed||x.coverUrl||coverFallbacks[x.key]||'');return src.indexOf('/catalogue-covers/')===0?src.split('?')[0]+'?v=20260920-5':src}
+function coverOf(x){return WoodrickCatalogue.cover(x)}
 function grouped(items){var g={};items.forEach(function(x){var k=n(x.category)+'|'+n(brandOf(x))+'|'+n(catalogueOf(x));if(!g[k])g[k]={category:x.category||'Uncategorised',brand:brandOf(x),catalogue:catalogueOf(x),items:[]};g[k].items.push(x)});return Object.values(g)}
 function card(g){
   var image=g.items.find(function(x){return mediaType(x)==='image'}),pdf=g.items.find(function(x){return mediaType(x)==='pdf'}),video=g.items.find(function(x){return mediaType(x)==='video'}),preview='',cover=pdf?coverOf(pdf):'';
-  if(image)preview='<img loading="eager" decoding="async" fetchpriority="high" src="'+mediaUrl(image)+'" alt="'+esc(g.catalogue)+'"><div class="cover-title">'+esc(g.catalogue)+'</div>';
-  else if(pdf)preview=(cover?'<img class="pdf-cover" loading="eager" decoding="async" fetchpriority="high" src="'+esc(cover)+'" data-pdf="'+esc(mediaUrl(pdf))+'" alt="'+esc(g.catalogue)+' cover">':'<div class="pdf-cover-fallback">PDF CATALOGUE</div>')+'<div class="cover-title">'+esc(g.catalogue)+'</div>';
+  if(pdf)preview=(cover?'<img class="pdf-cover" loading="eager" decoding="async" fetchpriority="high" src="'+esc(cover)+'" data-pdf="'+esc(mediaUrl(pdf))+'" alt="'+esc(g.catalogue)+' cover">':'<div class="pdf-cover-fallback">PDF CATALOGUE</div>')+'<div class="cover-title">'+esc(g.catalogue)+'</div>';
+  else if(image)preview='<img loading="eager" decoding="async" fetchpriority="high" src="'+mediaUrl(image)+'" alt="'+esc(g.catalogue)+'"><div class="cover-title">'+esc(g.catalogue)+'</div>';
   else if(video)preview='<video preload="metadata" muted src="'+mediaUrl(video)+'"></video><div class="cover-title">'+esc(g.catalogue)+'</div>';
-  var acts='';if(pdf)acts+='<a class="open-media" href="'+catalogueLink(pdf,g.catalogue)+'">VIEW CATALOGUE</a>';if(image)acts+='<a class="open-media" href="'+mediaUrl(image)+'" target="_blank" rel="noopener">OPEN PHOTO</a>';if(video)acts+='<a class="open-media" href="'+mediaUrl(video)+'" target="_blank" rel="noopener">OPEN VIDEO</a>';
-  return '<article class="media-card"><div class="media-preview">'+preview+'</div><div class="media-info"><div class="media-category">'+esc(g.category)+' · '+esc(g.brand)+'</div><div class="media-title">'+esc(g.catalogue)+'</div><div class="catalogue-media-label">'+g.items.map(function(x){return typeLabel(mediaType(x))}).filter(function(v,i,a){return a.indexOf(v)===i}).join(' · ')+'</div><div class="media-actions" style="margin-top:12px">'+acts+'</div></div></article>'
+  var acts='';if(pdf)acts+='<a class="open-media catalogue-primary" href="'+catalogueLink(pdf,g.catalogue)+'">VIEW CATALOGUE</a>';if(image)acts+='<a class="open-media" href="'+mediaUrl(image)+'" target="_blank" rel="noopener">OPEN PHOTO</a>';if(video)acts+='<a class="open-media" href="'+mediaUrl(video)+'" target="_blank" rel="noopener">OPEN VIDEO</a>';
+  return '<article class="media-card'+(pdf?' catalogue-tile':'')+'"><div class="media-preview'+(pdf?' catalogue-cover':'')+'">'+preview+'</div><div class="media-info'+(pdf?' catalogue-details':'')+'"><div class="media-category'+(pdf?' catalogue-eyebrow':'')+'">'+esc(g.category)+' · '+esc(g.brand)+'</div><div class="media-title'+(pdf?' catalogue-name':'')+'">'+esc(g.catalogue)+'</div><div class="catalogue-media-label'+(pdf?' catalogue-subline':'')+'">'+g.items.map(function(x){return typeLabel(mediaType(x))}).filter(function(v,i,a){return a.indexOf(v)===i}).join(' · ')+'</div><div class="media-actions'+(pdf?' catalogue-buttons':'')+'" style="margin-top:12px">'+acts+'</div></div></article>'
 }
 renderMedia=function(){
   var items=uploadedMedia.filter(function(x){return (activeCategory==='all'||n(x.category)===n(activeCategory))&&(activeType==='all'||mediaType(x)===activeType)});
