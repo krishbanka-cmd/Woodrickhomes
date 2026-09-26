@@ -489,7 +489,9 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
   .hero-actions .btn{padding:9px 11px!important;font-size:8.6px!important}
   .hero-brand-mark{min-width:116px!important;height:62px!important}
   .hero-brand-mark img{max-width:86px!important;max-height:31px!important}
-  .hero-slide-dots{bottom:106px!important}
+  .hero-slide-dots{bottom:106px!important;gap:5px!important}
+  .hero-slide-dot{width:18px!important}
+  .hero-slide-dot.is-active{width:28px!important}
 }
 @media(prefers-reduced-motion:reduce){
   .hero-slide{transition:none!important;transform:none!important}
@@ -987,6 +989,9 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
     <div class="hero-slide" style="--hero-image:url('https://images.unsplash.com/photo-1598928428433-1077478561d6?auto=format&fit=crop&w=2200&q=90')" data-scene="Home office"></div>
     <div class="hero-slide" style="--hero-image:url('https://images.unsplash.com/photo-1758448755969-8791367cf5c5?auto=format&fit=crop&w=2200&q=90')" data-scene="Bedroom"></div>
     <div class="hero-slide" style="--hero-image:url('https://images.unsplash.com/photo-1758448755894-7c179263f94d?auto=format&fit=crop&w=2200&q=90')" data-scene="Drawing and dining"></div>
+    <div class="hero-slide" style="--hero-image:none" data-hero-src="https://images.unsplash.com/photo-1769780265587-037ee842c0b0?auto=format&fit=crop&w=2200&q=90" data-scene="Exterior elevation"></div>
+    <div class="hero-slide" style="--hero-image:none" data-hero-src="https://images.unsplash.com/photo-1757524625335-0b7f62089dd2?auto=format&fit=crop&w=2200&q=90" data-scene="Walk-in wardrobe"></div>
+    <div class="hero-slide" style="--hero-image:none" data-hero-src="https://images.unsplash.com/photo-1680503397644-bcd216845f26?auto=format&fit=crop&w=2200&q=90" data-scene="Furniture showroom"></div>
   </div>
 
   <div class="hero-modular">INTERIORS • BUILDING MATERIALS • DESIGN</div>
@@ -1054,6 +1059,9 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
     <button class="hero-slide-dot" type="button" aria-label="Show home office slide" data-hero-slide="4"></button>
     <button class="hero-slide-dot" type="button" aria-label="Show bedroom slide" data-hero-slide="5"></button>
     <button class="hero-slide-dot" type="button" aria-label="Show drawing and dining slide" data-hero-slide="6"></button>
+    <button class="hero-slide-dot" type="button" aria-label="Show exterior elevation slide" data-hero-slide="7"></button>
+    <button class="hero-slide-dot" type="button" aria-label="Show walk-in wardrobe slide" data-hero-slide="8"></button>
+    <button class="hero-slide-dot" type="button" aria-label="Show furniture showroom slide" data-hero-slide="9"></button>
   </div>
 </section>
 <section class="about" id="about"><div class="container about-grid">
@@ -1512,14 +1520,36 @@ function submitForm(e){
   var slides=Array.prototype.slice.call(document.querySelectorAll('.hero-slide'));
   var dots=Array.prototype.slice.call(document.querySelectorAll('.hero-slide-dot'));
   if(slides.length<2) return;
-  var current=0, timer=null;
+  var current=0, timer=null, requestId=0;
+  function preload(index){
+    var slide=slides[index], source=slide.getAttribute('data-hero-src');
+    if(!source) return Promise.resolve(true);
+    if(slide._heroLoad) return slide._heroLoad;
+    slide._heroLoad=new Promise(function(resolve){
+      var picture=new Image();
+      picture.onload=function(){
+        slide.style.setProperty('--hero-image','url("'+source+'")');
+        slide.removeAttribute('data-hero-src');
+        resolve(true);
+      };
+      picture.onerror=function(){slide._heroLoad=null;resolve(false)};
+      picture.src=source;
+    });
+    return slide._heroLoad;
+  }
   function show(index){
-    current=(index+slides.length)%slides.length;
-    slides.forEach(function(slide,i){slide.classList.toggle('is-active',i===current)});
-    dots.forEach(function(dot,i){dot.classList.toggle('is-active',i===current);dot.setAttribute('aria-current',i===current?'true':'false')});
+    var target=(index+slides.length)%slides.length, requested=++requestId;
+    preload(target).then(function(loaded){
+      if(!loaded||requested!==requestId) return;
+      current=target;
+      slides.forEach(function(slide,i){slide.classList.toggle('is-active',i===current)});
+      dots.forEach(function(dot,i){dot.classList.toggle('is-active',i===current);dot.setAttribute('aria-current',i===current?'true':'false')});
+      preload((current+1)%slides.length);
+    });
   }
   function start(){
     stop();
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches||document.hidden) return;
     timer=setInterval(function(){show(current+1)},5200);
   }
   function stop(){if(timer){clearInterval(timer);timer=null}}
@@ -1533,6 +1563,7 @@ function submitForm(e){
     hero.addEventListener('focusin',stop);
     hero.addEventListener('focusout',start);
   }
+  document.addEventListener('visibilitychange',function(){if(document.hidden) stop(); else start()});
   show(0); start();
 })();
 </script>
