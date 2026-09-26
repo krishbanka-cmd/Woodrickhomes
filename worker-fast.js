@@ -192,8 +192,8 @@ export default{
       headers.set('expires','0');
       if(request.method==='HEAD'||!(headers.get('content-type')||'').includes('text/html'))return new Response(asset.body,{status:asset.status,statusText:asset.statusText,headers});
       let html=await asset.text();
-      const fixedBack='<script id="woodrick-fixed-catalogue-back">(function(){var b=document.getElementById("catalogueBack"),p=new URLSearchParams(location.search),back=p.get("return")||"/catalogues/";if(!b)return;b.href=back.startsWith("/")&&!back.startsWith("//")?back:"/catalogues/";})();<\\/script>';
-      if(!html.includes('woodrick-fixed-catalogue-back'))html=html.replace('</body>',fixedBack+'\\n</body>');
+      const fixedBack='<script id="woodrick-fixed-catalogue-back">(function(){var b=document.getElementById("catalogueBack"),p=new URLSearchParams(location.search),back=p.get("return")||"/catalogues/";if(!b)return;b.href=back.startsWith("/")&&!back.startsWith("//")?back:"/catalogues/";})();</script>';
+      if(!html.includes('woodrick-fixed-catalogue-back'))html=html.replace('</body>',fixedBack+'\n</body>');
       headers.delete('content-length');
       return new Response(html,{status:asset.status,statusText:asset.statusText,headers});
     }
