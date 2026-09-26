@@ -3,6 +3,8 @@
   const covers={
     'ristal.pdf':'ristal-08','ristal-solid-colour.pdf':'ristal-solid','ristal1mm.pdf':'ristal1mm',
     'ristal-slim-75mm.pdf':'ristal-slim','mwud.pdf':'mwud','woodline.pdf':'woodline-08',
+    'ristal-82mm.pdf':'ristal-08','ristal-solid-colour-92mm.pdf':'ristal-solid',
+    'mwud-82mm.pdf':'mwud','woodline-82mm.pdf':'woodline-08',
     'woodline-door-skin.pdf':'woodline-door','woodline-acrylic.pdf':'woodline-acrylic',
     'woodline-louvers-8x5.pdf':'woodline-louvers-8x5','woodline-led-louvers.pdf':'woodline-led-louvers',
     'woodline-louvers-9-5x6.pdf':'woodline-louvers-9-5x6','rainbow-door-skin.pdf':'rainbow',

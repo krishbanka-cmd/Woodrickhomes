@@ -79,7 +79,7 @@ var root=document.getElementById('mediaList');if(root)new MutationObserver(addDe
 
 const productHierarchy=`
 <link rel="stylesheet" href="/assets/catalogue-presentation.css?v=1">
-<script src="/assets/catalogue-presentation.js?v=1"></script>
+<script src="/assets/catalogue-presentation.js?v=2"></script>
 <style id="woodrick-product-hierarchy-v2">
 .brand-choice{cursor:pointer}.brand-choice .media-preview{background:linear-gradient(135deg,#0c0c0c,#242018);color:#f0c96b;font-family:Georgia,serif;font-size:34px;font-weight:700;text-align:center;padding:0}.brand-choice .media-title{margin-bottom:4px}.hierarchy-back{display:inline-flex;margin:0 0 18px;padding:10px 14px;border:1px solid #f0c96b;background:#171717;color:#f0c96b;font-size:11px;font-weight:900;cursor:pointer}.catalogue-media-label{font-size:10px;color:#aaa;margin-top:6px}.pdf-cover{width:100%;height:100%;object-fit:contain!important;background:#f4f1eb}.pdf-cover-fallback{width:100%;height:100%;display:grid;place-items:center;background:linear-gradient(135deg,#171717,#30291d);color:#f0c96b;font:700 28px Georgia,serif}.media-preview{position:relative}.media-preview img{object-fit:contain!important;background:#f4f1eb}.cover-title{display:none!important}.media-title{line-height:1.25!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:break-word!important;word-break:normal!important;min-height:2.5em}
 
