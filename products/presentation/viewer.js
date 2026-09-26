@@ -111,6 +111,23 @@ import * as pdfjsLib from './vendor/pdf.min.mjs';
     if (event.key === 'Escape' && zoomed) { toggleZoom(); return; }
     if (!zoomed && ['ArrowRight', 'PageDown', 'ArrowLeft', 'PageUp'].includes(event.key)) { event.preventDefault(); render(current + (['ArrowRight', 'PageDown'].includes(event.key) ? 1 : -1)); }
   });
+  // A deliberate mouse-wheel or trackpad scroll moves one page in the fitted
+  // presentation. Let the browser scroll normally while zoomed in.
+  let wheelAmount = 0, wheelReset, lastWheelPage = 0;
+  stage.addEventListener('wheel', event => {
+    if (!pdf || zoomed || Math.abs(event.deltaY) < Math.abs(event.deltaX)) return;
+    event.preventDefault();
+    if (Date.now() - lastWheelPage < 450) return;
+    wheelAmount += event.deltaY;
+    clearTimeout(wheelReset);
+    wheelReset = setTimeout(() => { wheelAmount = 0; }, 220);
+    if (Math.abs(wheelAmount) < 75) return;
+    const direction = wheelAmount > 0 ? 1 : -1;
+    wheelAmount = 0;
+    if (current + direction < 1 || current + direction > pdf.numPages) return;
+    lastWheelPage = Date.now();
+    render(current + direction);
+  }, {passive: false});
   let startPoint = null, suppressClick = false;
   stage.addEventListener('pointerdown', event => { if (!zoomed && event.isPrimary) startPoint = {x:event.clientX,y:event.clientY}; });
   stage.addEventListener('pointerup', event => {
