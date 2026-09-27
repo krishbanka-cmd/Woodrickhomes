@@ -42,6 +42,14 @@ test('only approved vendor can submit and only sees their own proposals',async()
   assert.equal((await review.json()).public,false);
   const adminList=await (await handleVendorProducts(request('/api/vendor-products/admin',{admin:true}),env)).json();
   assert.equal(adminList.items.length,1);
+  const byVendor=await (await handleVendorProducts(request('/api/vendor-products/admin?vendorId='+A,{admin:true}),env)).json();
+  assert.equal(byVendor.items.length,1);
+  const correction=await handleVendorProducts(request('/api/vendor-products/admin/status',{admin:true,method:'POST',body:{vendorId:A,id:submitted.id,status:'correction_required',note:'Add thickness'}}),env);
+  assert.equal(correction.status,200);
+  const visible=await (await handleVendorProducts(request('/api/vendor-products',{token:tokenA}),env)).json();
+  assert.equal(visible.items[0].correctionReason,'Add thickness');
+  assert.equal('reviewHistory' in visible.items[0],false);
+  assert.equal('reviewNote' in visible.items[0],false);
   bucket.data.set('private/vendors/records/'+A+'.json',JSON.stringify({id:A,status:'rejected'}));
   assert.equal((await handleVendorProducts(request('/api/vendor-products',{token:tokenA}),env)).status,401);
 });
