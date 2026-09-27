@@ -28,16 +28,23 @@ export async function handleVendor(req,env){
   }
   if(!await admin(req,env))return json({error:'Admin login required'},401);
   if(path==='/api/vendor-applications'&&req.method==='GET'){
-   const page=await env.PRODUCT_MEDIA.list({prefix:ROOT+'records/',limit:100});const items=[];
+   const cursor=url.searchParams.get('cursor')||'';
+   if(cursor.length>2048)return json({error:'Invalid cursor'},400);
+   const page=await env.PRODUCT_MEDIA.list({prefix:ROOT+'records/',limit:100,...(cursor?{cursor}:{})});const items=[];
    for(const o of page.objects){const item=await get(env,o.key.slice((ROOT+'records/').length).replace(/\.json$/,''));if(item)items.push(item)}
-   items.sort((a,b)=>b.createdAt.localeCompare(a.createdAt));return json({items,truncated:page.truncated});
+   items.sort((a,b)=>b.createdAt.localeCompare(a.createdAt));return json({items,truncated:page.truncated,cursor:page.truncated?page.cursor:null});
   }
   if(path==='/api/vendor-applications/status'&&req.method==='POST'){
    if(!sameOrigin(req,url))return json({error:'Invalid origin'},403);
-   const body=await req.json(),item=await get(env,clean(body.id,40)),status=clean(body.status,30);
+   const body=await req.json(),item=await get(env,clean(body.id,40)),status=clean(body.status,30),note=clean(body.note,500);
    if(!item)return json({error:'Application not found'},404);
-   if(!['pending','approved','rejected'].includes(status))return json({error:'Invalid status'},400);
-   item.status=status;item.reviewedAt=new Date().toISOString();await save(env,item);return json({ok:true,status});
+   if(!['pending','correction_required','approved','rejected'].includes(status))return json({error:'Invalid status'},400);
+   if(status==='correction_required'&&!note)return json({error:'Please describe the correction needed'},400);
+   if(String(body.note||'').trim().length>500)return json({error:'Review note must be 500 characters or fewer'},400);
+   const at=new Date().toISOString();
+   item.status=status;item.reviewNote=note;item.reviewedAt=at;
+   item.reviewHistory=[...(Array.isArray(item.reviewHistory)?item.reviewHistory:[]),{status,note,at}].slice(-30);
+   await save(env,item);return json({ok:true,status});
   }
   if(path==='/api/vendor-applications/file'&&req.method==='GET'){
    const item=await get(env,clean(url.searchParams.get('id'),40));if(!item||!item.documentKey)return json({error:'Document not found'},404);
