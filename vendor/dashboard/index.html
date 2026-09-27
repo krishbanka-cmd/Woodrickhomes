@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vendor Dashboard | Woodrick Homes</title>
+<style>
+:root{font-family:Arial,sans-serif;color:#f6ebd2;background:#101013}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#111115,#27201a);min-height:100vh}
+header{border-bottom:1px solid #6f5b39;padding:18px max(20px,calc((100vw - 1100px)/2));display:flex;justify-content:space-between;align-items:center;gap:14px}
+.brand{font-weight:900;letter-spacing:.12em}.brand b{color:#e9c477}a{color:#e9c477}main{max-width:1100px;padding:30px 20px 70px;margin:auto}
+.tag{color:#e9c477;font-size:12px;letter-spacing:.17em;font-weight:800}
+h1{font:clamp(32px,4vw,46px) Georgia,serif;margin:12px 0}h2{font:26px Georgia,serif;margin:0 0 13px}
+p{line-height:1.55;color:#d2c7b8}.panel{background:#1c1b1b;border:1px solid #77613b;padding:24px;margin-top:22px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.full{grid-column:1/-1}
+label{display:block;color:#e9d8b2;font-size:13px;margin-bottom:7px}
+input,select,textarea{width:100%;padding:12px;color:#fff;background:#282727;border:1px solid #766b5d;font:inherit}
+textarea{min-height:100px}button{background:#d4a44d;color:#15120f;border:0;padding:12px 18px;font-weight:800;cursor:pointer}button:disabled{opacity:.55}
+.muted{font-size:13px}.status{color:#edca7d;min-height:24px}article{border-top:1px solid #6f5b39;padding:18px 0}
+article h3{margin:0 0 8px}article p{margin:5px 0}.chip{display:inline-block;color:#e9c477;border:1px solid #77613b;padding:5px 9px;font-size:12px}
+[hidden]{display:none!important}@media(max-width:650px){header{align-items:flex-start;flex-direction:column}.grid{grid-template-columns:1fr}.full{grid-column:1}}
+</style>
+</head>
+<body>
+<header><span class="brand"><b>WOODRICK</b> HOMES · VENDOR</span><a href="/">← Home</a></header>
+<main>
+<span class="tag">WOODRICK PARTNER NETWORK</span><h1>Vendor Dashboard</h1>
+<p>Apne products submit karein aur Woodrick review status dekhein. Approval se pehle koi product public website par show nahi hota.</p>
+<section id="login-needed" class="panel" hidden>
+  <h2>Vendor access</h2><p>Yeh dashboard approved vendor login ke baad khulega. OTP login abhi setup mein hai.</p>
+  <a href="/become-a-vendor/">Vendor application →</a>
+</section>
+<div id="dashboard" hidden>
+  <section class="panel">
+    <h2>Submit a product</h2>
+    <p class="muted">Product details Woodrick admin ke review ke liye jayengi. Price aur brochure upload ka step baad mein add hoga.</p>
+    <form id="product-form">
+      <div class="grid">
+        <div><label for="title">Product name *</label><input id="title" name="title" maxlength="140" required></div>
+        <div><label for="sku">Design / SKU number *</label><input id="sku" name="sku" maxlength="80" required></div>
+        <div><label for="brand">Brand *</label><input id="brand" name="brand" maxlength="100" required></div>
+        <div><label for="category">Category *</label><select id="category" name="category" required><option value="">Select category</option><option>Laminates</option><option>Plywood</option><option>Louvers</option><option>Acrylic Laminates</option><option>Shuttering Plywood</option><option>Doors</option><option>HDHMR</option><option>MDF</option><option>WPC board & chaukhat</option><option>Tiles</option><option>Sanitary</option><option>Bath fittings</option><option>Other</option></select></div>
+        <div class="full"><label for="description">Specifications (optional)</label><textarea id="description" name="description" maxlength="1000"></textarea></div>
+      </div>
+      <button id="submit" type="submit">SEND FOR REVIEW</button><p id="submit-status" class="status" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+  <section class="panel"><h2>My product proposals</h2><button id="refresh" type="button">Refresh</button><p id="list-status" class="status" role="status" aria-live="polite"></p><div id="products"></div><button id="more" type="button" hidden>Load more</button></section>
+</div>
+</main>
+<script>
+const dashboard=document.getElementById('dashboard'),login=document.getElementById('login-needed');
+const products=document.getElementById('products'),listStatus=document.getElementById('list-status'),more=document.getElementById('more');
+let cursor='',busy=false;
+function element(tag,value){const node=document.createElement(tag);node.textContent=value||'';return node}
+function row(item){
+  const card=element('article'),heading=element('h3',item.title),chip=element('span',item.status.replaceAll('_',' '));chip.className='chip';
+  card.append(heading,chip,element('p','Brand: '+item.brand+' · Category: '+item.category+' · SKU: '+item.sku));
+  if(item.description)card.append(element('p',item.description));
+  if(item.correctionReason)card.append(element('p','Correction requested: '+item.correctionReason));
+  return card
+}
+async function load(reset=false){
+  if(busy)return;busy=true;more.disabled=true;if(reset){cursor='';products.replaceChildren()}
+  listStatus.textContent='Loading…';
+  try{
+    const response=await fetch('/api/vendor-products'+(cursor?'?cursor='+encodeURIComponent(cursor):''),{cache:'no-store'});
+    if(response.status===401){dashboard.hidden=true;login.hidden=false;return}
+    const data=await response.json();if(!response.ok)throw Error(data.error||'Unable to load products');
+    dashboard.hidden=false;login.hidden=true;
+    for(const item of data.items)products.append(row(item));
+    cursor=data.cursor||'';more.hidden=!cursor;
+    listStatus.textContent=products.children.length+' proposal(s) shown'+(cursor?' · more available':'')
+  }catch(error){listStatus.textContent=error.message||'Unable to load products'}finally{busy=false;more.disabled=false}
+}
+document.getElementById('product-form').addEventListener('submit',async event=>{
+  event.preventDefault();const form=event.currentTarget,button=document.getElementById('submit'),status=document.getElementById('submit-status');
+  const body=Object.fromEntries(new FormData(form));button.disabled=true;status.textContent='Submitting…';
+  try{
+    const response=await fetch('/api/vendor-products',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+    const result=await response.json();if(!response.ok)throw Error(result.error||'Submit failed');
+    form.reset();status.textContent='Product proposal received. Reference: '+result.id+' · Pending review.';await load(true)
+  }catch(error){status.textContent=error.message||'Please retry'}finally{button.disabled=false}
+});
+document.getElementById('refresh').onclick=()=>load(true);more.onclick=()=>load();load(true);
+</script>
+</body>
+</html>
