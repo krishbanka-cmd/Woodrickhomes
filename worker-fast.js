@@ -94,7 +94,11 @@ async function indexedMedia(env){
     const data=JSON.parse(body);
     if(!Array.isArray(data.items)||data.items.length===0)return null;
     let changed=false;
-    data.items=data.items.map(item=>{
+    data.items=data.items.filter(item=>{
+      const visible=!String(item&&item.key||'').startsWith('private/')&&!String(item&&item.sourceKey||'').startsWith('private/');
+      if(!visible)changed=true;
+      return visible;
+    }).map(item=>{
       const source=String(item&&item.sourceKey||'');
       if(!source.startsWith('library/'))return item;
       const query=new URLSearchParams({source,brand:String(item.brand||''),category:String(item.category||''),catalogue:String(item.catalogue||item.title||'')});
