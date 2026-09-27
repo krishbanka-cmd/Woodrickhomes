@@ -28,10 +28,19 @@ export async function handleVendor(req,env){
   }
   if(!await admin(req,env))return json({error:'Admin login required'},401);
   if(path==='/api/vendor-applications'&&req.method==='GET'){
+   const reference=url.searchParams.get('id');
+   if(reference!==null){
+    if(!/^[a-f0-9-]{36}$/.test(reference))return json({error:'Invalid reference ID'},400);
+    const item=await get(env,reference);
+    return json({items:item?[item]:[],truncated:false,cursor:null});
+   }
    const cursor=url.searchParams.get('cursor')||'';
    if(cursor.length>2048)return json({error:'Invalid cursor'},400);
    const page=await env.PRODUCT_MEDIA.list({prefix:ROOT+'records/',limit:100,...(cursor?{cursor}:{})});const items=[];
-   for(const o of page.objects){const item=await get(env,o.key.slice((ROOT+'records/').length).replace(/\.json$/,''));if(item)items.push(item)}
+   for(let i=0;i<page.objects.length;i+=10){
+    const batch=await Promise.all(page.objects.slice(i,i+10).map(o=>get(env,o.key.slice((ROOT+'records/').length).replace(/\.json$/,''))));
+    items.push(...batch.filter(Boolean));
+   }
    items.sort((a,b)=>b.createdAt.localeCompare(a.createdAt));return json({items,truncated:page.truncated,cursor:page.truncated?page.cursor:null});
   }
   if(path==='/api/vendor-applications/status'&&req.method==='POST'){
