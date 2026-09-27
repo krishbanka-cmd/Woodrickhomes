@@ -1222,7 +1222,8 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
 .material-stories-head p{color:#5e594f;margin:0;font-size:15px;line-height:1.5}
 .material-stories-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 .material-story{position:relative;display:flex;min-height:340px;flex-direction:column;justify-content:flex-end;overflow:hidden;padding:26px;color:#fff;text-decoration:none;background:#25221d;isolation:isolate}
-.material-story:before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,transparent 20%,rgba(0,0,0,.78) 100%),var(--material-image) center/cover;transition:transform .35s}
+.material-story:before{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,transparent 20%,rgba(0,0,0,.78) 100%),var(--material-image) center/cover;transition:transform .35s}
+.material-story>*{position:relative;z-index:1}
 .material-story:hover:before{transform:scale(1.04)}
 .material-story span{font:800 10px Arial,sans-serif;letter-spacing:.16em;color:#f0c96b}
 .material-story strong{font:500 clamp(27px,2.5vw,37px) Georgia,serif;margin:7px 0 16px}
