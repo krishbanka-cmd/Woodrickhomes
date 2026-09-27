@@ -47,8 +47,35 @@ function group(items){const grouped=new Map;for(const x of items){const fileName
 function renderFilters(){const cats=['All',...new Set(catalogues.map(x=>x.category).filter(Boolean))];if(!cats.includes(active))active='All';filters.innerHTML=cats.map(c=>`<button class="${c===active?'active':''}" data-c="${esc(c)}">${esc(c)}</button>`).join('');filters.querySelectorAll('button').forEach(b=>b.onclick=()=>{active=b.dataset.c;renderFilters();render()})}
 function render(){const wanted=norm(query),list=catalogues.filter(x=>(active==='All'||x.category===active)&&(!wanted||norm([x.brand,x.category,x.name].join(' ')).includes(wanted)));status.textContent=`${list.length} catalogue${list.length===1?'':'s'} found${active==='All'?' in complete index':''}`;grid.innerHTML=list.length?list.map((g,index)=>{const first=g.pages[0],params=new URLSearchParams;if(active!=='All')params.set('category',active);if(query)params.set('q',query);const returnTo='/catalogues/'+(params.size?'?'+params:''),view=g.pdf?u(WoodrickCatalogue.pdfKey(g.pdf),'pdfviewer=1&title='+encodeURIComponent(g.name)+'&return='+encodeURIComponent(returnTo)+'&'):first?u(first.key,'raw=1&return='+encodeURIComponent(returnTo)+'&'):'#',cover=WoodrickCatalogue.cover(g.pdf)||g.cover||(first?u(first.key,'raw=1&'):''),preview=cover?`<img loading="${index<3?'eager':'lazy'}" decoding="async" ${index===0?'fetchpriority="high"':''} src="${cover}" alt="${esc(g.name)}" onerror="this.outerHTML='<div class=&quot;cover-fallback&quot;>${esc(g.name)}</div>'">`:`<div class="cover-fallback">${esc(g.name)}</div>`;return`<article class="card catalogue-tile"><div class="cover catalogue-cover">${preview}</div><div class="info catalogue-details"><div class="tag catalogue-eyebrow">${esc(g.category)} · ${esc(g.brand)}</div><h2 class="catalogue-name">${esc(g.name)}</h2><div class="meta catalogue-subline">${g.pages.length?g.pages.length+' pages':'PDF catalogue'}</div><div class="actions catalogue-buttons"><a class="primary catalogue-primary" href="${view}">VIEW CATALOGUE${g.pdf?' · PDF':''}</a>${g.pdf?`<a class="catalogue-secondary" href="${u(WoodrickCatalogue.pdfKey(g.pdf),'download=1&')}">DOWNLOAD PDF</a>`:''}</div></div></article>`}).join(''):'<div class="empty">No matching catalogue found. Try another brand, category or name.</div>'}
 search.addEventListener('input',()=>{query=search.value;render()});
-async function fetchMedia(url){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);try{const response=await fetch(url,{cache:'no-store',signal:controller.signal});if(!response.ok)throw new Error('media '+response.status);const data=await response.json();if(!Array.isArray(data.items))throw new Error('invalid media response');return data.items}finally{clearTimeout(timer)}}
-async function loadCatalogues(){status.textContent='Loading complete catalogue index…';const sources=['/api/media?catalogue=1','/api/media?prefix=library/','/api/media?catalogue=1&retry='+Date.now()],results=await Promise.allSettled(sources.map(fetchMedia)),byKey=new Map;results.forEach(result=>{if(result.status==='fulfilled')result.value.forEach(item=>{if(item&&item.key)byKey.set(item.key,item)})});catalogues=group([...byKey.values()]).sort((a,b)=>a.brand.localeCompare(b.brand)||a.name.localeCompare(b.name));if(catalogues.length){renderFilters();render();return}grid.innerHTML='<div class="empty">Catalogue connection is taking longer than expected.</div>';status.innerHTML='<button id="retryCatalogues" type="button">RETRY</button>';document.getElementById('retryCatalogues').onclick=loadCatalogues}
+async function fetchMedia(url){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),25000);try{const response=await fetch(url,{cache:'no-store',signal:controller.signal});if(!response.ok)throw new Error('media '+response.status);const data=await response.json();if(!Array.isArray(data.items))throw new Error('invalid media response');return data}finally{clearTimeout(timer)}}
+async function loadCatalogues(){
+  status.textContent='Loading complete catalogue index…';
+  const byKey=new Map;
+  try{
+    for(const source of ['catalogue=1','prefix=library/']){
+      const seenCursors=new Set;
+      let cursor='',pages=0;
+      do{
+        const url='/api/media?'+source+(cursor?'&cursor='+encodeURIComponent(cursor):'');
+        const data=await fetchMedia(url);
+        data.items.forEach(item=>{if(item&&item.key)byKey.set(item.key,item)});
+        pages++;
+        if(!data.truncated){cursor='';break}
+        if(!data.cursor||seenCursors.has(data.cursor))throw new Error('Catalogue index pagination stopped early');
+        seenCursors.add(data.cursor);cursor=data.cursor;
+        status.textContent=`Loading catalogue index… ${byKey.size} files checked`;
+      }while(pages<200);
+      if(cursor)throw new Error('Catalogue index exceeded the page limit');
+    }
+    catalogues=group([...byKey.values()]).sort((a,b)=>a.brand.localeCompare(b.brand)||a.name.localeCompare(b.name));
+    renderFilters();render();
+  }catch(err){
+    grid.innerHTML='<div class="empty">Catalogue index could not be fully loaded. Please retry.</div>';
+    status.innerHTML='<button id="retryCatalogues" type="button">RETRY CATALOGUES</button>';
+    document.getElementById('retryCatalogues').onclick=loadCatalogues;
+    console.error('Catalogue index incomplete:',err);
+  }
+}
 loadCatalogues();
 </script>
 </body>
