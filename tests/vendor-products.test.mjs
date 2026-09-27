@@ -63,3 +63,21 @@ test('sessions expire and correction reason is required',async()=>{
   const response=await handleVendorProducts(request('/api/vendor-products/admin/status',{admin:true,method:'POST',body:{vendorId:A,id:created.id,status:'correction_required'}}),env);
   assert.equal(response.status,400);
 });
+test('correction resubmission updates the same private proposal and retains review history',async()=>{
+  const bucket=storage(),env={PRODUCT_MEDIA:bucket,VENDOR_SESSION_SECRET:SECRET,ADMIN_UPLOAD_TOKEN:'admin-test'};
+  for(const id of [A,B])bucket.data.set('private/vendors/records/'+id+'.json',JSON.stringify({id,status:'approved'}));
+  const tokenA=await createVendorSession(A,SECRET),tokenB=await createVendorSession(B,SECRET);
+  const original=await (await handleVendorProducts(request('/api/vendor-products',{token:tokenA,method:'POST',body:{title:'Plywood',brand:'Century',category:'Plywood',sku:'CP-1'}}),env)).json();
+  await handleVendorProducts(request('/api/vendor-products/admin/status',{admin:true,method:'POST',body:{vendorId:A,id:original.id,status:'correction_required',note:'Add thickness'}}),env);
+  const change={id:original.id,title:'Plywood 18mm',brand:'Century',category:'Plywood',sku:'CP-1',description:'18 mm'};
+  assert.equal((await handleVendorProducts(request('/api/vendor-products/resubmit',{token:tokenB,method:'POST',body:change}),env)).status,404);
+  const resubmit=await handleVendorProducts(request('/api/vendor-products/resubmit',{token:tokenA,method:'POST',body:change}),env);
+  assert.equal(resubmit.status,200);assert.equal((await resubmit.json()).id,original.id);
+  const owned=await (await handleVendorProducts(request('/api/vendor-products',{token:tokenA}),env)).json();
+  assert.equal(owned.items.length,1);assert.equal(owned.items[0].title,'Plywood 18mm');
+  assert.equal(owned.items[0].status,'pending');assert.equal(owned.items[0].revision,2);
+  assert.equal('correctionReason' in owned.items[0],false);
+  const saved=JSON.parse(bucket.data.get('private/vendor-products/'+A+'/'+original.id+'.json'));
+  assert.deepEqual(saved.reviewHistory.map(event=>event.status),['correction_required','resubmitted']);
+  assert.equal((await handleVendorProducts(request('/api/vendor-products/resubmit',{token:tokenA,method:'POST',body:change}),env)).status,409);
+});

@@ -83,16 +83,28 @@ export async function handleVendorProducts(req,env){
       }
       return json({error:'Method not allowed'},405);
     }
-    if(path!=='/api/vendor-products')return json({error:'Not found'},404);
+    if(path!=='/api/vendor-products'&&path!=='/api/vendor-products/resubmit')return json({error:'Not found'},404);
     const application=await vendor(req,env);
     if(!application)return json({error:'Approved vendor login required'},401);
-    if(req.method==='GET')return list(env,ROOT+application.id+'/',url.searchParams.get('cursor')||'',true);
+    if(path==='/api/vendor-products'&&req.method==='GET')return list(env,ROOT+application.id+'/',url.searchParams.get('cursor')||'',true);
     if(req.method==='POST'){
       if(!sameOrigin(req,url))return json({error:'Invalid origin'},403);
       if(!(req.headers.get('content-type')||'').includes('application/json'))return json({error:'JSON required'},415);
       const body=await req.json(),title=clean(body.title,140),brand=clean(body.brand,100),category=clean(body.category,100),sku=clean(body.sku,80),description=clean(body.description,1000);
       if(title.length<2||!brand||!category||!sku)return json({error:'Title, brand, category and SKU are required'},400);
       if(String(body.description||'').length>1000)return json({error:'Description must be 1000 characters or fewer'},400);
+      if(path==='/api/vendor-products/resubmit'){
+        const id=clean(body.id,40);
+        if(!validId(id))return json({error:'Invalid product reference'},400);
+        const key=ROOT+application.id+'/'+id+'.json',object=await env.PRODUCT_MEDIA.get(key);
+        if(!object)return json({error:'Product proposal not found'},404);
+        const item=JSON.parse(await object.text());
+        if(item.vendorId!==application.id||item.status!=='correction_required')return json({error:'Only your correction requests can be resubmitted'},409);
+        Object.assign(item,{title,brand,category,sku,description,status:'pending',reviewNote:'',reviewedAt:null,updatedAt:new Date().toISOString(),revision:(item.revision||1)+1});
+        item.reviewHistory=[...(Array.isArray(item.reviewHistory)?item.reviewHistory:[]),{status:'resubmitted',note:'',at:item.updatedAt}].slice(-30);
+        await env.PRODUCT_MEDIA.put(key,JSON.stringify(item),{httpMetadata:{contentType:'application/json'}});
+        return json({ok:true,id,status:'pending',public:false});
+      }
       const id=crypto.randomUUID(),item={id,vendorId:application.id,title,brand,category,sku,description,status:'pending',createdAt:new Date().toISOString(),reviewedAt:null};
       await env.PRODUCT_MEDIA.put(ROOT+application.id+'/'+id+'.json',JSON.stringify(item),{httpMetadata:{contentType:'application/json'}});
       return json({ok:true,id,status:'pending',public:false},201);
