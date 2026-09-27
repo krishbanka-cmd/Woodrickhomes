@@ -1,1 +1,80 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Vendor Applications | Woodrick Homes Admin</title><style>*{box-sizing:border-box}body{margin:0;background:#111116;color:#f3ede4;font:15px Arial,sans-serif}header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #6c5831;padding:20px max(20px,calc((100vw - 1000px)/2))}h1{font:32px Georgia,serif;margin:0}a{color:#e7c478}main{max-width:1000px;padding:28px 20px;margin:auto}button{background:#d9ac55;border:0;padding:10px 14px;font-weight:700;cursor:pointer}select{padding:9px;background:#222;color:#fff;border:1px solid #977a4c}article{border:1px solid #6f5d40;background:#1d1d20;padding:20px;margin:16px 0}h2{font-size:19px;margin:0 0 12px}p{line-height:1.5;color:#d4c8b8}b{color:#edce89}.meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}.actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:15px}#status{color:#e9ca83}@media(max-width:600px){.meta{grid-template-columns:1fr}h1{font-size:24px}}</style></head><body><header><h1>Vendor Applications</h1><a href="/admin-products/">← Products Admin</a></header><main><p>New suppliers ki details aur documents review karein. Approval sirf internal status hai; public product listing ya vendor login abhi activate nahi hota.</p><button id="refresh">Refresh applications</button> <span id="status" role="status"></span><div id="items"></div></main><script>const list=document.getElementById('items'),status=document.getElementById('status');function el(tag,text){const node=document.createElement(tag);node.textContent=text||'';return node}function field(box,label,value){const item=el('div');const title=el('b',label+': ');item.append(title,document.createTextNode(value||'—'));box.append(item)}async function load(){status.textContent='Loading…';list.replaceChildren();try{const r=await fetch('/api/vendor-applications',{cache:'no-store'});if(r.status===401){location.href='/admin-products/';return}const data=await r.json();if(!r.ok)throw Error(data.error||'Unable to load');status.textContent=data.items.length+' application(s)'+(data.truncated?' · showing latest 100':'');for(const v of data.items){const card=el('article'),h=el('h2',v.business),meta=el('div');meta.className='meta';field(meta,'Contact',v.contact);field(meta,'Mobile',v.mobile);field(meta,'City',v.city);field(meta,'Category',v.category);field(meta,'GSTIN',v.gst);field(meta,'Received',new Date(v.createdAt).toLocaleString());field(meta,'Status',v.status);card.append(h,meta);if(v.note)card.append(el('p',v.note));const actions=el('div');actions.className='actions';if(v.documentKey){const link=el('a','Download document ↗');link.href='/api/vendor-applications/file?id='+encodeURIComponent(v.id);link.target='_blank';link.rel='noopener';actions.append(link)}const select=el('select');for(const s of ['pending','approved','rejected']){const o=el('option',s);o.value=s;if(v.status===s)o.selected=true;select.append(o)}const btn=el('button','Save status');btn.onclick=async()=>{btn.disabled=true;try{const r=await fetch('/api/vendor-applications/status',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id:v.id,status:select.value})});const d=await r.json();if(!r.ok)throw Error(d.error);await load()}catch(e){status.textContent=e.message||'Save failed'}finally{btn.disabled=false}};actions.append(select,btn);card.append(actions);list.append(card)}}catch(e){status.textContent=e.message||'Unable to load'}}document.getElementById('refresh').onclick=load;load();</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vendor Applications | Woodrick Homes Admin</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#111116;color:#f3ede4;font:15px Arial,sans-serif}
+header{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid #6c5831;padding:20px max(20px,calc((100vw - 1000px)/2))}
+h1{font:32px Georgia,serif;margin:0}a{color:#e7c478}main{max-width:1000px;padding:28px 20px;margin:auto}
+button{background:#d9ac55;border:0;padding:10px 14px;font-weight:700;cursor:pointer}button:disabled{opacity:.55;cursor:wait}
+select,textarea{padding:9px;background:#222;color:#fff;border:1px solid #977a4c;font:inherit}
+textarea{width:100%;min-height:70px;resize:vertical;margin-top:8px}
+article{border:1px solid #6f5d40;background:#1d1d20;padding:20px;margin:16px 0}
+h2{font-size:19px;margin:0 0 12px}p{line-height:1.5;color:#d4c8b8}b{color:#edce89}
+.meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}
+.actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:15px}
+.review{margin-top:16px;padding-top:14px;border-top:1px solid #514738}.review label{display:block;color:#edce89;font-weight:700}
+.review small{display:block;color:#c9bfad;margin:5px 0 12px}#status{color:#e9ca83;margin-left:12px}#more{display:none;margin:16px 0}
+@media(max-width:600px){header{align-items:flex-start;flex-direction:column}.meta{grid-template-columns:1fr}h1{font-size:24px}}
+</style>
+</head>
+<body>
+<header><h1>Vendor Applications</h1><a href="/admin-products/">← Products Admin</a></header>
+<main>
+<p>Supplier details aur documents review karein. Approval internal status hai; product listing aur vendor login abhi activate nahi hote.</p>
+<button id="refresh" type="button">Refresh applications</button><span id="status" role="status" aria-live="polite"></span>
+<div id="items"></div><button id="more" type="button">Load more applications</button>
+</main>
+<script>
+const list=document.getElementById('items'),status=document.getElementById('status'),more=document.getElementById('more');
+let cursor=null,loading=false,count=0;
+function el(tag,text){const node=document.createElement(tag);node.textContent=text||'';return node}
+function field(box,label,value){const item=el('div'),title=el('b',label+': ');item.append(title,document.createTextNode(value||'—'));box.append(item)}
+function card(v){
+  const article=el('article'),heading=el('h2',v.business),meta=el('div');meta.className='meta';
+  field(meta,'Contact',v.contact);field(meta,'Mobile',v.mobile);field(meta,'City',v.city);
+  field(meta,'Category',v.category);field(meta,'GSTIN',v.gst);
+  field(meta,'Received',new Date(v.createdAt).toLocaleString());field(meta,'Status',v.status);
+  article.append(heading,meta);if(v.note)article.append(el('p',v.note));
+  const actions=el('div');actions.className='actions';
+  if(v.documentKey){const link=el('a','Download document ↗');link.href='/api/vendor-applications/file?id='+encodeURIComponent(v.id);link.target='_blank';link.rel='noopener';actions.append(link)}
+  const select=el('select');select.setAttribute('aria-label','Review status for '+v.business);
+  for(const [value,label] of [['pending','Pending'],['correction_required','Correction Required'],['approved','Approved'],['rejected','Rejected']]){
+    const option=el('option',label);option.value=value;option.selected=v.status===value;select.append(option)
+  }
+  actions.append(select);article.append(actions);
+  const review=el('div');review.className='review';
+  const label=el('label','Review note');const note=el('textarea');note.maxLength=500;note.value=v.reviewNote||'';
+  label.append(note);review.append(label,el('small','Correction Required ke liye reason zaroor likhein. Yeh note sirf admin ko dikhta hai; vendor ko contact alag se karein.'));
+  const save=el('button','Save review');save.type='button';save.onclick=async()=>{
+    if(select.value==='correction_required'&&!note.value.trim()){status.textContent='Correction reason likhein.';note.focus();return}
+    save.disabled=true;try{
+      const response=await fetch('/api/vendor-applications/status',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id:v.id,status:select.value,note:note.value.trim()})});
+      const result=await response.json();if(!response.ok)throw Error(result.error||'Save failed');await load(true)
+    }catch(error){status.textContent=error.message||'Save failed'}finally{save.disabled=false}
+  };
+  review.append(save);article.append(review);
+  if(Array.isArray(v.reviewHistory)&&v.reviewHistory.length){
+    const previous=v.reviewHistory[v.reviewHistory.length-1];article.append(el('p','Last review: '+previous.status+' · '+new Date(previous.at).toLocaleString()+(previous.note?' · '+previous.note:'')))
+  }
+  return article
+}
+async function load(reset=false){
+  if(loading)return;loading=true;more.disabled=true;
+  if(reset){cursor=null;count=0;list.replaceChildren()}
+  status.textContent='Loading…';
+  try{
+    const query=cursor?'?cursor='+encodeURIComponent(cursor):'';
+    const response=await fetch('/api/vendor-applications'+query,{cache:'no-store'});
+    if(response.status===401){location.href='/admin-products/';return}
+    const data=await response.json();if(!response.ok)throw Error(data.error||'Unable to load');
+    for(const item of data.items)list.append(card(item));
+    count+=data.items.length;cursor=data.cursor||null;more.style.display=cursor?'inline-block':'none';
+    status.textContent=count+' application(s) shown'+(cursor?' · more available':'')
+  }catch(error){status.textContent=error.message||'Unable to load'}finally{loading=false;more.disabled=false}
+}
+document.getElementById('refresh').onclick=()=>load(true);more.onclick=()=>load();load(true);
+</script>
+</body>
+</html>
