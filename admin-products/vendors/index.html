@@ -41,6 +41,7 @@ function card(v){
   article.append(heading,meta);if(v.note)article.append(el('p',v.note));
   const actions=el('div');actions.className='actions';
   if(v.documentKey){const link=el('a','Download document ↗');link.href='/api/vendor-applications/file?id='+encodeURIComponent(v.id);link.target='_blank';link.rel='noopener';actions.append(link)}
+  const productsLink=el('a','View product proposals →');productsLink.href='/admin-products/vendor-products/?vendorId='+encodeURIComponent(v.id);actions.append(productsLink);
   const select=el('select');select.setAttribute('aria-label','Review status for '+v.business);
   for(const [value,label] of [['pending','Pending'],['correction_required','Correction Required'],['approved','Approved'],['rejected','Rejected']]){
     const option=el('option',label);option.value=value;option.selected=v.status===value;select.append(option)
