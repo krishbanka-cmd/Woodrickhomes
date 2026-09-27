@@ -39,7 +39,7 @@ async function admin(req,env){
   return cookie(req,'woodrick_admin')===Array.from(new Uint8Array(signature),b=>b.toString(16).padStart(2,'0')).join('');
 }
 function sameOrigin(req,url){const origin=req.headers.get('origin');return !origin||origin===url.origin}
-async function list(env,prefix,cursor){
+async function list(env,prefix,cursor,vendorView=false){
   if(cursor.length>2048)return json({error:'Invalid cursor'},400);
   const page=await env.PRODUCT_MEDIA.list({prefix,limit:100,...(cursor?{cursor}:{})}),items=[];
   for(let index=0;index<page.objects.length;index+=10){
@@ -49,7 +49,10 @@ async function list(env,prefix,cursor){
     }));
     items.push(...batch.filter(Boolean));
   }
-  return json({items,cursor:page.truncated?page.cursor:null,truncated:page.truncated});
+  const visible=vendorView?items.map(({reviewHistory,reviewNote,...item})=>({
+    ...item,...(item.status==='correction_required'&&reviewNote?{correctionReason:reviewNote}:{})
+  })):items;
+  return json({items:visible,cursor:page.truncated?page.cursor:null,truncated:page.truncated});
 }
 
 export async function handleVendorProducts(req,env){
@@ -58,7 +61,11 @@ export async function handleVendorProducts(req,env){
   try{
     if(path==='/api/vendor-products/admin'||path==='/api/vendor-products/admin/status'){
       if(!await admin(req,env))return json({error:'Admin login required'},401);
-      if(path==='/api/vendor-products/admin'&&req.method==='GET')return list(env,ROOT,url.searchParams.get('cursor')||'');
+      if(path==='/api/vendor-products/admin'&&req.method==='GET'){
+        const vendorId=url.searchParams.get('vendorId');
+        if(vendorId!==null&&!validId(vendorId))return json({error:'Invalid vendor reference'},400);
+        return list(env,ROOT+(vendorId?vendorId+'/':''),url.searchParams.get('cursor')||'');
+      }
       if(path==='/api/vendor-products/admin/status'&&req.method==='POST'){
         if(!sameOrigin(req,url))return json({error:'Invalid origin'},403);
         const body=await req.json(),vendorId=clean(body.vendorId,40),id=clean(body.id,40),status=clean(body.status,30),note=clean(body.note,500);
@@ -79,7 +86,7 @@ export async function handleVendorProducts(req,env){
     if(path!=='/api/vendor-products')return json({error:'Not found'},404);
     const application=await vendor(req,env);
     if(!application)return json({error:'Approved vendor login required'},401);
-    if(req.method==='GET')return list(env,ROOT+application.id+'/',url.searchParams.get('cursor')||'');
+    if(req.method==='GET')return list(env,ROOT+application.id+'/',url.searchParams.get('cursor')||'',true);
     if(req.method==='POST'){
       if(!sameOrigin(req,url))return json({error:'Invalid origin'},403);
       if(!(req.headers.get('content-type')||'').includes('application/json'))return json({error:'JSON required'},415);
