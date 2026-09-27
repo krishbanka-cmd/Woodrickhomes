@@ -1,4 +1,5 @@
 import {handleListQuote} from './worker-list-quotes.js';
+import {handleVendor} from './worker-vendors.js';
 import app from './worker-design-extraction.js';
 import {backfillDesignIndex} from './worker-design-picker-click-fix.js';
 import {PUBLIC_MEDIA_INDEX_KEY,refreshPublicMediaIndex,syncAndClean} from './worker-product-media-sync.js';
@@ -148,6 +149,7 @@ export default{
   async fetch(request,env,ctx){
     const url=new URL(request.url);
     if(url.pathname==='/api/list-quote'||url.pathname.startsWith('/api/list-quote/'))return handleListQuote(request,env);
+    if(url.pathname==='/api/vendor-applications'||url.pathname.startsWith('/api/vendor-applications/'))return handleVendor(request,env);
     if(url.pathname==='/api/media'&&((url.searchParams.get('key')||'').startsWith('private/')||(url.searchParams.get('prefix')||'').startsWith('private/')))return brandJson({error:'Not found'},404);
     if(url.pathname==='/api/brands'&&(request.method==='GET'||request.method==='POST'))return handleBrandRail(request,env);
     if((request.method==='GET'||request.method==='HEAD')){
