@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vendor Products | Woodrick Homes Admin</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#111116;color:#f3ede4;font:15px Arial,sans-serif}
+header{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid #6c5831;padding:20px max(20px,calc((100vw - 1060px)/2))}
+h1{font:32px Georgia,serif;margin:0}a{color:#e7c478}main{max-width:1060px;padding:28px 20px;margin:auto}
+button{background:#d9ac55;border:0;padding:10px 14px;font-weight:700;cursor:pointer}button:disabled{opacity:.55}
+input,select,textarea{padding:9px;background:#222;color:#fff;border:1px solid #977a4c;font:inherit}
+input{width:min(370px,100%)}textarea{width:100%;min-height:72px;resize:vertical;margin:8px 0}
+article{border:1px solid #6f5d40;background:#1d1d20;padding:20px;margin:16px 0}h2{font-size:19px;margin:0 0 12px}
+p{line-height:1.5;color:#d4c8b8}b,label{color:#edce89}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}
+.controls{display:flex;align-items:center;flex-wrap:wrap;gap:10px}.review{border-top:1px solid #514738;margin-top:14px;padding-top:14px}
+.review label{display:block;font-weight:700}small{display:block;color:#c9bfad;margin-bottom:10px}#more{display:none;margin:12px 0}
+@media(max-width:650px){header{flex-direction:column;align-items:flex-start}h1{font-size:24px}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><h1>Vendor Product Proposals</h1><a href="/admin-products/">← Products Admin</a></header>
+<main>
+<p>Vendor proposals review karein. <strong>Approved</strong> status ke baad bhi product public catalogue mein publish nahi hota; uske liye alag publishing step zaroori hai.</p>
+<div class="controls"><label for="vendor">Vendor reference ID</label><input id="vendor" placeholder="Filter by application ID" autocomplete="off"><button id="filter" type="button">Find vendor</button><button id="refresh" type="button">Show all</button></div>
+<p id="status" role="status" aria-live="polite"></p><div id="items"></div><button id="more" type="button">Load more proposals</button>
+</main>
+<script>
+const items=document.getElementById('items'),status=document.getElementById('status'),more=document.getElementById('more'),vendorInput=document.getElementById('vendor');
+let cursor='',filter='',busy=false,total=0;
+function element(tag,text){const node=document.createElement(tag);node.textContent=text||'';return node}
+function field(box,label,value){const row=element('div'),bold=element('b',label+': ');row.append(bold,document.createTextNode(value||'—'));box.append(row)}
+function card(product){
+  const article=element('article'),heading=element('h2',product.title),grid=element('div');grid.className='grid';
+  field(grid,'Brand',product.brand);field(grid,'Category',product.category);field(grid,'SKU',product.sku);
+  field(grid,'Vendor ID',product.vendorId);field(grid,'Received',new Date(product.createdAt).toLocaleString());field(grid,'Status',product.status);
+  article.append(heading,grid);if(product.description)article.append(element('p',product.description));
+  const review=element('div');review.className='review';const choice=element('select');
+  choice.setAttribute('aria-label','Status for '+product.title);
+  for(const [value,label] of [['pending','Pending'],['correction_required','Correction Required'],['approved','Approved'],['rejected','Rejected']]){
+    const option=element('option',label);option.value=value;option.selected=product.status===value;choice.append(option)
+  }
+  const label=element('label','Admin review note');const note=element('textarea');note.maxLength=500;note.value=product.reviewNote||'';
+  label.append(note);review.append(choice,label,element('small','Correction Required ka reason vendor ko dikhega. Baaki statuses ke notes sirf admin ko dikhenge.'));
+  const button=element('button','Save review');button.type='button';
+  button.onclick=async()=>{
+    if(choice.value==='correction_required'&&!note.value.trim()){status.textContent='Correction reason likhein.';note.focus();return}
+    button.disabled=true;try{
+      const response=await fetch('/api/vendor-products/admin/status',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({vendorId:product.vendorId,id:product.id,status:choice.value,note:note.value.trim()})});
+      const result=await response.json();if(!response.ok)throw Error(result.error||'Save failed');
+      await load(true)
+    }catch(error){status.textContent=error.message||'Save failed'}finally{button.disabled=false}
+  };
+  review.append(button);article.append(review);
+  if(product.reviewedAt)article.append(element('p','Last review: '+new Date(product.reviewedAt).toLocaleString()));
+  return article
+}
+async function load(reset=false){
+  if(busy)return;busy=true;more.disabled=true;
+  if(reset){cursor='';total=0;items.replaceChildren()}
+  status.textContent='Loading…';
+  try{
+    const params=new URLSearchParams();if(filter)params.set('vendorId',filter);if(cursor)params.set('cursor',cursor);
+    const response=await fetch('/api/vendor-products/admin'+(params.size?'?'+params:''),{cache:'no-store'});
+    if(response.status===401){location.href='/admin-products/';return}
+    const data=await response.json();if(!response.ok)throw Error(data.error||'Unable to load');
+    for(const product of data.items)items.append(card(product));
+    total+=data.items.length;cursor=data.cursor||'';more.style.display=cursor?'inline-block':'none';
+    status.textContent=total+' proposal(s) shown'+(cursor?' · more available':'')
+  }catch(error){status.textContent=error.message||'Unable to load'}finally{busy=false;more.disabled=false}
+}
+document.getElementById('filter').onclick=()=>{filter=vendorInput.value.trim();if(!filter){status.textContent='Vendor reference ID daalein.';vendorInput.focus();return}load(true)};
+vendorInput.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();document.getElementById('filter').click()}});
+document.getElementById('refresh').onclick=()=>{vendorInput.value='';filter='';load(true)};
+more.onclick=()=>load();
+filter=new URLSearchParams(location.search).get('vendorId')||'';vendorInput.value=filter;load(true);
+</script>
+</body>
+</html>
