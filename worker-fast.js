@@ -1,6 +1,7 @@
 import {handleListQuote} from './worker-list-quotes.js';
 import {handleVendor} from './worker-vendors.js';
 import {handleVendorProducts} from './worker-vendor-products.js';
+import {handleEnquiries} from './worker-enquiries.js'
 import app from './worker-design-extraction.js';
 import {backfillDesignIndex} from './worker-design-picker-click-fix.js';
 import {PUBLIC_MEDIA_INDEX_KEY,refreshPublicMediaIndex,syncAndClean} from './worker-product-media-sync.js';
@@ -107,6 +108,7 @@ async function indexedMedia(env){
       if(item.coverUrl===coverUrl)return item;
       changed=true;return{...item,coverUrl};
     });
+    if(data.total!==data.items.length){data.total=data.items.length;changed=true}
     if(changed)body=JSON.stringify(data);
   }catch{return null}
   return new Response(body,{headers:{
@@ -156,6 +158,7 @@ export default{
     if(url.pathname==='/api/list-quote'||url.pathname.startsWith('/api/list-quote/'))return handleListQuote(request,env);
     if(url.pathname==='/api/vendor-applications'||url.pathname.startsWith('/api/vendor-applications/'))return handleVendor(request,env);
     if(url.pathname==='/api/vendor-products'||url.pathname.startsWith('/api/vendor-products/'))return handleVendorProducts(request,env);
+    if(url.pathname==='/api/enquiries')return handleEnquiries(request,env);
     if(url.pathname==='/api/media'&&((url.searchParams.get('key')||'').startsWith('private/')||(url.searchParams.get('prefix')||'').startsWith('private/')))return brandJson({error:'Not found'},404);
     if(url.pathname==='/api/brands'&&(request.method==='GET'||request.method==='POST'))return handleBrandRail(request,env);
     if((request.method==='GET'||request.method==='HEAD')){
@@ -217,7 +220,7 @@ export default{
     }
     let response=await app.fetch(request,env,ctx);
     if(url.pathname==='/api/media'&&request.method==='GET'&&!url.searchParams.get('key')&&!url.searchParams.get('prefix')&&response.ok){
-      try{const data=await response.clone().json();if(Array.isArray(data.items)&&data.items.some(x=>String(x.key||'').startsWith('private/'))){data.items=data.items.filter(x=>!String(x.key||'').startsWith('private/'));return brandJson(data)}}catch{}
+      try{const data=await response.clone().json();if(Array.isArray(data.items)&&data.items.some(x=>String(x.key||'').startsWith('private/'))){data.items=data.items.filter(x=>!String(x.key||'').startsWith('private/'));data.total=data.items.length;return brandJson(data)}}catch{}
     }
     return response;
   },

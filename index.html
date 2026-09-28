@@ -6,6 +6,10 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Woodrick Homes | Premium Building Materials &amp; Interior Solutions</title>
 <meta content="Woodrick Homes — premium building materials, plywood, laminates, tiles, bath fittings, paints, hardware, modular kitchens and interior solutions in Gorakhpur." name="description"/>
+<link rel="canonical" href="https://woodrickhomes.com/"/>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"LocalBusiness","name":"Woodrick Homes","url":"https://woodrickhomes.com/","telephone":"+91-9415324839","email":"woodrickhomes@gmail.com","address":{"@type":"PostalAddress","streetAddress":"A30, Transport Nagar","addressLocality":"Gorakhpur","addressRegion":"Uttar Pradesh","postalCode":"273016","addressCountry":"IN"},"sameAs":["https://www.instagram.com/woodrick.homes/"]}
+</script>
 <style>
 :root{
   --ink:#151515; --gold:#b78a3b; --gold2:#d7b36a; --cream:#f7f3ec; --muted:#6d6a65;
@@ -1594,17 +1598,21 @@ function submitForm(e){
    }
    const payload={name:name,mobile:mobile,email:email,city:city,requirement:requirement,message:message,source:'woodrickhomes.com'};
    if(requestId)payload.attachment_request_id=requestId;
+   const savedResponse=await fetch('/api/enquiries',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
+   const saved=await savedResponse.json();
+   if(!savedResponse.ok||!saved.id)throw Error(saved.error||'Enquiry save nahi ho payi. Dobara try karein.');
    fetch('https://script.google.com/macros/s/AKfycbyaPA-H-vCttmE-mMWp4Bo_kPRdi2PoXl-7NLrPfCfOQ-3_HCREslXF8MvZSlT7qYrIVw/exec',{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:new URLSearchParams(payload).toString()}).catch(function(err){console.error('Enquiry save error',err)});
    const lines=['*New Website Enquiry – Woodrick Homes*','','*Name:* '+name,'*Mobile:* '+mobile,'*Email:* '+(email||'Not provided'),'*City:* '+city,'*Requirement:* '+requirement,'*Message:* '+(message||'Not provided')];
+   lines.push('*Enquiry ID:* '+saved.id);
    if(requestId)lines.push('*List/Photo attached:* Yes (admin panel)','*Request ID:* '+requestId);
    const whatsapp='https://wa.me/919415324839?text='+encodeURIComponent(lines.join('\n'));
    const opened=window.open(whatsapp,'_blank');
    if(!opened)window.location.href=whatsapp;
    const toast=document.getElementById('toast');
-   if(toast){toast.textContent=requestId?'Enquiry aur attachment save ho gaye. WhatsApp mein Send dabayein.':'Enquiry details save ho gayi. WhatsApp mein Send dabayein.';toast.classList.add('show');setTimeout(function(){toast.classList.remove('show')},5500)}
-   status.textContent=requestId?'Attachment saved · Request ID: '+requestId+'. WhatsApp mein Send dabayein.':'WhatsApp mein Send dabayein.';
+   if(toast){toast.textContent='Enquiry Woodrick ko mil gayi hai. WhatsApp mein Send dabayein.';toast.classList.add('show');setTimeout(function(){toast.classList.remove('show')},5500)}
+   status.textContent='Enquiry received · Reference: '+saved.id+(requestId?' · Attachment: '+requestId:'')+'. WhatsApp mein Send dabayein.';
    form.reset();
-  }catch(err){status.textContent=err.message||'Attachment save nahi ho payi. Dobara try karein.'}
+  }catch(err){status.textContent=err.message||'Enquiry submit nahi ho payi. Dobara try karein.'}
   finally{button.disabled=false}
  })();
 }
