@@ -9,8 +9,8 @@ function storage(){
   const data=new Map();
   return {
     data,
-    async get(key){return data.has(key)?{text:async()=>data.get(key)}:null},
-    async put(key,value){data.set(key,String(value))},
+    async get(key){return data.has(key)?{text:async()=>String(data.get(key)),body:data.get(key)}:null},
+    async put(key,value){data.set(key,value instanceof Uint8Array?value:String(value))},
     async list({prefix,limit,cursor}){
       const keys=[...data.keys()].filter(key=>key.startsWith(prefix)).sort();
       const offset=cursor?keys.indexOf(cursor)+1:0,objects=keys.slice(offset,offset+limit).map(key=>({key}));
@@ -80,4 +80,24 @@ test('correction resubmission updates the same private proposal and retains revi
   const saved=JSON.parse(bucket.data.get('private/vendor-products/'+A+'/'+original.id+'.json'));
   assert.deepEqual(saved.reviewHistory.map(event=>event.status),['correction_required','resubmitted']);
   assert.equal((await handleVendorProducts(request('/api/vendor-products/resubmit',{token:tokenA,method:'POST',body:change}),env)).status,409);
+});
+test('approved vendor attaches a private PDF; only admin can download it',async()=>{
+  const bucket=storage(),env={PRODUCT_MEDIA:bucket,VENDOR_SESSION_SECRET:SECRET,ADMIN_UPLOAD_TOKEN:'admin-test'};
+  bucket.data.set('private/vendors/records/'+A+'.json',JSON.stringify({id:A,status:'approved'}));
+  const token=await createVendorSession(A,SECRET),form=new FormData();
+  for(const [key,value] of Object.entries({title:'Laminate design',brand:'Ristal',category:'Laminates',sku:'R-123'}))form.set(key,value);
+  form.set('brochure',new File(['%PDF-1.4\nprivate brochure'],'catalogue.pdf',{type:'application/pdf'}));
+  const created=await handleVendorProducts(new Request('https://woodrickhomes.com/api/vendor-products',{method:'POST',headers:{cookie:'woodrick_vendor='+token},body:form}),env);
+  assert.equal(created.status,201);const {id}=await created.json();
+  const path='/api/vendor-products/admin/file?vendorId='+A+'&id='+id;
+  assert.equal((await handleVendorProducts(request(path),env)).status,401);
+  const download=await handleVendorProducts(request(path,{admin:true}),env);
+  assert.equal(download.status,200);assert.equal(download.headers.get('content-disposition'),'attachment; filename="vendor-brochure.pdf"');
+  assert.match(await download.text(),/^%PDF-1.4/);
+  const publicList=await (await handleVendorProducts(request('/api/vendor-products',{token}),env)).json();
+  assert.equal(publicList.items[0].hasBrochure,true);
+  assert.equal(publicList.items.length,1);
+  const invalid=new FormData();for(const [key,value] of Object.entries({title:'Bad file',brand:'Ristal',category:'Laminates',sku:'R-124'}))invalid.set(key,value);
+  invalid.set('brochure',new File(['not a PDF'],'bad.pdf',{type:'application/pdf'}));
+  assert.equal((await handleVendorProducts(new Request('https://woodrickhomes.com/api/vendor-products',{method:'POST',headers:{cookie:'woodrick_vendor='+token},body:invalid}),env)).status,400);
 });

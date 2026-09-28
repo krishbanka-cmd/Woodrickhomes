@@ -1,5 +1,8 @@
 // Product proposals remain private until an explicit publishing workflow is built.
 const ROOT='private/vendor-products/';
+const FILE_ROOT='private/vendor-product-files/';
+const MAX_BROCHURE=5*1024*1024;
+const BROCHURE_TYPES={'application/pdf':'pdf','image/jpeg':'jpg','image/png':'png','image/webp':'webp'};
 const encoder=new TextEncoder();
 const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}});
 const clean=(value,max=160)=>String(value||'').trim().slice(0,max);
@@ -39,6 +42,17 @@ async function admin(req,env){
   return cookie(req,'woodrick_admin')===Array.from(new Uint8Array(signature),b=>b.toString(16).padStart(2,'0')).join('');
 }
 function sameOrigin(req,url){const origin=req.headers.get('origin');return !origin||origin===url.origin}
+async function brochureData(file){
+  if(!file||typeof file.arrayBuffer!=='function'||!file.size)return null;
+  if(!BROCHURE_TYPES[file.type]||file.size>MAX_BROCHURE)throw Error('Brochure must be a PDF or JPG, PNG, WebP image up to 5 MB');
+  const bytes=new Uint8Array(await file.arrayBuffer()),type=file.type;
+  const valid=type==='application/pdf'?new TextDecoder().decode(bytes.slice(0,5))==='%PDF-':
+    type==='image/jpeg'?bytes[0]===255&&bytes[1]===216&&bytes[2]===255:
+    type==='image/png'?bytes.slice(0,8).every((value,i)=>value===[137,80,78,71,13,10,26,10][i]):
+    new TextDecoder().decode(bytes.slice(0,4))==='RIFF'&&new TextDecoder().decode(bytes.slice(8,12))==='WEBP';
+  if(!valid)throw Error('File content does not match its format');
+  return {bytes,type,extension:BROCHURE_TYPES[type]};
+}
 async function list(env,prefix,cursor,vendorView=false){
   if(cursor.length>2048)return json({error:'Invalid cursor'},400);
   const page=await env.PRODUCT_MEDIA.list({prefix,limit:100,...(cursor?{cursor}:{})}),items=[];
@@ -59,8 +73,16 @@ export async function handleVendorProducts(req,env){
   if(!env.PRODUCT_MEDIA)return json({error:'Vendor storage unavailable'},503);
   const url=new URL(req.url),path=url.pathname;
   try{
-    if(path==='/api/vendor-products/admin'||path==='/api/vendor-products/admin/status'){
+    if(path==='/api/vendor-products/admin'||path==='/api/vendor-products/admin/status'||path==='/api/vendor-products/admin/file'){
       if(!await admin(req,env))return json({error:'Admin login required'},401);
+      if(path==='/api/vendor-products/admin/file'&&req.method==='GET'){
+        const vendorId=url.searchParams.get('vendorId')||'',id=url.searchParams.get('id')||'';
+        if(!validId(vendorId)||!validId(id))return json({error:'Invalid product reference'},400);
+        const entry=await env.PRODUCT_MEDIA.get(ROOT+vendorId+'/'+id+'.json');if(!entry)return json({error:'Brochure not found'},404);
+        const item=JSON.parse(await entry.text());if(!item.hasBrochure)return json({error:'Brochure not found'},404);
+        const object=await env.PRODUCT_MEDIA.get(FILE_ROOT+vendorId+'/'+id+'/brochure');if(!object)return json({error:'Brochure not found'},404);
+        return new Response(object.body,{headers:{'content-type':item.brochureType||'application/octet-stream','content-disposition':'attachment; filename="vendor-brochure.'+(BROCHURE_TYPES[item.brochureType]||'bin')+'"','cache-control':'private, no-store','x-content-type-options':'nosniff','content-security-policy':'sandbox'}});
+      }
       if(path==='/api/vendor-products/admin'&&req.method==='GET'){
         const vendorId=url.searchParams.get('vendorId');
         if(vendorId!==null&&!validId(vendorId))return json({error:'Invalid vendor reference'},400);
@@ -89,8 +111,12 @@ export async function handleVendorProducts(req,env){
     if(path==='/api/vendor-products'&&req.method==='GET')return list(env,ROOT+application.id+'/',url.searchParams.get('cursor')||'',true);
     if(req.method==='POST'){
       if(!sameOrigin(req,url))return json({error:'Invalid origin'},403);
-      if(!(req.headers.get('content-type')||'').includes('application/json'))return json({error:'JSON required'},415);
-      const body=await req.json(),title=clean(body.title,140),brand=clean(body.brand,100),category=clean(body.category,100),sku=clean(body.sku,80),description=clean(body.description,1000);
+      const contentType=req.headers.get('content-type')||'',multipart=contentType.includes('multipart/form-data');
+      if(!multipart&&!contentType.includes('application/json'))return json({error:'JSON or form data required'},415);
+      if(multipart&&Number(req.headers.get('content-length')||0)>MAX_BROCHURE+150000)return json({error:'Brochure must be 5 MB or smaller'},413);
+      const form=multipart?await req.formData():null,body=form?Object.fromEntries(form):await req.json();
+      let brochure;try{brochure=await brochureData(form?.get('brochure'))}catch(error){return json({error:error.message},400)}
+      const title=clean(body.title,140),brand=clean(body.brand,100),category=clean(body.category,100),sku=clean(body.sku,80),description=clean(body.description,1000);
       if(title.length<2||!brand||!category||!sku)return json({error:'Title, brand, category and SKU are required'},400);
       if(String(body.description||'').length>1000)return json({error:'Description must be 1000 characters or fewer'},400);
       if(path==='/api/vendor-products/resubmit'){
@@ -101,11 +127,13 @@ export async function handleVendorProducts(req,env){
         const item=JSON.parse(await object.text());
         if(item.vendorId!==application.id||item.status!=='correction_required')return json({error:'Only your correction requests can be resubmitted'},409);
         Object.assign(item,{title,brand,category,sku,description,status:'pending',reviewNote:'',reviewedAt:null,updatedAt:new Date().toISOString(),revision:(item.revision||1)+1});
+        if(brochure){await env.PRODUCT_MEDIA.put(FILE_ROOT+application.id+'/'+id+'/brochure',brochure.bytes,{httpMetadata:{contentType:brochure.type}});item.hasBrochure=true;item.brochureType=brochure.type}
         item.reviewHistory=[...(Array.isArray(item.reviewHistory)?item.reviewHistory:[]),{status:'resubmitted',note:'',at:item.updatedAt}].slice(-30);
         await env.PRODUCT_MEDIA.put(key,JSON.stringify(item),{httpMetadata:{contentType:'application/json'}});
         return json({ok:true,id,status:'pending',public:false});
       }
       const id=crypto.randomUUID(),item={id,vendorId:application.id,title,brand,category,sku,description,status:'pending',createdAt:new Date().toISOString(),reviewedAt:null};
+      if(brochure){await env.PRODUCT_MEDIA.put(FILE_ROOT+application.id+'/'+id+'/brochure',brochure.bytes,{httpMetadata:{contentType:brochure.type}});item.hasBrochure=true;item.brochureType=brochure.type}
       await env.PRODUCT_MEDIA.put(ROOT+application.id+'/'+id+'.json',JSON.stringify(item),{httpMetadata:{contentType:'application/json'}});
       return json({ok:true,id,status:'pending',public:false},201);
     }

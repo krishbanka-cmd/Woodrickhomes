@@ -51,6 +51,7 @@ function card(product){
     }catch(error){status.textContent=error.message||'Save failed'}finally{button.disabled=false}
   };
   review.append(button);article.append(review);
+  if(product.hasBrochure){const link=element('a','Download private brochure / photo');link.href='/api/vendor-products/admin/file?'+new URLSearchParams({vendorId:product.vendorId,id:product.id});link.style.display='block';link.style.marginTop='12px';article.append(link)}
   if(product.reviewedAt)article.append(element('p','Last review: '+new Date(product.reviewedAt).toLocaleString()));
   return article
 }

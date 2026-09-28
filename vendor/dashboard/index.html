@@ -40,6 +40,7 @@ article h3{margin:0 0 8px}article p{margin:5px 0}.chip{display:inline-block;colo
         <div><label for="brand">Brand *</label><input id="brand" name="brand" maxlength="100" required></div>
         <div><label for="category">Category *</label><select id="category" name="category" required><option value="">Select category</option><option>Laminates</option><option>Plywood</option><option>Louvers</option><option>Acrylic Laminates</option><option>Shuttering Plywood</option><option>Doors</option><option>HDHMR</option><option>MDF</option><option>WPC board & chaukhat</option><option>Tiles</option><option>Sanitary</option><option>Bath fittings</option><option>Other</option></select></div>
         <div class="full"><label for="description">Specifications (optional)</label><textarea id="description" name="description" maxlength="1000"></textarea></div>
+        <div class="full"><label for="brochure">Catalogue or product photo (optional, PDF/JPG/PNG/WebP, max 5 MB)</label><input id="brochure" name="brochure" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"></div>
       </div>
       <button id="submit" type="submit">SEND FOR REVIEW</button><p id="submit-status" class="status" role="status" aria-live="polite"></p>
       <button id="cancel-edit" type="button" hidden>Cancel correction</button>
@@ -60,6 +61,7 @@ function row(item){
   const card=element('article'),heading=element('h3',item.title),chip=element('span',item.status.replaceAll('_',' '));chip.className='chip';
   card.append(heading,chip,element('p','Brand: '+item.brand+' · Category: '+item.category+' · SKU: '+item.sku));
   if(item.description)card.append(element('p',item.description));
+  if(item.hasBrochure)card.append(element('p','Private brochure/photo attached for Woodrick review'));
   if(item.correctionReason)card.append(element('p','Correction requested: '+item.correctionReason));
   if(item.status==='correction_required'){
     const edit=element('button','Correct and resubmit');edit.type='button';
@@ -89,10 +91,12 @@ async function load(reset=false){
 }
 document.getElementById('product-form').addEventListener('submit',async event=>{
   event.preventDefault();const form=event.currentTarget,button=document.getElementById('submit'),status=document.getElementById('submit-status');
-  const body=Object.fromEntries(new FormData(form));button.disabled=true;status.textContent='Submitting…';
+  const body=new FormData(form),file=form.elements.brochure.files[0];
+  if(file&&file.size>5*1024*1024){status.textContent='Brochure 5 MB se chhoti chunein.';return}
+  button.disabled=true;status.textContent='Submitting…';
   try{
-    if(correctionId)body.id=correctionId;
-    const response=await fetch(correctionId?'/api/vendor-products/resubmit':'/api/vendor-products',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+    if(correctionId)body.set('id',correctionId);
+    const response=await fetch(correctionId?'/api/vendor-products/resubmit':'/api/vendor-products',{method:'POST',body});
     const result=await response.json();if(!response.ok)throw Error(result.error||'Submit failed');
     clearCorrection();status.textContent='Product proposal received. Reference: '+result.id+' · Pending review.';await load(true)
   }catch(error){status.textContent=error.message||'Please retry'}finally{button.disabled=false}
