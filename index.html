@@ -1018,12 +1018,14 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
 
 /* Product categories now participate in the full-screen hero sequence */
 .hero-slide[data-material-hero]{background-position:center!important;background-size:cover!important;background-repeat:no-repeat!important}
+.hero .hero-content{max-width:600px!important;width:min(600px,48vw)!important;margin-left:max(4%,calc((100% - 1180px)/2))!important;margin-right:0!important}
 .hero .hero-product-range{display:none!important}
 .hero h1{font-size:clamp(44px,4.2vw,54px)!important;max-width:600px!important}
 .hero .hero-content>p{max-width:560px!important;font-size:14px!important}
 .hero .hero-actions{max-width:560px!important}
 .hero .hero-actions .btn:nth-child(2),
 .hero .hero-actions .btn:nth-child(4){display:none!important}
+@media(max-width:850px){.hero .hero-content{width:92%!important;max-width:92%!important;margin-left:auto!important;margin-right:auto!important}}
 </style>
 </head>
 <body>
