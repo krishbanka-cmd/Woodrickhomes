@@ -38,6 +38,15 @@
   #categories .media-link{min-height:44px}
   #categories .enquire{min-height:44px;display:flex;align-items:center;justify-content:center}
 }
+
+/* Keep corresponding content and actions aligned across each category row. */
+@supports (grid-template-rows:subgrid){
+  #categories .category-grid{row-gap:0}
+  #categories .card{display:grid;grid-row:span 6;grid-template-rows:subgrid;row-gap:0;margin-bottom:14px}
+}
+@supports not (grid-template-rows:subgrid){
+  #categories .media-row{min-height:78px;align-content:start}
+}
 </style>
 </head>
 <body>
