@@ -1062,7 +1062,9 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
 
     <div class="hero-actions">
       <a class="btn btn-gold" id="hero-dynamic-link" href="/products/">EXPLORE PRODUCTS</a>
-      <a class="btn btn-outline hero-secondary-cta" href="https://drive.google.com/drive/folders/1zf6WNeCcctv6Hm-zxAsyV6I1RVcqicj0" rel="noopener" target="_blank">VIEW CATALOGUE</a>
+      <a class="btn btn-outline" href="#modular-kitchen-showcase">MODULAR KITCHEN</a>
+      <a class="btn btn-outline hero-secondary-cta" href="/catalogues/">VIEW CATALOGUE</a>
+      <a class="btn btn-outline" href="https://wa.me/919415324839?text=Hello%20Woodrick%20Homes%2C%20I%20am%20interested%20in%20your%20products%20and%20would%20like%20more%20details." target="_blank" rel="noopener">WHATSAPP ENQUIRY</a>
     </div>
   </div>
 
@@ -1817,6 +1819,35 @@ document.getElementById('contact-attachment')?.addEventListener('change',functio
   }else{
     syncHeroBrandRail();
   }
+})();
+</script>
+
+
+<script id="woodrick-hero-post-load-sync-20260929">
+(function(){
+  function syncCategoryHero(){
+    var hero=document.querySelector('.hero'), active=hero&&hero.querySelector('.hero-slide.is-active');
+    if(!hero||!active)return;
+    var heading=hero.querySelector('h1');
+    if(heading&&!document.getElementById('hero-dynamic-title')){
+      heading.innerHTML='<span id="hero-dynamic-title"></span><br><em id="hero-dynamic-accent"></em>';
+    }
+    var actions=hero.querySelector('.hero-actions');
+    if(actions&&!document.getElementById('hero-dynamic-link')){
+      actions.innerHTML='<a class="btn btn-gold" id="hero-dynamic-link" href="/products/">EXPLORE PRODUCTS</a><a class="btn btn-outline" href="#modular-kitchen-showcase">MODULAR KITCHEN</a><a class="btn btn-outline hero-secondary-cta" href="/catalogues/">VIEW CATALOGUE</a><a class="btn btn-outline" href="https://wa.me/919415324839?text=Hello%20Woodrick%20Homes%2C%20I%20am%20interested%20in%20your%20products%20and%20would%20like%20more%20details." target="_blank" rel="noopener">WHATSAPP ENQUIRY</a>';
+    }
+    var kicker=document.getElementById('hero-dynamic-kicker')||hero.querySelector('.kicker');
+    var title=document.getElementById('hero-dynamic-title');
+    var accent=document.getElementById('hero-dynamic-accent');
+    var copy=document.getElementById('hero-dynamic-copy')||hero.querySelector('.hero-content p');
+    var link=document.getElementById('hero-dynamic-link');
+    if(kicker)kicker.textContent=active.getAttribute('data-kicker')||'ONE-STOP BUILDING & HOME SOLUTIONS';
+    if(title)title.textContent=active.getAttribute('data-title')||'Everything for';
+    if(accent)accent.textContent=active.getAttribute('data-accent')||'Better Spaces.';
+    if(copy)copy.textContent=active.getAttribute('data-copy')||'Complete building materials and interior solutions from trusted brands.';
+    if(link)link.href=active.getAttribute('data-href')||'/products/';
+  }
+  window.addEventListener('load',function(){window.setTimeout(syncCategoryHero,0)},{once:true});
 })();
 </script>
 
