@@ -1016,56 +1016,14 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
  .hero-product-range span:nth-child(n+6){display:none}
 }
 
-/* Sliding product showcase inspired by a full material banner */
-.hero-product-showcase{
- position:absolute;z-index:4;top:176px;right:max(3%,calc((100% - 1180px)/2));
- width:min(520px,43vw);opacity:1;visibility:visible;pointer-events:auto
-}
-.hero .hero-content{max-width:500px!important;width:min(500px,42vw)!important;margin-left:max(4%,calc((100% - 1180px)/2))!important;margin-right:0!important}
-.hero-product-showcase-head{display:flex;align-items:end;justify-content:space-between;gap:18px;margin-bottom:10px}
-.hero-product-showcase-head span{color:#f0c96b;font:800 10px/1.2 Arial,sans-serif;letter-spacing:.16em;text-transform:uppercase}
-.hero-product-showcase-head a{color:#fff;font:800 9px/1 Arial,sans-serif;letter-spacing:.1em;text-transform:uppercase;border-bottom:1px solid #f0c96b;padding-bottom:4px}
-.hero-product-carousel{position:relative;overflow:hidden;border:1px solid rgba(240,201,107,.74);background:#15120d;box-shadow:0 18px 38px rgba(0,0,0,.28)}
-.hero-product-grid{display:flex;gap:0;transform:translate3d(0,0,0);transition:transform .68s cubic-bezier(.22,.61,.36,1);will-change:transform}
-.hero-product-card{position:relative;flex:0 0 100%;height:272px;overflow:hidden;background:#15120d}
-.hero-product-thumb{position:absolute;inset:0;background-image:linear-gradient(90deg,rgba(0,0,0,.04) 25%,rgba(0,0,0,.70) 100%),linear-gradient(0deg,rgba(0,0,0,.80),transparent 60%),var(--product-image);background-size:cover;background-position:center;transition:transform .6s ease}
-.hero-product-card:hover .hero-product-thumb,.hero-product-card:focus-visible .hero-product-thumb{transform:scale(1.035)}
-.hero-product-card strong{position:absolute;z-index:2;left:22px;right:70px;bottom:24px;color:#fff;font:500 29px/1.05 Georgia,serif;text-shadow:0 3px 12px rgba(0,0,0,.9)}
-.hero-product-card strong:before{content:"EXPLORE MATERIAL";display:block;margin-bottom:7px;color:#f0c96b;font:800 9px/1 Arial,sans-serif;letter-spacing:.16em}
-.hero-product-card strong:after{content:"  →";color:#f0c96b}
-.hero-product-arrow{position:absolute;z-index:4;top:50%;width:34px;height:46px;margin-top:-23px;border:1px solid rgba(240,201,107,.72);background:rgba(8,7,5,.72);color:#f0c96b;font:400 25px/1 Georgia,serif;cursor:pointer}
-.hero-product-arrow:hover,.hero-product-arrow:focus-visible{background:#f0c96b;color:#090806}
-.hero-product-prev{left:10px}.hero-product-next{right:10px}
-.hero-product-dots{position:absolute;z-index:4;right:18px;bottom:17px;display:flex;gap:5px}
-.hero-product-dot{width:17px;height:3px;padding:0;border:0;background:rgba(255,255,255,.42);cursor:pointer}
-.hero-product-dot.is-active{background:#f0c96b;width:26px}
+/* Product categories now participate in the full-screen hero sequence */
+.hero-slide[data-material-hero]{background-position:center!important;background-size:cover!important;background-repeat:no-repeat!important}
 .hero .hero-product-range{display:none!important}
-.hero h1{font-size:clamp(44px,4.2vw,54px)!important;max-width:500px!important}
-.hero .hero-content>p{max-width:490px!important;font-size:14px!important}
-.hero .hero-actions{max-width:500px!important}
+.hero h1{font-size:clamp(44px,4.2vw,54px)!important;max-width:600px!important}
+.hero .hero-content>p{max-width:560px!important;font-size:14px!important}
+.hero .hero-actions{max-width:560px!important}
 .hero .hero-actions .btn:nth-child(2),
 .hero .hero-actions .btn:nth-child(4){display:none!important}
-@media(max-width:1100px) and (min-width:851px){
- .hero-product-showcase{width:42vw;right:3%;top:190px}
- .hero-product-card{height:230px}
- .hero-product-card strong{font-size:24px}
- .hero .hero-content{max-width:48%!important}
-}
-@media(max-width:850px){
- .hero .hero-content{width:92%!important;max-width:92%!important;margin-left:auto!important;margin-right:auto!important}
- .hero-product-showcase{top:auto;left:4%;right:4%;bottom:105px;width:auto}
- .hero-product-showcase-head{display:none}
- .hero-product-card{height:92px}
- .hero-product-card strong{left:14px;right:55px;bottom:12px;font-size:16px}
- .hero-product-card strong:before{font-size:7px;margin-bottom:4px}
- .hero-product-arrow{width:28px;height:36px;margin-top:-18px;font-size:20px}
- .hero-product-prev{left:6px}.hero-product-next{right:6px}
- .hero-product-dots{right:12px;bottom:9px}
-}
-@media(max-width:520px){
- .hero .hero-product-range{display:none!important}
- .hero-product-showcase{bottom:102px}
-}
 </style>
 </head>
 <body>
@@ -1088,6 +1046,14 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
 <section class="hero" id="home">
   <div class="hero-slides" aria-hidden="true">
     <div class="hero-slide is-active" style="--hero-image:url('https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=2200&q=90')" data-kicker="ONE-STOP BUILDING & HOME SOLUTIONS" data-title="Everything for" data-accent="Better Spaces." data-copy="Building materials, premium surfaces and interior solutions—brought together with trusted brands and expert guidance." data-href="/products/"></div>
+    <div class="hero-slide" data-material-hero="Cement" data-scene="Cement products" style="--hero-image:url('https://www.ultratechcement.com/content/ultratechcement/in/ta/home/for-homebuilders/products/_jcr_content/root/container/container/container_267731970__2023425555/teaser.coreimg.png/1707274353185/cement-card.png')" data-kicker="FOUNDATION • STRENGTH • RELIABILITY" data-title="Cement for" data-accent="Stronger Foundations." data-copy="Trusted cement solutions for residential, commercial and infrastructure projects." data-href="/products/?category=Cement#categories"></div>
+    <div class="hero-slide" data-material-hero="Steel" data-scene="TMT steel products" style="--hero-image:url('https://assets.bldnxt.in/catalog/product/cache/1/image/a77c1558d860704591e3027d1ebed402/v/t/vtch000008_nonb000008_5ae682f2215ad.jpg')" data-kicker="550D TMT • STRUCTURAL STRENGTH" data-title="Steel That" data-accent="Builds Confidence." data-copy="High-strength TMT steel engineered for durable, dependable structures." data-href="/products/?category=Steel#categories"></div>
+    <div class="hero-slide" data-material-hero="Plywood" data-scene="Plywood products" style="--hero-image:url('https://s.alicdn.com/%40sc04/kf/H4575e8defa7d4f1c85ab4e5045f75efaK/Different-Size-Available-3x7-4x8-6x8-5x9-5x8-Plywood.jpg')" data-kicker="PLYWOOD • MDF • HDHMR • WPC" data-title="Boards for" data-accent="Better Interiors." data-copy="Plywood and performance boards for furniture, storage and interior applications." data-href="/products/?category=Plywood#categories"></div>
+    <div class="hero-slide" data-material-hero="Laminates" data-scene="Laminate products" style="--hero-image:url('https://s.alicdn.com/%40sc04/kf/H45cf4937e66442cc89a56ff3ae5e7735Y/12mm-Hpl-Panel-6-mm-Hpl-Hpl-18mm-Thickness.jpg')" data-kicker="LAMINATES • ACRYLICS • DECORATIVE SURFACES" data-title="Finishes That" data-accent="Define Your Space." data-copy="Decorative laminates, acrylic finishes and surfaces for expressive modern interiors." data-href="/products/?category=Laminates#categories"></div>
+    <div class="hero-slide" data-material-hero="Tiles" data-scene="Tile products" style="--hero-image:url('https://98eda87788a287f6d084.cdn6.editmysite.com/uploads/b/98eda87788a287f6d0840d09cd1bee28c3a25ecfec22000db28f2dee86413fc2/2025-09-25_15-38-37_1758829147.png?optimize=medium&amp;width=2400')" data-kicker="FLOOR TILES • WALL TILES • SURFACES" data-title="Tiles for" data-accent="Every Style." data-copy="Coordinated floor and wall tiles for homes, bathrooms and commercial spaces." data-href="/products/?category=Tiles#categories"></div>
+    <div class="hero-slide" data-material-hero="Sanitaryware" data-scene="Sanitaryware products" style="--hero-image:url('https://mahgoubceramic.storage.googleapis.com/wp-content/uploads/2025/8/mahgoub-Toilet-and-basin-set-Roca-siza-white.jpg')" data-kicker="SANITARYWARE • BATH FITTINGS" data-title="Complete Bath" data-accent="Solutions." data-copy="Elegant sanitaryware and bath fittings designed for comfort, hygiene and lasting use." data-href="/products/?category=Sanitaryware#categories"></div>
+    <div class="hero-slide" data-material-hero="Paints" data-scene="Paint products" style="--hero-image:url('https://www.pngkey.com/png/detail/137-1377356_white-paint-can-png-illustration.png')" data-kicker="PAINTS • PUTTY • WALL FINISHES" data-title="Colour Your" data-accent="Perfect Space." data-copy="Interior and exterior paints, wall putty and finishing solutions from trusted brands." data-href="/products/?category=Paints#categories"></div>
+    <div class="hero-slide" data-material-hero="Hardware" data-scene="Furniture hardware products" style="--hero-image:url('https://cortecarosi.com/cdn/shop/products/36505007_4b8c39a1-46f2-4ee3-a395-efd272abbda4.png?v=1684618980&amp;width=3840')" data-kicker="HINGES • RUNNERS • KITCHEN HARDWARE" data-title="Hardware for" data-accent="Effortless Living." data-copy="Premium furniture and kitchen hardware for smooth function and refined detailing." data-href="/products/?category=Hardware#categories"></div>
     <div class="hero-slide" style="--hero-image:url('https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=2200&q=90')" data-kicker="PLYWOOD • MDF • HDHMR • WPC" data-title="Build Strong." data-accent="Finish Beautifully." data-copy="Boards, plywood and performance materials for furniture, interiors and dependable construction." data-href="/products/?category=Plywood#categories"></div>
     <div class="hero-slide" style="--hero-image:url('https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=2200&q=90')" data-kicker="MODULAR KITCHEN • HARDWARE • STORAGE" data-title="Designed Around" data-accent="Your Everyday Life." data-copy="Smart kitchens, wardrobes and hardware solutions planned for beauty, comfort and lasting performance." data-href="#modular-kitchen-showcase"></div>
     <div class="hero-slide" style="--hero-image:url('https://images.unsplash.com/photo-1754447628644-b2dc91ce3237?auto=format&fit=crop&w=2200&q=90')" data-scene="Tiled bathroom" data-kicker="TILES • SANITARYWARE • BATH FITTINGS" data-title="Complete Bathroom" data-accent="Solutions." data-copy="Coordinated tiles, sanitaryware and bath fittings for refined, practical and easy-to-maintain spaces." data-href="/products/?category=Tiles#categories"></div>
@@ -1119,36 +1085,7 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
     </div>
   </div>
 
-  <aside class="hero-product-showcase" aria-label="Sliding building material product range">
-    <div class="hero-product-showcase-head">
-      <span>Materials in Motion</span>
-      <a href="/products/">View complete range →</a>
-    </div>
-    <div class="hero-product-carousel">
-      <div class="hero-product-grid">
-        <a class="hero-product-card" href="/products/?category=Cement#categories" aria-label="Explore cement products"><span class="hero-product-thumb" style="--product-image:url('https://www.ultratechcement.com/content/ultratechcement/in/ta/home/for-homebuilders/products/_jcr_content/root/container/container/container_267731970__2023425555/teaser.coreimg.png/1707274353185/cement-card.png')"></span><strong>Cement</strong></a>
-        <a class="hero-product-card" href="/products/?category=Steel#categories" aria-label="Explore steel products"><span class="hero-product-thumb" style="--product-image:url('https://assets.bldnxt.in/catalog/product/cache/1/image/a77c1558d860704591e3027d1ebed402/v/t/vtch000008_nonb000008_5ae682f2215ad.jpg')"></span><strong>TMT Steel</strong></a>
-        <a class="hero-product-card" href="/products/?category=Plywood#categories" aria-label="Explore plywood products"><span class="hero-product-thumb" style="--product-image:url('https://s.alicdn.com/%40sc04/kf/H4575e8defa7d4f1c85ab4e5045f75efaK/Different-Size-Available-3x7-4x8-6x8-5x9-5x8-Plywood.jpg')"></span><strong>Plywood &amp; Boards</strong></a>
-        <a class="hero-product-card" href="/products/?category=Laminates#categories" aria-label="Explore laminate products"><span class="hero-product-thumb" style="--product-image:url('https://s.alicdn.com/%40sc04/kf/H45cf4937e66442cc89a56ff3ae5e7735Y/12mm-Hpl-Panel-6-mm-Hpl-Hpl-18mm-Thickness.jpg')"></span><strong>Laminates</strong></a>
-        <a class="hero-product-card" href="/products/?category=Tiles#categories" aria-label="Explore tile products"><span class="hero-product-thumb" style="--product-image:url('https://98eda87788a287f6d084.cdn6.editmysite.com/uploads/b/98eda87788a287f6d0840d09cd1bee28c3a25ecfec22000db28f2dee86413fc2/2025-09-25_15-38-37_1758829147.png?optimize=medium&amp;width=2400')"></span><strong>Tiles</strong></a>
-        <a class="hero-product-card" href="/products/?category=Sanitaryware#categories" aria-label="Explore sanitaryware products"><span class="hero-product-thumb" style="--product-image:url('https://mahgoubceramic.storage.googleapis.com/wp-content/uploads/2025/8/mahgoub-Toilet-and-basin-set-Roca-siza-white.jpg')"></span><strong>Sanitaryware</strong></a>
-        <a class="hero-product-card" href="/products/?category=Paints#categories" aria-label="Explore paint products"><span class="hero-product-thumb" style="--product-image:url('https://www.pngkey.com/png/detail/137-1377356_white-paint-can-png-illustration.png')"></span><strong>Paints &amp; Putty</strong></a>
-        <a class="hero-product-card" href="/products/?category=Hardware#categories" aria-label="Explore hardware products"><span class="hero-product-thumb" style="--product-image:url('https://cortecarosi.com/cdn/shop/products/36505007_4b8c39a1-46f2-4ee3-a395-efd272abbda4.png?v=1684618980&amp;width=3840')"></span><strong>Hardware</strong></a>
-      </div>
-      <button class="hero-product-arrow hero-product-prev" type="button" aria-label="Previous material">‹</button>
-      <button class="hero-product-arrow hero-product-next" type="button" aria-label="Next material">›</button>
-      <div class="hero-product-dots" aria-label="Choose material slide">
-        <button class="hero-product-dot is-active" type="button" data-product-slide="0" aria-label="Show cement"></button>
-        <button class="hero-product-dot" type="button" data-product-slide="1" aria-label="Show TMT steel"></button>
-        <button class="hero-product-dot" type="button" data-product-slide="2" aria-label="Show plywood"></button>
-        <button class="hero-product-dot" type="button" data-product-slide="3" aria-label="Show laminates"></button>
-        <button class="hero-product-dot" type="button" data-product-slide="4" aria-label="Show tiles"></button>
-        <button class="hero-product-dot" type="button" data-product-slide="5" aria-label="Show sanitaryware"></button>
-        <button class="hero-product-dot" type="button" data-product-slide="6" aria-label="Show paints"></button>
-        <button class="hero-product-dot" type="button" data-product-slide="7" aria-label="Show hardware"></button>
-      </div>
-    </div>
-  </aside>
+  
 
   <div class="hero-brand-dock" aria-label="Trusted brand partners">
     <div class="hero-brand-dock-inner">
@@ -1195,18 +1132,26 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
   </div>
 
   <div class="hero-slide-dots" aria-label="Hero slides">
-    <button class="hero-slide-dot is-active" type="button" aria-label="Show slide 1" data-hero-slide="0"></button>
-    <button class="hero-slide-dot" type="button" aria-label="Show slide 2" data-hero-slide="1"></button>
-    <button class="hero-slide-dot" type="button" aria-label="Show slide 3" data-hero-slide="2"></button>
-    <button class="hero-slide-dot" type="button" aria-label="Show tiled bathroom slide" data-hero-slide="3"></button>
-    <button class="hero-slide-dot" type="button" aria-label="Show home office slide" data-hero-slide="4"></button>
-    <button class="hero-slide-dot" type="button" aria-label="Show bedroom slide" data-hero-slide="5"></button>
-    <button class="hero-slide-dot" type="button" aria-label="Show kitchen and dining slide" data-hero-slide="6"></button>
-    <button class="hero-slide-dot" type="button" aria-label="Show exterior elevation slide" data-hero-slide="7"></button>
-    <button class="hero-slide-dot" type="button" aria-label="Show walk-in wardrobe slide" data-hero-slide="8"></button>
-    <button class="hero-slide-dot" type="button" aria-label="Show furniture showroom slide" data-hero-slide="9"></button>
-    <button class="hero-slide-dot" type="button" aria-label="Show restaurant interior slide" data-hero-slide="10"></button>
-    <button class="hero-slide-dot" type="button" aria-label="Show resort lounge slide" data-hero-slide="11"></button>
+    <button class="hero-slide-dot is-active" type="button" aria-label="Show Opening view slide" data-hero-slide="0"></button>
+    <button class="hero-slide-dot" type="button" aria-label="Show Cement slide" data-hero-slide="1"></button>
+    <button class="hero-slide-dot" type="button" aria-label="Show TMT steel slide" data-hero-slide="2"></button>
+    <button class="hero-slide-dot" type="button" aria-label="Show Plywood slide" data-hero-slide="3"></button>
+    <button class="hero-slide-dot" type="button" aria-label="Show Laminates slide" data-hero-slide="4"></button>
+    <button class="hero-slide-dot" type="button" aria-label="Show Tiles slide" data-hero-slide="5"></button>
+    <button class="hero-slide-dot" type="button" aria-label="Show Sanitaryware slide" data-hero-slide="6"></button>
+    <button class="hero-slide-dot" type="button" aria-label="Show Paints slide" data-hero-slide="7"></button>
+    <button class="hero-slide-dot" type="button" aria-label="Show Hardware slide" data-hero-slide="8"></button>
+    <button class="hero-slide-dot" type="button" aria-label="Show Plywood interiors slide" data-hero-slide="9"></button>
+    <button class="hero-slide-dot" type="button" aria-label="Show Modular kitchen slide" data-hero-slide="10"></button>
+    <button class="hero-slide-dot" type="button" aria-label="Show Bathroom slide" data-hero-slide="11"></button>
+    <button class="hero-slide-dot" type="button" aria-label="Show Home office slide" data-hero-slide="12"></button>
+    <button class="hero-slide-dot" type="button" aria-label="Show Bedroom slide" data-hero-slide="13"></button>
+    <button class="hero-slide-dot" type="button" aria-label="Show Kitchen and dining slide" data-hero-slide="14"></button>
+    <button class="hero-slide-dot" type="button" aria-label="Show Exterior elevation slide" data-hero-slide="15"></button>
+    <button class="hero-slide-dot" type="button" aria-label="Show Walk-in wardrobe slide" data-hero-slide="16"></button>
+    <button class="hero-slide-dot" type="button" aria-label="Show Furniture showroom slide" data-hero-slide="17"></button>
+    <button class="hero-slide-dot" type="button" aria-label="Show Restaurant slide" data-hero-slide="18"></button>
+    <button class="hero-slide-dot" type="button" aria-label="Show Resort lounge slide" data-hero-slide="19"></button>
   </div>
 </section>
 <section class="about" id="about"><div class="container about-grid">
@@ -1905,39 +1850,7 @@ document.getElementById('contact-attachment')?.addEventListener('change',functio
 </script>
 
 
-<script id="woodrick-material-carousel-20260929">
-(function(){
-  var carousel=document.querySelector('.hero-product-carousel');
-  if(!carousel)return;
-  var track=carousel.querySelector('.hero-product-grid');
-  var cards=Array.prototype.slice.call(track.querySelectorAll('.hero-product-card'));
-  var dots=Array.prototype.slice.call(carousel.querySelectorAll('.hero-product-dot'));
-  var prev=carousel.querySelector('.hero-product-prev');
-  var next=carousel.querySelector('.hero-product-next');
-  var current=0,timer=null;
-  function show(index){
-    current=(index+cards.length)%cards.length;
-    track.style.transform='translate3d(-'+(current*100)+'%,0,0)';
-    cards.forEach(function(card,i){card.setAttribute('aria-hidden',i===current?'false':'true');card.tabIndex=i===current?0:-1});
-    dots.forEach(function(dot,i){dot.classList.toggle('is-active',i===current);dot.setAttribute('aria-current',i===current?'true':'false')});
-  }
-  function stop(){if(timer){clearInterval(timer);timer=null}}
-  function start(){
-    stop();
-    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches||document.hidden)return;
-    timer=setInterval(function(){show(current+1)},3000);
-  }
-  if(prev)prev.addEventListener('click',function(){show(current-1);start()});
-  if(next)next.addEventListener('click',function(){show(current+1);start()});
-  dots.forEach(function(dot){dot.addEventListener('click',function(){show(Number(dot.getAttribute('data-product-slide'))||0);start()})});
-  carousel.addEventListener('mouseenter',stop);
-  carousel.addEventListener('mouseleave',start);
-  carousel.addEventListener('focusin',stop);
-  carousel.addEventListener('focusout',start);
-  document.addEventListener('visibilitychange',function(){if(document.hidden)stop();else start()});
-  show(0);start();
-})();
-</script>
+
 
 <script id="woodrick-hero-post-load-sync-20260929">
 (function(){
