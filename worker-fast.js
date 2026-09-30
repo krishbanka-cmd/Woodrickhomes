@@ -3,7 +3,7 @@ import {handleVendor} from './worker-vendors.js';
 import {handleEnquiries} from './worker-enquiries.js';
 import app from './worker-design-extraction.js';
 import {backfillDesignIndex} from './worker-design-picker-click-fix.js';
-import {PUBLIC_MEDIA_INDEX_KEY,refreshPublicMediaIndex,syncAndClean} from './worker-product-media-sync.js';
+import {PUBLIC_MEDIA_INDEX_KEY,refreshPublicMediaIndex,syncAndClean,STATIC_PUBLIC_MEDIA} from './worker-product-media-sync.js';
 
 const BRAND_RAIL_KEY='_system/brand-rail-v1.json';
 const BRAND_RAIL_DEFAULTS=[
@@ -98,6 +98,7 @@ async function indexedMedia(env){
     const data=JSON.parse(body);
     if(!Array.isArray(data.items)||data.items.length===0)return null;
     let changed=false;
+    for(const item of STATIC_PUBLIC_MEDIA){if(!data.items.some(x=>x.key===item.key)){data.items.push({...item,url:'/api/media?key='+encodeURIComponent(item.key)});changed=true}}
     data.items=data.items.filter(item=>{
       const visible=!String(item&&item.key||'').startsWith('private/')&&!String(item&&item.sourceKey||'').startsWith('private/');
       if(!visible)changed=true;
@@ -157,6 +158,10 @@ async function rangedPdf(request,url,env){
 export default{
   async fetch(request,env,ctx){
     const url=new URL(request.url);
+    if((request.method==='GET'||request.method==='HEAD')&&url.pathname==='/api/media'){
+      const asset=STATIC_PUBLIC_MEDIA.find(item=>item.key===url.searchParams.get('key'));
+      if(asset)return env.ASSETS.fetch(new Request(new URL(asset.staticUrl,url),request));
+    }
     if(url.pathname==='/api/list-quote'||url.pathname.startsWith('/api/list-quote/'))return handleListQuote(request,env);
     if(url.pathname==='/api/vendor-applications'||url.pathname.startsWith('/api/vendor-applications/'))return handleVendor(request,env);
     if(url.pathname==='/api/enquiries')return handleEnquiries(request,env);

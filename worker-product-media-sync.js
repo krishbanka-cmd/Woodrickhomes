@@ -1,5 +1,7 @@
 import app from './worker-admin-layout-polish.js';
 
+export const STATIC_PUBLIC_MEDIA=[{key:'assets/media/senator-showcase.mp4',brand:'Senator',category:'Bath Fittings',title:'Senator Premium Wellness Collection',catalogue:'Senator Premium Wellness Collection',type:'video',originalName:'senator-showcase.mp4',staticUrl:'/assets/media/senator-showcase.mp4',source:'website-asset'}];
+
 export const PUBLIC_MEDIA_INDEX_KEY='_config/public-media-index-v1.json';
 const FAST_COVER_BY_KEY={
   'kitchen/pdf/woodrick-kitchen-catalogue.pdf':'/catalogue-covers/kitchen.webp?v=20260913-2',
@@ -93,6 +95,7 @@ export async function syncAndClean(env){
 async function publicMediaList(env){
   const objects=await listCustomerMedia(env),items=[];
   for(const o of objects){const m=o.customMetadata||{},title=String(m.title||'').trim();if(/\s+page\s*\d+\s*$/i.test(title))continue;const category=canonicalCategory(m.category||''),brand=m.brand||brandOf(o),catalogue=m.catalogue||catalogueOf(o),source=String(m.sourceKey||''),coverQuery=new URLSearchParams({source,brand,category,catalogue}),dynamicCover=source.startsWith('library/')?('/api/catalogue-cover?'+coverQuery.toString()):'';items.push({key:o.key,size:o.size,uploaded:o.uploaded,url:`/api/media?key=${encodeURIComponent(o.key)}`,...m,category,brand,catalogue,coverUrl:dynamicCover||FAST_COVER_BY_KEY[o.key]})}
+  for(const item of STATIC_PUBLIC_MEDIA){if(!items.some(x=>x.key===item.key))items.push({...item,url:'/api/media?key='+encodeURIComponent(item.key)})}
   items.sort((a,b)=>String(b.syncedAt||b.uploadedAt||b.uploaded||'').localeCompare(String(a.syncedAt||a.uploadedAt||a.uploaded||'')));
   const response=json({items,total:items.length,truncated:false,cursor:null,mode:'library-canonical-product-media-v2-fast-preview'});
   response.headers.set('cache-control','public, max-age=30, s-maxage=120, stale-while-revalidate=300');
