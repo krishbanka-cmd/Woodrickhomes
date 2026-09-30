@@ -38,7 +38,7 @@ function isLibraryPdf(o){const m=o.customMetadata||{};return String(o.key||'').s
 function typeOf(o){const m=o.customMetadata||{},name=String(m.originalName||o.key||'').toLowerCase(),t=String(m.type||'').toLowerCase();if(t==='original-pdf'||t==='pdf'||name.endsWith('.pdf'))return'pdf';if(t==='video'||/\.(mp4|webm)$/.test(name))return'video';return'image'}
 function catalogueOf(o){const m=o.customMetadata||{};return String(m.catalogue||m.title||m.originalName||'Catalogue').replace(/\.[a-z0-9]{2,5}$/i,'').replace(/\s+page\s*\d+\s*$/i,'').trim()||'Catalogue'}
 function brandOf(o){const m=o.customMetadata||{};if(String(m.brand||'').trim())return String(m.brand).trim();const c=catalogueOf(o),first=(c.match(/^[A-Za-z0-9&+-]+/)||[])[0];return first||'Other'}
-function identity(o){const m=o.customMetadata||{};return [norm(canonicalCategory(m.category||'')),typeOf(o),norm(catalogueOf(o))].join('|')}
+function identity(o){const m=o.customMetadata||{};return [norm(brandOf(o)),norm(canonicalCategory(m.category||'')),typeOf(o),norm(catalogueOf(o))].join('|')}
 function syncKeyFor(o){const m=o.customMetadata||{},brand=brandOf(o),category=canonicalCategory(m.category||'Other'),catalogue=catalogueOf(o);return `product-sync/${slug(category)}/${slug(brand)}/${slug(catalogue)}.pdf`}
 
 async function listAll(env,prefix=''){
@@ -73,13 +73,13 @@ export async function syncAndClean(env){
   if(!env.PRODUCT_MEDIA)return {synced:0,deleted:0};
   let objects=await listAll(env);const libraries=objects.filter(isLibraryPdf);let synced=0,deleted=0;
   const libIds=new Map();
-  for(const lib of libraries){const m=lib.customMetadata||{},id=[norm(canonicalCategory(m.category||'')),'pdf',norm(catalogueOf(lib))].join('|');libIds.set(id,lib);const before=await env.PRODUCT_MEDIA.head(syncKeyFor(lib));await putSyncedPdf(env,lib);if(!before)synced++}
+  for(const lib of libraries){const m=lib.customMetadata||{},id=[norm(brandOf(lib)),norm(canonicalCategory(m.category||'')),'pdf',norm(catalogueOf(lib))].join('|');libIds.set(id,lib);const before=await env.PRODUCT_MEDIA.head(syncKeyFor(lib));await putSyncedPdf(env,lib);if(!before)synced++}
   objects=await listAll(env);
   const publicObjects=objects.filter(o=>!isLibrary(o)&&!String(o.key||'').startsWith('private/'));
   const byId=new Map();
   for(const o of publicObjects){
     const m=o.customMetadata||{},id=identity(o),title=String(m.title||'').trim(),page=title.match(/^(.*?)\s+page\s*(\d+)\s*$/i);
-    if(page){const stem=[norm(canonicalCategory(m.category||'')),'pdf',norm(page[1])].join('|');if(libIds.has(stem)){await env.PRODUCT_MEDIA.delete(o.key);deleted++;continue}}
+    if(page){const stem=[norm(brandOf(o)),norm(canonicalCategory(m.category||'')),'pdf',norm(page[1])].join('|');if(libIds.has(stem)){await env.PRODUCT_MEDIA.delete(o.key);deleted++;continue}}
     const arr=byId.get(id)||[];arr.push(o);byId.set(id,arr);
   }
   for(const [id,arr] of byId){
@@ -129,3 +129,4 @@ export default{async fetch(request,env,ctx){
   if(libraryOriginal&&response.ok){try{await syncAndClean(env);await refreshPublicMediaIndex(env)}catch{}}
   return response;
 }};
+

@@ -80,6 +80,8 @@ function isPublicMediaList(request,url){
     url.pathname==='/api/media'&&
     !url.searchParams.get('key')&&
     !url.searchParams.get('prefix')&&
+    !url.searchParams.has('_')&&
+    !url.searchParams.has('scope')&&
     !(request.headers.get('referer')||'').includes('/admin-products');
 }
 
@@ -87,6 +89,7 @@ async function indexedMedia(env){
   if(!env.PRODUCT_MEDIA)return null;
   const index=await env.PRODUCT_MEDIA.get(PUBLIC_MEDIA_INDEX_KEY);
   if(!index)return null;
+  if(!index.uploaded||Date.now()-new Date(index.uploaded).getTime()>120000)return null;
   // Never serve an accidentally empty/corrupt fast index to customers.  Falling
   // through makes the canonical R2 listing rebuild the response instead.
   let body;
@@ -217,7 +220,12 @@ export default{
       try{const response=await indexedMedia(env);if(response)return response}catch{}
     }
     let response=await app.fetch(request,env,ctx);
-    if(url.pathname==='/api/media'&&request.method==='GET'&&!url.searchParams.get('key')&&!url.searchParams.get('prefix')&&response.ok){
+    if(request.method==='POST'&&url.pathname==='/api/upload'&&response.ok){
+      try{await refreshPublicMediaIndex(env)}catch{try{await env.PRODUCT_MEDIA.delete(PUBLIC_MEDIA_INDEX_KEY)}catch{}}
+    }
+    if(url.pathname==='/api/media'&&request.method==='GET'&&!url.searchParams.get('key')&&!url.searchParams.get('prefix')&&
+    !url.searchParams.has('_')&&
+    !url.searchParams.has('scope')&&response.ok){
       try{const data=await response.clone().json();if(Array.isArray(data.items)&&data.items.some(x=>String(x.key||'').startsWith('private/'))){data.items=data.items.filter(x=>!String(x.key||'').startsWith('private/'));data.total=data.items.length;return brandJson(data)}}catch{}
     }
     return response;
@@ -229,3 +237,4 @@ export default{
     ]));
   }
 };
+

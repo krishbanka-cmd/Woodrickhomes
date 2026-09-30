@@ -8,7 +8,7 @@ function norm(v=''){return String(v||'').trim().toLowerCase().replace(/&/g,'and'
 function explicitAdminPassword(request,env){const h=request.headers.get('authorization')||'';return !!env.ADMIN_UPLOAD_TOKEN&&h===`Bearer ${env.ADMIN_UPLOAD_TOKEN}`}
 function cleanCategory(item){const title=String(item.catalogue||item.title||item.originalName||'');const c=String(item.category||'').trim();if(/door\s*skin/i.test(title)||/^door\s*skin(s)?$/i.test(c))return'Door Skin';return c}
 function catalogueKey(v=''){return norm(String(v||'').replace(/\.(pdf|jpg|jpeg|png|webp)$/i,'').replace(/\s+page\s*\d+\s*$/i,'').replace(/\s+(catalogue|catalog|laminate|laminates)\s*$/i,''))}
-function dedupeItems(items=[]){const map=new Map();for(const raw of items){const x={...raw,category:cleanCategory(raw)};const key=[norm(x.category),norm(x.type||''),catalogueKey(x.catalogue||x.title||x.originalName||x.key)].join('|');const prev=map.get(key);if(!prev){map.set(key,x);continue}const a=String(prev.key||'').startsWith('product-sync/'),b=String(x.key||'').startsWith('product-sync/');if(b&&!a)map.set(key,x);else if(a===b&&String(x.title||'').length<String(prev.title||'').length)map.set(key,x)}return [...map.values()]}
+function dedupeItems(items=[]){const map=new Map();for(const raw of items){const x={...raw,category:cleanCategory(raw)};const key=[norm(x.brand),norm(x.category),norm(x.type||''),catalogueKey(x.catalogue||x.title||x.originalName||x.key)].join('|');const prev=map.get(key);if(!prev){map.set(key,x);continue}const a=String(prev.key||'').startsWith('product-sync/'),b=String(x.key||'').startsWith('product-sync/');if(b&&!a)map.set(key,x);else if(a===b&&String(x.title||'').length<String(prev.title||'').length)map.set(key,x)}return [...map.values()]}
 async function readCategories(env){if(!env.PRODUCT_MEDIA)return DEFAULT_CATEGORIES;try{const o=await env.PRODUCT_MEDIA.get(CATEGORY_KEY);if(!o)return DEFAULT_CATEGORIES;const d=await o.json();const a=Array.isArray(d.categories)?d.categories:[];return [...new Set([...DEFAULT_CATEGORIES,...a.map(x=>String(x||'').trim()).filter(Boolean)])]}catch{return DEFAULT_CATEGORIES}}
 async function writeCategories(env,categories){const clean=[...new Set(categories.map(x=>String(x||'').trim()).filter(Boolean))];await env.PRODUCT_MEDIA.put(CATEGORY_KEY,JSON.stringify({categories:clean,updatedAt:new Date().toISOString()}),{httpMetadata:{contentType:'application/json'}});return clean}
 
@@ -79,3 +79,4 @@ export default{async fetch(request,env,ctx){
   }
   return response;
 }};
+
