@@ -13,6 +13,8 @@ on:
       - 'admin-design-extraction.html'
       - 'admin-products/**'
       - 'become-a-vendor/**'
+      - 'vendor/**'
+      - 'tests/**'
       - 'catalogues/**'
       - 'products/**'
       - 'brands/**'
@@ -48,6 +50,9 @@ jobs:
 
       - name: Confirm Node version
         run: node --version
+
+      - name: Test vendor permissions and moderation
+        run: node --experimental-default-type=module --test tests/vendors.test.mjs
 
       - name: Deploy Worker
         env:

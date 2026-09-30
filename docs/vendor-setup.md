@@ -1,0 +1,27 @@
+# Vendor panel operations
+
+Pages: `/become-a-vendor/` (registration), `/vendor/` (vendor dashboard), `/admin-products/vendors/` (existing admin login required).
+
+1. Review a vendor's private business document and mobile number in the admin panel.
+2. Approve the vendor. When OTP is unavailable, confirm manual mobile verification only after your team has actually verified the number.
+3. Create a one-time access link and share it directly with that vendor. It expires after 24 hours and can be used once. Dashboard sessions expire after 8 hours; create a new link when needed.
+4. Vendor uploads photos, PDF catalogues or videos. Review them under Products. Only approved media appears in public product and brand pages.
+5. Editing an approved product preserves its previously approved media while the revision is pending. Rejection or archival removes public media. Suspending a vendor removes all of their approved media; reinstatement requires product review again.
+
+Records, business documents, draft product files, audit events and backup queues are stored in the existing R2 bucket under `private/vendors/`. Approved copies are under `vendor-public/`. Public APIs reject private file access. Lists use pagination without a fixed 100-vendor limit.
+
+## Optional OTP activation
+
+Set Cloudflare Worker secrets `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID`. Use `VENDOR_OTP_CHANNEL=whatsapp` only for a configured Twilio Verify WhatsApp channel; SMS is the default. The server uses actual provider verification, with resend and attempt limits. No demo OTP exists. Without provider credentials, private applications and admin-issued vendor access links remain available.
+
+An optional `VENDOR_SESSION_SECRET` must be a strong stable random secret. Otherwise the existing `ADMIN_UPLOAD_TOKEN` signs vendor sessions and mobile indexes. Changing the signing secret invalidates sessions; existing records are discovered and reindexed on mobile sign-in.
+
+## Optional Google Sheet backup
+
+R2 remains the primary store; Sheet delivery failures never delete vendor records. Pending events are stored under `private/vendors/backup/`. The admin panel offers a retry action.
+
+Use `google-apps-script/vendor-backup.gs` with a dedicated Sheet. Set Apps Script properties `SPREADSHEET_ID` and a strong random `VENDOR_SHEET_TOKEN`. Deploy as a web app that executes as the owner and accepts webhook requests. Set the deployment URL and matching token as Worker secrets `VENDOR_SHEET_URL`, `VENDOR_SHEET_TOKEN`. Keep the Sheet private. The webhook upserts by vendor ID and ignores stale events. KYC files and access tokens are never sent to Sheets.
+
+## Verification
+
+Run `node --experimental-default-type=module --test tests/vendors.test.mjs` with Node 22. Synthetic tests cover owner isolation, private KYC, mobile-verification gates, single-use links, OTP provider integration, moderation, duplicate preservation across vendors, suspension, paginated search beyond 1,000 vendors and cross-origin write protection. Deployment runs these tests before publishing.

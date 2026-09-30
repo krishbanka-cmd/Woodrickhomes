@@ -162,8 +162,25 @@ export default{
       const asset=STATIC_PUBLIC_MEDIA.find(item=>item.key===url.searchParams.get('key'));
       if(asset)return env.ASSETS.fetch(new Request(new URL(asset.staticUrl,url),request));
     }
+    if(url.pathname==='/api/media'&&(url.searchParams.get('key')||'').startsWith('vendor-public/')){
+      const key=url.searchParams.get('key'),parts=key.split('/');
+      const [vendorObject,productObject]=await Promise.all([env.PRODUCT_MEDIA.get('private/vendors/records/'+parts[1]+'.json'),env.PRODUCT_MEDIA.get('private/vendors/products/'+parts[2]+'.json')]);
+      const vendor=vendorObject?await vendorObject.json():null,product=productObject?await productObject.json():null;
+      if(vendor?.status!=='approved'||product?.vendorId!==parts[1]||!product?.publicKeys?.includes(key))return brandJson({error:'Not found'},404);
+    }
     if(url.pathname==='/api/list-quote'||url.pathname.startsWith('/api/list-quote/'))return handleListQuote(request,env);
-    if(url.pathname==='/api/vendor-applications'||url.pathname.startsWith('/api/vendor-applications/'))return handleVendor(request,env);
+    if(url.pathname==='/api/vendor-applications'||url.pathname.startsWith('/api/vendor-applications/')||url.pathname.startsWith('/api/vendor/')){
+      const response=await handleVendor(request,env,ctx);
+      if(request.method==='POST'&&response.ok&&['/api/vendor-applications/status','/api/vendor-applications/products/review','/api/vendor/products/archive'].includes(url.pathname)){try{await refreshPublicMediaIndex(env)}catch{try{await env.PRODUCT_MEDIA.delete(PUBLIC_MEDIA_INDEX_KEY)}catch{}}}
+      return response;
+    }
+    if(['/vendor/','/vendor','/become-a-vendor/','/become-a-vendor','/admin-products/vendors/','/admin-products/vendors','/vendor/index.html','/become-a-vendor/index.html','/admin-products/vendors/index.html'].includes(url.pathname)){
+      if(url.pathname.startsWith('/admin-products/')&&!await brandAuthorized(request,env))return Response.redirect(new URL('/admin-products/',url).href,302);
+      const path=url.pathname.endsWith('index.html')?url.pathname:url.pathname.endsWith('/')?url.pathname:url.pathname+'/';
+      const asset=await env.ASSETS.fetch(new Request(new URL(path,url),request));
+      const headers=new Headers(asset.headers);headers.set('cache-control','private, no-store');headers.set('x-robots-tag','noindex');
+      return new Response(asset.body,{status:asset.status,headers});
+    }
     if(url.pathname==='/api/enquiries')return handleEnquiries(request,env);
     if(url.pathname==='/api/media'&&((url.searchParams.get('key')||'').startsWith('private/')||(url.searchParams.get('prefix')||'').startsWith('private/')))return brandJson({error:'Not found'},404);
     if(url.pathname==='/api/brands'&&(request.method==='GET'||request.method==='POST'))return handleBrandRail(request,env);
