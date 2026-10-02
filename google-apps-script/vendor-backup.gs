@@ -12,8 +12,9 @@ function doPost(request) {
     lock.waitLock(10000);
     const book = SpreadsheetApp.openById(config.getProperty('SPREADSHEET_ID'));
     const sheet = book.getSheetByName('Vendors') || book.insertSheet('Vendors');
-    const headers = ['id','business','contact','mobile','city','category','gst','status','createdAt','updatedAt'];
+    const headers = ['id','business','contact','mobile','city','category','gst','status','createdAt','updatedAt','brands','supplyLocations'];
     if (sheet.getLastRow() === 0) sheet.appendRow(headers);
+    else sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
     const rows = sheet.getDataRange().getValues();
     const index = rows.findIndex((row, i) => i > 0 && String(row[0]) === item.id);
     if (index > 0 && String(rows[index][9]) > String(item.updatedAt || '')) return json({ok:true});
@@ -29,3 +30,4 @@ function doPost(request) {
     if (lock.hasLock()) lock.releaseLock();
   }
 }
+
