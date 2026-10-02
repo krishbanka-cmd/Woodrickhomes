@@ -27,8 +27,8 @@
   window.WoodrickCatalogue={
     pdfKey(item){const key=String(item&&item.key||'');return aliases[key.toLowerCase()]||key},
     cover(item){
-      const key=String(item&&item.key||'').toLowerCase();
-      for(const [suffix,name] of Object.entries(covers))if(key.endsWith('/'+suffix))return '/catalogue-covers/'+name+'.webp';
+      const original=String(item&&item.key||'').toLowerCase(),key=String(aliases[original]||original).toLowerCase();
+      for(const [suffix,name] of Object.entries(covers))if(key.endsWith(suffix))return '/catalogue-covers/'+name+'.webp';
       return String(item&&item.coverUrl||'');
     }
   };
