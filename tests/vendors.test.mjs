@@ -18,6 +18,14 @@ test('Vendor brands and supply locations are separate, editable and included in 
  const afterBlank=await data(await call(s,'/api/vendor-applications',{admin:true}));assert.equal(afterBlank.items.find(v=>v.id===created.id).brands,body.brands);
  assert.equal((await call(s,path,{admin:true,body:{...body,brands:'x'.repeat(501)}})).status,400);
  const backup=await (await s.storage.get('private/vendors/backup/'+created.id+'.json')).json();assert.equal(backup.event.brands,body.brands);assert.equal(backup.event.supplyLocations,body.supplyLocations);
+ const ownerBody={brands:'Century, Green',supplyLocations:'Deoria',id:'00000000-0000-0000-0000-000000000000'};
+ assert.equal((await call(s,'/api/vendor/coverage',{body:ownerBody})).status,401);
+ const corrected=await data(await call(s,'/api/vendor/coverage',{cookie:signed.cookie,body:ownerBody}));assert.equal(corrected.status,200);assert.equal(corrected.vendor.id,created.id);assert.equal(corrected.vendor.status,'approved');
+ const ownerSession=await data(await call(s,'/api/vendor/session',{cookie:signed.cookie}));assert.equal(ownerSession.vendor.brands,ownerBody.brands);assert.equal(ownerSession.vendor.supplyLocations,ownerBody.supplyLocations);
+ const adminRows=await data(await call(s,'/api/vendor-applications',{admin:true}));assert.equal(adminRows.items.find(v=>v.id===created.id).supplyLocations,ownerBody.supplyLocations);
+ assert.equal((await call(s,'/api/vendor/coverage',{cookie:signed.cookie,body:{brands:'',supplyLocations:''}})).status,400);
+ const isolated=await create(s,'9876543212'),isolatedLogin=await login(s,isolated);await call(s,'/api/vendor/coverage',{cookie:isolatedLogin.cookie,body:{...ownerBody,id:created.id,brands:'Other brand'}});assert.equal((await data(await call(s,'/api/vendor/session',{cookie:signed.cookie}))).vendor.brands,ownerBody.brands);
+ await call(s,'/api/vendor-applications/status',{admin:true,body:{id:created.id,status:'suspended',note:'Synthetic suspension'}});assert.equal((await call(s,'/api/vendor/coverage',{cookie:signed.cookie,body:ownerBody})).status,403);
  const legacy=await create(s,'9876543211');assert.equal(legacy.brands,'');assert.equal(legacy.supplyLocations,'');
 });
 
