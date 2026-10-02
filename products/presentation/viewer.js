@@ -32,7 +32,7 @@ import * as pdfjsLib from './vendor/pdf.min.mjs';
     document.getElementById('count').textContent = '– / –';
     return;
   }
-  let pdf = null, current = 1, generation = 0, zoomed = false, referenceAspect = 0;
+  let pdf = null, current = 1, generation = 0, zoomed = false, referenceAspect = 0, activeRender = null;
 
   document.title = catalogueTitle + ' | Woodrick Homes';
   document.getElementById('title').textContent = catalogueTitle;
@@ -65,6 +65,14 @@ import * as pdfjsLib from './vendor/pdf.min.mjs';
     stage.classList.toggle('zoomed', zoomed); zoom.textContent = zoomed ? 'Fit page' : 'Zoom in';
     zoom.setAttribute('aria-pressed', String(zoomed)); controls(); setStatus('Loading page…'); canvas.hidden = true;
     try {
+      // Wheel, resize and Next can overlap. Finish cancellation before reusing
+      // the canvas, and discard superseded requests.
+      if (activeRender) {
+        const previousRender = activeRender;
+        previousRender.cancel();
+        try { await previousRender.promise; } catch (_) {}
+      }
+      if (ticket !== generation) return;
       const pdfPage = await pdf.getPage(current);
       if (ticket !== generation) return;
       const natural = pdfPage.getViewport({scale: 1});
@@ -76,7 +84,9 @@ import * as pdfjsLib from './vendor/pdf.min.mjs';
       canvas.width = Math.max(1, Math.floor(viewport.width)); canvas.height = Math.max(1, Math.floor(viewport.height));
       canvas.style.width = Math.max(1, Math.floor(natural.width * cssScale)) + 'px';
       canvas.style.height = Math.max(1, Math.floor(natural.height * cssScale)) + 'px';
-      await pdfPage.render({canvasContext: context, viewport}).promise;
+      const task = pdfPage.render({canvasContext: context, viewport});
+      activeRender = task;
+      try { await task.promise; } finally { if (activeRender === task) activeRender = null; }
       if (ticket !== generation) return;
       frame.hidden = false; canvas.hidden = false; status.hidden = true; canvas.setAttribute('aria-label', catalogueTitle + ', page ' + current);
       if (!zoomed) { stage.scrollTop = 0; stage.scrollLeft = 0; }
@@ -92,9 +102,11 @@ import * as pdfjsLib from './vendor/pdf.min.mjs';
       await workerReady;
       const task=pdfjsLib.getDocument({url:rawUrl,rangeChunkSize:262144,disableAutoFetch:true,disableStream:false});
       task.onProgress=progress=>{if(ticket!==generation||pdf||!progress||!progress.total)return;const percent=Math.min(99,Math.round(progress.loaded/progress.total*100));setStatus('Preparing catalogue… '+percent+'%');};
-      pdf=await task.promise;clearTimeout(slowTimer);await render(1);
+      const loaded=await task.promise;
+      if(ticket!==generation){await loaded.destroy();return;}
+      pdf=loaded;clearTimeout(slowTimer);await render(1);
     }
-    catch (error) { clearTimeout(slowTimer);console.error('Catalogue load failed:', error); setStatus('This catalogue could not load. Check your connection and retry. ', true); }
+    catch (error) { clearTimeout(slowTimer);if(ticket!==generation)return;console.error('Catalogue load failed:', error); setStatus('This catalogue could not load. Check your connection and retry. ', true); }
   }
   function toggleZoom(event) {
     if (!pdf) return;

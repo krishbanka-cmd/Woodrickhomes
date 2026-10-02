@@ -1,3 +1,4 @@
+import {consistentCustomerResponse} from './worker-ui-consistency.js';
 import {handleListQuote} from './worker-list-quotes.js';
 import {handleVendor} from './worker-vendors.js';
 import {handleEnquiries} from './worker-enquiries.js';
@@ -250,7 +251,7 @@ export default{
     !url.searchParams.has('scope')&&response.ok){
       try{const data=await response.clone().json();if(Array.isArray(data.items)&&data.items.some(x=>String(x.key||'').startsWith('private/'))){data.items=data.items.filter(x=>!String(x.key||'').startsWith('private/'));data.total=data.items.length;return brandJson(data)}}catch{}
     }
-    return response;
+    return request.method==='GET'?consistentCustomerResponse(response,url):response;
   },
   async scheduled(controller,env,ctx){
     ctx.waitUntil(Promise.all([
