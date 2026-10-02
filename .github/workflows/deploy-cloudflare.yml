@@ -51,8 +51,8 @@ jobs:
       - name: Confirm Node version
         run: node --version
 
-      - name: Test vendor permissions and moderation
-        run: node --experimental-default-type=module --test tests/vendors.test.mjs
+      - name: Test permissions, catalogue presentation and website routes
+        run: node --experimental-default-type=module --test tests/*.test.mjs
 
       - name: Deploy Worker
         env:

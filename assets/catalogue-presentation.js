@@ -33,3 +33,30 @@
     }
   };
 })();
+
+// Shared, lazy first-page preview for new catalogues without a saved cover.
+(function(){
+  const previews=new Map(),queued=new WeakSet();let observer,queue=[],active=0,engineModule;
+  async function firstPage(url){
+    if(previews.has(url))return previews.get(url);
+    const pending=(async()=>{let task;try{
+      engineModule=engineModule||import('/assets/pdf-engine.mjs?v=20261002-audit1');
+      const {pdfEngine}=await engineModule,engine=await pdfEngine();
+      task=engine.getDocument({url});const pdf=await task.promise,page=await pdf.getPage(1),base=page.getViewport({scale:1}),view=page.getViewport({scale:Math.min(1.5,900/base.width)}),canvas=document.createElement('canvas');
+      canvas.width=Math.ceil(view.width);canvas.height=Math.ceil(view.height);
+      await page.render({canvasContext:canvas.getContext('2d'),viewport:view,background:'#fff'}).promise;
+      return canvas.toDataURL('image/jpeg',.88);
+    }finally{if(task)await task.destroy()}})();
+    previews.set(url,pending);pending.catch(()=>previews.delete(url));return pending;
+  }
+  function drain(){while(active<2&&queue.length){const el=queue.shift();if(!el.isConnected)continue;active++;
+    const url=el.dataset.cataloguePdf;firstPage(url).then(src=>{if(!el.isConnected)return;const img=document.createElement('img');img.src=src;img.alt=el.dataset.catalogueTitle||'Catalogue cover';el.replaceChildren(img)}).catch(()=>{if(el.isConnected)el.textContent='Preview unavailable · Open catalogue to view';queued.delete(el)}).finally(()=>{active--;drain()});
+  }}
+  function schedule(el){if(queued.has(el))return;queued.add(el);el.textContent='Loading cover…';queue.push(el);drain()}
+  function watch(el){if(!observer&&'IntersectionObserver' in window)observer=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){observer.unobserve(e.target);schedule(e.target)}})},{rootMargin:'160px'});if(observer)observer.observe(el);else schedule(el)}
+  window.WoodrickCatalogue.observe=function(root=document){root.querySelectorAll('[data-catalogue-pdf]').forEach(el=>{
+    const image=el.querySelector('img');if(!image){watch(el);return}
+    image.addEventListener('error',()=>{el.replaceChildren();watch(el)},{once:true});
+    if(image.complete&&!image.naturalWidth){el.replaceChildren();watch(el)}
+  })};
+})();
