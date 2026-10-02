@@ -5,6 +5,21 @@ import {readFile} from 'node:fs/promises';
 import app from '../worker-fast.js';
 import {syncAndClean} from '../worker-product-media-sync.js';
 
+test('Business applications preserve multiple categories through admin review and profile resubmission',async()=>{
+ const s=setup(),form=application('9876543210');form.append('category','Plywood');form.append('category','Louvers');form.append('category','Plywood');
+ const submitted=await data(await call(s,'/api/vendor-applications',{body:form}));assert.equal(submitted.status,201);assert.deepEqual(submitted.vendor.categories,['Laminates','Plywood','Louvers']);assert.equal(submitted.vendor.category,'Laminates, Plywood, Louvers');
+ const listed=await data(await call(s,'/api/vendor-applications',{admin:true}));assert.deepEqual(listed.items[0].categories,submitted.vendor.categories);
+ const search=await data(await call(s,'/api/vendor-applications?search=9876543210',{admin:true}));assert.equal(search.items[0].category,submitted.vendor.category);
+ const signed=await login(s,submitted.vendor),edit=application('9876543210');edit.delete('file');edit.delete('category');edit.append('category','Tiles');edit.append('category','Bath Fittings');
+ const updated=await data(await call(s,'/api/vendor/profile',{cookie:signed.cookie,body:edit}));assert.equal(updated.status,200);assert.deepEqual(updated.vendor.categories,['Tiles','Bath Fittings']);
+ const backup=await (await s.storage.get('private/vendors/backup/'+submitted.id+'.json')).json();assert.equal(backup.event.category,'Tiles, Bath Fittings');
+ const empty=application('9876543211');empty.delete('category');assert.equal((await call(s,'/api/vendor-applications',{body:empty})).status,400);
+ const tooLong=application('9876543211');tooLong.set('category','x'.repeat(101));assert.equal((await call(s,'/api/vendor-applications',{body:tooLong})).status,400);
+ const tooMany=application('9876543211');for(let i=0;i<40;i++)tooMany.append('category','Category '+i);assert.equal((await call(s,'/api/vendor-applications',{body:tooMany})).status,400);
+ const legacy=await create(s,'9876543212');assert.deepEqual(legacy.categories,['Laminates']);
+ await approve(s,submitted.vendor);const p=await newProduct(s,signed.cookie);assert.equal(p.category,'Laminates');assert.equal(p.categories,undefined);
+});
+
 test('Login history is admin-only, newest first, and records successful sign-ins only',async()=>{
  const s=setup(),v=await create(s,'9876543210'),other=await create(s,'9876543211');
  const path='/api/vendor-applications/login-history?id='+v.id;
