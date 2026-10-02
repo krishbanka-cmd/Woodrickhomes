@@ -5,6 +5,19 @@ import {readFile} from 'node:fs/promises';
 import app from '../worker-fast.js';
 import {syncAndClean} from '../worker-product-media-sync.js';
 
+test('Vendor brands and supply locations are separate, editable and included in backup',async()=>{
+ const s=setup(),form=application('9876543210');form.set('brands','Woodline, Century, Green');form.set('supplyLocations','Gorakhpur, Deoria');
+ const created=await data(await call(s,'/api/vendor-applications',{body:form}));assert.equal(created.status,201);assert.equal(created.vendor.brands,'Woodline, Century, Green');assert.equal(created.vendor.supplyLocations,'Gorakhpur, Deoria');
+ const signed=await login(s,created.vendor),edit=application('9876543210');edit.delete('file');edit.delete('note');edit.set('brands','Century');edit.set('supplyLocations','Kushinagar');
+ const revised=await data(await call(s,'/api/vendor/profile',{cookie:signed.cookie,body:edit}));assert.equal(revised.status,200);assert.equal(revised.vendor.brands,'Century');assert.equal(revised.vendor.supplyLocations,'Kushinagar');assert.equal(revised.vendor.note,'Synthetic test application');
+ await approve(s,created.vendor);const path='/api/vendor-applications/coverage',body={id:created.id,brands:'Woodline, Century, Green',supplyLocations:'Gorakhpur, Maharajganj'};
+ assert.equal((await call(s,path,{body})).status,401);assert.equal((await call(s,path,{cookie:signed.cookie,body})).status,401);
+ const saved=await data(await call(s,path,{admin:true,body}));assert.equal(saved.status,200);assert.equal(saved.vendor.status,'approved');assert.equal(saved.vendor.brands,body.brands);assert.equal(saved.vendor.supplyLocations,body.supplyLocations);
+ assert.equal((await call(s,path,{admin:true,body:{...body,brands:'x'.repeat(501)}})).status,400);
+ const backup=await (await s.storage.get('private/vendors/backup/'+created.id+'.json')).json();assert.equal(backup.event.brands,body.brands);assert.equal(backup.event.supplyLocations,body.supplyLocations);
+ const legacy=await create(s,'9876543211');assert.equal(legacy.brands,'');assert.equal(legacy.supplyLocations,'');
+});
+
 test('Optional Aadhaar and PAN files stay private and persist through profile edits',async()=>{
  const s=setup(),form=application('9876543210');for(const kind of ['aadhaar','pan'])form.set(kind,new File(['%PDF-1.7\nsynthetic-'+kind],kind+'.pdf',{type:'application/pdf'}));
  const created=await data(await call(s,'/api/vendor-applications',{body:form}));assert.equal(created.status,201);assert.equal(created.vendor.hasAadhaar,true);assert.equal(created.vendor.hasPan,true);assert.equal(created.vendor.aadhaarKey,undefined);assert.equal(created.vendor.panKey,undefined);
