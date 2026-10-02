@@ -8,6 +8,7 @@ export async function consistentCustomerResponse(response,url){
   if(url.pathname.startsWith('/api/')||url.pathname.startsWith('/admin')||url.pathname.startsWith('/vendor')||url.pathname.startsWith('/become-a-vendor')||url.pathname.startsWith('/products/presentation/'))return response;
   let html=await response.text();
   html=html.replace(/(\/assets\/catalogue-presentation\.(?:css|js))\?v=[^"'<>\s]+/g,'$1?v='+revision);
+  html=html.replace(/(<a\b[^>]*href=)(["'])#products-services\2([^>]*>\s*(?:EXPLORE\s+)?PRODUCTS\s*<\/a>)/gi,'$1$2/products/$2$3');
   const pageClass=workflow.test(url.pathname)?'woodrick-workflow-page':browse.test(url.pathname)?'woodrick-browse-page':'';
   if(pageClass)html=html.replace(/<body([^>]*)>/i,(all,attrs)=>/\bclass=/.test(attrs)?'<body'+attrs.replace(/class=(['"])(.*?)\1/,(m,q,c)=>'class='+q+c+' '+pageClass+q)+'>':'<body'+attrs+' class="'+pageClass+'">');
   if(pageClass)html=html.replace('</body>','<link rel="stylesheet" href="/assets/customer-ui.css?v='+revision+'">\n</body>');
