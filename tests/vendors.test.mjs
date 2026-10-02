@@ -13,6 +13,9 @@ test('Vendor brands and supply locations are separate, editable and included in 
  await approve(s,created.vendor);const path='/api/vendor-applications/coverage',body={id:created.id,brands:'Woodline, Century, Green',supplyLocations:'Gorakhpur, Maharajganj'};
  assert.equal((await call(s,path,{body})).status,401);assert.equal((await call(s,path,{cookie:signed.cookie,body})).status,401);
  const saved=await data(await call(s,path,{admin:true,body}));assert.equal(saved.status,200);assert.equal(saved.vendor.status,'approved');assert.equal(saved.vendor.brands,body.brands);assert.equal(saved.vendor.supplyLocations,body.supplyLocations);
+ const persisted=await data(await call(s,'/api/vendor-applications',{admin:true}));assert.equal(persisted.items.find(v=>v.id===created.id).brands,body.brands);assert.equal(persisted.items.find(v=>v.id===created.id).supplyLocations,body.supplyLocations);
+ assert.equal((await call(s,path,{admin:true,body:{id:created.id,brands:'',supplyLocations:''}})).status,400);
+ const afterBlank=await data(await call(s,'/api/vendor-applications',{admin:true}));assert.equal(afterBlank.items.find(v=>v.id===created.id).brands,body.brands);
  assert.equal((await call(s,path,{admin:true,body:{...body,brands:'x'.repeat(501)}})).status,400);
  const backup=await (await s.storage.get('private/vendors/backup/'+created.id+'.json')).json();assert.equal(backup.event.brands,body.brands);assert.equal(backup.event.supplyLocations,body.supplyLocations);
  const legacy=await create(s,'9876543211');assert.equal(legacy.brands,'');assert.equal(legacy.supplyLocations,'');
