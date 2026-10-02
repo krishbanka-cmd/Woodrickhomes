@@ -5,6 +5,35 @@ import {readFile} from 'node:fs/promises';
 import app from '../worker-fast.js';
 import {syncAndClean} from '../worker-product-media-sync.js';
 
+test('Login history is admin-only, newest first, and records successful sign-ins only',async()=>{
+ const s=setup(),v=await create(s,'9876543210'),other=await create(s,'9876543211');
+ const path='/api/vendor-applications/login-history?id='+v.id;
+ assert.equal((await call(s,path)).status,401);
+ assert.equal((await data(await call(s,path,{admin:true}))).items.length,0);
+ const signed=await login(s,v);
+ assert.equal((await call(s,path,{cookie:signed.cookie})).status,401);
+ assert.equal((await call(s,'/api/vendor/activate',{body:{token:signed.token}})).status,401);
+ for(let i=0;i<3;i++)await call(s,'/api/vendor/session',{cookie:signed.cookie});
+ let result=await data(await call(s,path,{admin:true}));
+ assert.equal(result.items.length,1);assert.equal(result.items[0].method,'access-link');
+ assert.deepEqual(Object.keys(result.items[0]).sort(),['at','id','method']);
+ assert.equal((await data(await call(s,'/api/vendor-applications/login-history?id='+other.id,{admin:true}))).items.length,0);
+ const rows=await data(await call(s,'/api/vendor-applications',{admin:true}));
+ assert.equal(rows.items.find(x=>x.id===v.id).lastLogin.at,result.items[0].at);
+ assert.equal(rows.items.find(x=>x.id===other.id).lastLogin,null);
+ assert.equal((await call(s,'/api/vendor-applications/login-history?id=../../records',{admin:true})).status,400);
+ assert.equal((await call(s,'/api/media?prefix=private/vendors/logins/')).status,404);
+ for(let i=0;i<61;i++){const at=new Date(Date.UTC(2025,0,1,0,0,i)).toISOString();await s.storage.put('private/vendors/logins/'+v.id+'/'+String(9999999999999-Date.parse(at))+'-seed-'+i+'.json',JSON.stringify({id:'seed-'+i,at,method:'otp'}))}
+ result=await data(await call(s,path,{admin:true}));assert.equal(result.items.length,50);assert.ok(result.cursor);
+ const rest=await data(await call(s,path+'&cursor='+encodeURIComponent(result.cursor),{admin:true}));assert.equal(rest.items.length,12);
+ const all=[...result.items,...rest.items];assert.deepEqual(all.map(x=>x.at),all.map(x=>x.at).sort().reverse());
+ Object.assign(s.env,{TWILIO_ACCOUNT_SID:'AC-test',TWILIO_AUTH_TOKEN:'test-token',TWILIO_VERIFY_SERVICE_SID:'VA-test'});
+ const original=globalThis.fetch;let approved=false;globalThis.fetch=async()=>new Response(JSON.stringify({status:approved?'approved':'pending'}));
+ try{assert.equal((await call(s,'/api/vendor/otp/check',{body:{mobile:v.mobile,code:'123456'}})).status,400);approved=true;assert.equal((await call(s,'/api/vendor/otp/check',{body:{mobile:v.mobile,code:'123456'}})).status,200)}finally{globalThis.fetch=original}
+ const stored=await s.storage.list({prefix:'private/vendors/logins/'+v.id+'/'});assert.equal(stored.objects.length,63);
+ assert.equal((await data(await call(s,path,{admin:true}))).items[0].method,'otp');
+});
+
 class MemoryR2{
  constructor(){this.rows=new Map();this.version=0}
  async get(key){const row=this.rows.get(key);if(!row)return null;return {...row,body:row.bytes,text:async()=>row.bytes.toString(),json:async()=>JSON.parse(row.bytes.toString()),writeHttpMetadata(h){h.set('content-type',row.httpMetadata?.contentType||'application/octet-stream')}}}
