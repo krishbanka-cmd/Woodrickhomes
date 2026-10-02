@@ -25,7 +25,7 @@
 .status{margin:14px 0 16px}
 @media(max-width:560px){.top{padding:8px 4%}.top .brand{font-size:15px}.wrap{padding-top:20px}.intro h1{font-size:clamp(29px,7vw,36px)}}
 </style>
-<link rel="stylesheet" href="/assets/catalogue-presentation.css?v=2">
+<link rel="stylesheet" href="/assets/catalogue-presentation.css?v=4">
 <script src="/assets/catalogue-presentation.js?v=3"></script>
 </head>
 <body>
@@ -34,7 +34,7 @@
 <section class="intro"><small>WOODRICK HOME LIBRARY</small><h1>Explore Our Catalogues</h1><p>Search by brand, category or catalogue name. View every page or download the original PDF.</p></section>
 <div class="catalogue-tools"><label class="search"><input id="search" type="search" autocomplete="off" placeholder="Search brand, category or catalogue…" aria-label="Search catalogues"></label><div class="filters" id="filters"></div></div>
 <div class="status" id="status">Loading complete catalogue index…</div>
-<section class="grid" id="grid"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></section>
+<section class="grid catalogue-grid" id="grid"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></section>
 </main>
 <script>
 const grid=document.getElementById('grid'),filters=document.getElementById('filters'),status=document.getElementById('status'),search=document.getElementById('search');
