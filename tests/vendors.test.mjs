@@ -5,6 +5,28 @@ import {readFile} from 'node:fs/promises';
 import app from '../worker-fast.js';
 import {syncAndClean} from '../worker-product-media-sync.js';
 
+test('Optional Aadhaar and PAN files stay private and persist through profile edits',async()=>{
+ const s=setup(),form=application('9876543210');for(const kind of ['aadhaar','pan'])form.set(kind,new File(['%PDF-1.7\nsynthetic-'+kind],kind+'.pdf',{type:'application/pdf'}));
+ const created=await data(await call(s,'/api/vendor-applications',{body:form}));assert.equal(created.status,201);assert.equal(created.vendor.hasAadhaar,true);assert.equal(created.vendor.hasPan,true);assert.equal(created.vendor.aadhaarKey,undefined);assert.equal(created.vendor.panKey,undefined);
+ const rows=await data(await call(s,'/api/vendor-applications',{admin:true})),stored=rows.items[0];
+ const owner=await login(s,created.vendor),other=await create(s,'9876543211'),second=await login(s,other);
+ for(const kind of ['aadhaar','pan']){
+  const path='/api/vendor-applications/file?id='+created.id+'&kind='+kind;
+  assert.equal((await call(s,path)).status,401);assert.equal((await call(s,path,{cookie:owner.cookie})).status,401);
+  const download=await call(s,path,{admin:true});assert.equal(download.status,200);assert.match(await download.text(),new RegExp('synthetic-'+kind));assert.equal(download.headers.get('cache-control'),'private, no-store');
+  assert.equal((await call(s,'/api/vendor/file?document='+kind,{cookie:owner.cookie})).status,200);
+  assert.equal((await call(s,'/api/vendor/file?document='+kind+'&id='+created.id,{cookie:second.cookie})).status,404);
+  assert.equal((await call(s,'/api/media?key='+encodeURIComponent(stored[kind+'Key']))).status,404);
+ }
+ const edit=application('9876543210');edit.delete('file');edit.set('pan',new File(['%PDF-1.7\nreplacement-pan'],'pan.pdf',{type:'application/pdf'}));
+ const updated=await data(await call(s,'/api/vendor/profile',{cookie:owner.cookie,body:edit}));assert.equal(updated.status,200);assert.equal(updated.vendor.hasAadhaar,true);assert.equal(updated.vendor.hasPan,true);
+ assert.match(await (await call(s,'/api/vendor/file?document=pan',{cookie:owner.cookie})).text(),/replacement-pan/);
+ const bad=application('9876543212');bad.set('aadhaar',new File(['fake'],'bad.pdf',{type:'application/pdf'}));assert.equal((await call(s,'/api/vendor-applications',{body:bad})).status,400);
+ const large=application('9876543212');large.set('pan',new File(['%PDF-',new Uint8Array(5*1024*1024)],'large.pdf',{type:'application/pdf'}));assert.equal((await call(s,'/api/vendor-applications',{body:large})).status,400);
+ const backup=await (await s.storage.get('private/vendors/backup/'+created.id+'.json')).json();assert.equal(backup.event.aadhaarKey,undefined);assert.equal(backup.event.panKey,undefined);
+ const legacy=await create(s,'9876543213');assert.equal(legacy.hasAadhaar,false);assert.equal(legacy.hasPan,false);
+});
+
 test('Business applications preserve multiple categories through admin review and profile resubmission',async()=>{
  const s=setup(),form=application('9876543210');form.append('category','Plywood');form.append('category','Louvers');form.append('category','Plywood');
  const submitted=await data(await call(s,'/api/vendor-applications',{body:form}));assert.equal(submitted.status,201);assert.deepEqual(submitted.vendor.categories,['Laminates','Plywood','Louvers']);assert.equal(submitted.vendor.category,'Laminates, Plywood, Louvers');
