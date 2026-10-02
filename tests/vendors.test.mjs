@@ -5,6 +5,14 @@ import {readFile} from 'node:fs/promises';
 import app from '../worker-fast.js';
 import {syncAndClean} from '../worker-product-media-sync.js';
 
+test('Vendor catalogues accept 50 MB and reject larger PDFs',async()=>{
+ const s=setup(),v=await create(s,'9876543210');await approve(s,v);const signed=await login(s,v);
+ for(const [size,expected] of [[50*1024*1024,201],[50*1024*1024+1,400]]){
+  const bytes=new Uint8Array(size);bytes.set(new TextEncoder().encode('%PDF-1.7\n'));const form=product();form.delete('photo');form.set('catalogue',new File([bytes],'catalogue.pdf',{type:'application/pdf'}));
+  const result=await data(await call(s,'/api/vendor/products',{cookie:signed.cookie,body:form}));assert.equal(result.status,expected);if(expected===201)assert.equal(result.product.files[0].size,size);else assert.match(result.error,/Catalogue is too large/);
+ }
+});
+
 test('Vendor brands and supply locations are separate, editable and included in backup',async()=>{
  const s=setup(),form=application('9876543210');form.set('brands','Woodline, Century, Green');form.set('supplyLocations','Gorakhpur, Deoria');
  const created=await data(await call(s,'/api/vendor-applications',{body:form}));assert.equal(created.status,201);assert.equal(created.vendor.brands,'Woodline, Century, Green');assert.equal(created.vendor.supplyLocations,'Gorakhpur, Deoria');
