@@ -26,9 +26,10 @@ function categoryOptions(box,values,selected=[]){
  function filter(){const term=search.value.trim().toLowerCase();let count=0;for(const label of list.children){label.hidden=!label.textContent.toLowerCase().includes(term);if(!label.hidden)count++}empty.hidden=!!count}
  function open(){popup.hidden=false;toggle.setAttribute('aria-expanded','true');search.value='';filter()}
  function close(){popup.hidden=true;toggle.setAttribute('aria-expanded','false')}
- toggle.onclick=()=>{if(popup.hidden){open();search.focus()}else close()};search.oninput=filter;
+ toggle.onclick=()=>{if(popup.hidden){open();if(window.matchMedia('(hover: hover) and (pointer: fine)').matches)search.focus()}else close()};search.oninput=filter;
  box.onkeydown=event=>{if(event.key==='Escape'&&!popup.hidden){event.preventDefault();close();toggle.focus()}};
- box.onfocusout=event=>{if(!box.contains(event.relatedTarget))close()};
+ // Safari may emit focusout with no relatedTarget when tapping a checkbox label.
+ box.onfocusout=event=>{if(event.relatedTarget&&!box.contains(event.relatedTarget))close()};
  box.closeCategoryOutside=event=>{if(!box.contains(event.target))close()};document.addEventListener('pointerdown',box.closeCategoryOutside);
  for(const value of [...new Set([...values,...selected])]){const label=node('label',undefined,'category-choice'),input=node('input');input.type='checkbox';input.name='category';input.value=value;input.defaultChecked=selected.includes(value);input.checked=input.defaultChecked;input.onchange=()=>validateCategories(box);input.addEventListener('invalid',()=>{open();search.value='';filter()});label.append(input,document.createTextNode(value));list.append(label)}
  box.renderCategorySelection=()=>{tags.replaceChildren();const checked=[...list.querySelectorAll('input:checked')];for(const input of checked){const tag=node('span',undefined,'category-tag'),remove=node('button','×','category-remove');remove.type='button';remove.setAttribute('aria-label','Remove '+input.value);remove.onclick=()=>{input.checked=false;validateCategories(box);toggle.focus()};tag.append(node('span',input.value),remove);tags.append(tag)}toggle.textContent=checked.length?'Add / change ▾':'Choose categories ▾';toggle.setAttribute('aria-label',checked.length?'Add or change selected categories':'Choose product and service categories')};
