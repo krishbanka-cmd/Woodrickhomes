@@ -22,7 +22,7 @@ function isCataloguePdf(item){return item.type==='original-pdf'||item.type==='pd
 function completeCatalogueItems(library,publicMedia){
  const all=[...library],keys=new Set(library.map(x=>x.key)),pdfKeys=new Set(library.filter(isCataloguePdf).map(x=>WoodrickCatalogue.pdfKey(x)));
  for(const item of publicMedia){if(String(item.key||'').startsWith('private/')||!isCataloguePdf(item)||keys.has(item.key)||keys.has(item.sourceKey)||pdfKeys.has(WoodrickCatalogue.pdfKey(item)))continue;
-  all.push({...item,type:'pdf',catalogue:item.title||item.catalogue||item.originalName||'Catalogue'});keys.add(item.key);pdfKeys.add(WoodrickCatalogue.pdfKey(item));
+  all.push({...item,type:'pdf',catalogue:(/woodline-louvers-9-5x6\.pdf$/i.test(item.key||'')?'Woodline Louvers 9.5x6':item.title||item.catalogue||item.originalName||'Catalogue')});keys.add(item.key);pdfKeys.add(WoodrickCatalogue.pdfKey(item));
  }
  return all;
 }
@@ -30,7 +30,7 @@ async function loadAll(){
  async function collect(query){let cursor='',all=[],seen=new Set();do{const u='/api/media?'+query+(cursor?'&cursor='+encodeURIComponent(cursor):'')+'&_='+Date.now();const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error('Catalogue service unavailable');const d=await r.json();if(!Array.isArray(d.items))throw new Error('Incomplete catalogue response');all.push(...d.items);const next=d.truncated&&d.cursor?d.cursor:'';if(next&&seen.has(next))throw new Error('Incomplete catalogue response');if(next)seen.add(next);cursor=next}while(cursor);return all}
  const [library,publicMedia]=await Promise.all([collect('prefix=library/'),collect('catalogue=1')]);
  const all=completeCatalogueItems(library,publicMedia),map={};
- all.forEach(x=>{const brand=canonicalBrand(x.brand),category=canonicalCategory(x.category),catalogue=x.catalogue||x.title||'Catalogue',k=[category,brand,catalogue].map(searchKey).join('||');map[k]??={brand,category,catalogue,pdf:null,jpg:[],designsLoaded:false,designsByPage:{}};if(isCataloguePdf(x))map[k].pdf=x;else if(x.type==='jpg-page')map[k].jpg.push(x)});
+ all.forEach(x=>{const brand=canonicalBrand(x.brand),category=canonicalCategory(x.category),catalogue=WoodrickCatalogue.title(x),k=[category,brand,catalogue].map(searchKey).join('||');map[k]??={brand,category,catalogue,pdf:null,jpg:[],designsLoaded:false,designsByPage:{}};if(isCataloguePdf(x))map[k].pdf=x;else if(x.type==='jpg-page')map[k].jpg.push(x)});
  groups=Object.values(map).filter(g=>g.pdf||g.jpg.length).map(g=>{g.jpg.sort((a,b)=>Number(a.page||0)-Number(b.page||0));return g}).sort((a,b)=>a.category.localeCompare(b.category)||a.brand.localeCompare(b.brand)||a.catalogue.localeCompare(b.catalogue));fillFilters();applyRequestedCategory();render()
 }
 function fillFilters(){const current=$('category').value;$('category').innerHTML='<option value="">All Categories</option>';[...new Set(groups.map(g=>g.category))].sort().forEach(v=>$('category').insertAdjacentHTML('beforeend',`<option>${esc(v)}</option>`));if(current&&[...$('category').options].some(o=>o.value===current))$('category').value=current;fillBrandFilter()}

@@ -136,6 +136,7 @@ const productHierarchy=`
 <script id="woodrick-product-hierarchy-script-v2">(function(){
 var sourceParams=new URLSearchParams(location.search),selectedBrand=sourceParams.get('brand')||'';
 if(sourceParams.get('category'))activeCategory=sourceParams.get('category');
+if(activeCategory==='all')selectedBrand='';
 if(['all','image','pdf','video'].includes(sourceParams.get('type')))activeType=sourceParams.get('type');
 document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.toggle('active',b.dataset.filterType===activeType)});
 // Product categories are inserted while the page loads. The browser's first
@@ -189,6 +190,7 @@ function card(g){
 renderMedia=function(){
   var state=new URLSearchParams;if(activeCategory!=='all')state.set('category',activeCategory);if(activeType!=='all')state.set('type',activeType);if(selectedBrand)state.set('brand',selectedBrand);history.replaceState(null,'',location.pathname+(state.size?'?'+state:'')+location.hash);
   var items=uploadedMedia.filter(function(x){return (activeCategory==='all'||n(x.category)===n(activeCategory))&&(activeType==='all'||mediaType(x)===activeType)});
+  if(selectedBrand&&!items.some(function(x){return n(brandOf(x))===n(selectedBrand)}))selectedBrand='';
   var groups=grouped(items);
   var pdfCount=grouped(items.filter(function(x){return mediaType(x)==='pdf'})).length,photoCount=items.filter(function(x){return mediaType(x)==='image'}).length,videoCount=items.filter(function(x){return mediaType(x)==='video'}).length,count=activeType==='pdf'?groups.length:items.length,label=activeType==='pdf'?'catalogue':activeType==='image'?'photo':activeType==='video'?'video':'media item';liveStatus.textContent=(activeCategory==='all'?'All categories':activeCategory)+' · '+(activeType==='all'?(pdfCount+' catalogues · '+photoCount+' photos · '+videoCount+' video'+(videoCount===1?'':'s')+' · '+items.length+' total media'):(activeType.toUpperCase()+' · '+count+' '+label+(count===1?'':'s')));
   if(!items.length){

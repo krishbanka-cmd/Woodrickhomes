@@ -38,7 +38,7 @@ function canonicalCategory(v=''){
 function isLibrary(o){const m=o.customMetadata||{};return String(o.key||'').startsWith('library/')||String(m.library||'')==='1'||m.type==='original-pdf'||m.type==='jpg-page'}
 function isLibraryPdf(o){const m=o.customMetadata||{};return String(o.key||'').startsWith('library/')&&(m.type==='original-pdf'||String(m.originalName||'').toLowerCase().endsWith('.pdf'))||m.type==='original-pdf'}
 function typeOf(o){const m=o.customMetadata||{},name=String(m.originalName||o.key||'').toLowerCase(),t=String(m.type||'').toLowerCase();if(t==='original-pdf'||t==='pdf'||name.endsWith('.pdf'))return'pdf';if(t==='video'||/\.(mp4|webm)$/.test(name))return'video';return'image'}
-function catalogueOf(o){const m=o.customMetadata||{};return String(m.catalogue||m.title||m.originalName||'Catalogue').replace(/\.[a-z0-9]{2,5}$/i,'').replace(/\s+page\s*\d+\s*$/i,'').trim()||'Catalogue'}
+function catalogueOf(o){const m=o.customMetadata||{};return String(m.catalogue||m.title||m.originalName||'Catalogue').replace(/\.(?:pdf|jpe?g|png|webp|mp4|webm)$/i,'').replace(/\s+page\s*\d+\s*$/i,'').trim()||'Catalogue'}
 function brandOf(o){const m=o.customMetadata||{};if(String(m.brand||'').trim())return String(m.brand).trim();const c=catalogueOf(o),first=(c.match(/^[A-Za-z0-9&+-]+/)||[])[0];return first||'Other'}
 function identity(o){const m=o.customMetadata||{};return [norm(m.vendorId||''),norm(brandOf(o)),norm(canonicalCategory(m.category||'')),typeOf(o),norm(catalogueOf(o))].join('|')}
 function syncKeyFor(o){const m=o.customMetadata||{},brand=brandOf(o),category=canonicalCategory(m.category||'Other'),catalogue=catalogueOf(o);return `product-sync/${slug(category)}/${slug(brand)}/${slug(catalogue)}.pdf`}

@@ -133,7 +133,7 @@ function cachedMedia(){try{const d=JSON.parse(localStorage.getItem(MEDIA_CACHE_K
 function updateCategoryMediaLinks(){
   document.querySelectorAll('.card[data-category]').forEach(card=>{
     const category=String(card.dataset.category||'').toLowerCase();let available=0;
-    card.querySelectorAll('.media-link.media-filter').forEach(link=>{
+    card.querySelectorAll('.media-link[data-type]').forEach(link=>{
       const found=uploadedMedia.some(item=>String(item.category||'').toLowerCase()===category&&mediaType(item)===(link.dataset.type||''));
       if(found)available++;
       link.setAttribute('aria-disabled',String(!found));link.tabIndex=found?0:-1;

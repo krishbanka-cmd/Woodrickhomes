@@ -24,7 +24,14 @@
     'library/woodline/door-skin/woodline-door-skin/original/woodline-door-skin.pdf':'product-sync/doors/woodline/woodline-door-skin.pdf',
     'library/woodline-louvers/louvers/woodline-louvers-8x5/original/woodline-louvers-8x5.pdf':'product-sync/louvers/woodline-louvers/woodline-louvers-8x5.pdf'
   };
+  const titles={
+    'ristal-08':'Ristal 0.82mm Premium Laminates','ristal-solid':'Ristal Solid Colour 0.92mm','ristal1mm':'Ristal 1mm Laminates','ristal-slim':'Ristal Slim 0.75mm Laminates',
+    'mwud':'MWUD Futura 0.8mm Laminates','woodline-08':'Woodline 0.8mm Laminates','woodline-door':'Woodline Door Skin','woodline-acrylic':'Woodline Acrylic',
+    'woodline-louvers-8x5':"Woodline Louvers 8x5''",'woodline-led-louvers':'Woodline LED Louvers','woodline-louvers-9-5x6':'Woodline Louvers 9.5x6',
+    'rainbow':'Rainbow Door Skin','woodrick-25-kg-mr':'Woodrick Shuttering Plywood 25 KG MR','kitchen':'Woodrick Kitchen Catalogue','godrej':'Godrej Lock Catalogue & Price List','ipsa':'IPSA Hardware Catalogue & Price List'
+  };
   window.WoodrickCatalogue={
+    title(item){const original=String(item&&item.key||'').toLowerCase(),sibling=original.replace(/\/([^/]+)\/jpg\/[^/]+$/, '/$1/original/$1.pdf'),key=String(aliases[sibling]||sibling).toLowerCase();for(const [suffix,name] of Object.entries(covers))if(key.endsWith(suffix))return titles[name];return String(item&&(item.catalogue||item.title||item.originalName)||'Catalogue').replace(/\.(?:pdf|jpe?g|png|webp|mp4|webm)$/i,'')},
     pdfKey(item){const key=String(item&&item.key||'');return aliases[key.toLowerCase()]||key},
     cover(item){
       const original=String(item&&item.key||'').toLowerCase(),key=String(aliases[original]||original).toLowerCase();

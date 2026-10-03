@@ -10,7 +10,7 @@ test('Customer presentation normalizes versions without changing authenticated p
   const response=()=>new Response(source,{headers:{'content-type':'text/html','content-length':'999'}});
   for(const path of ['/brands/','/products/','/catalogues/','/woodrick-library.html','/woodrick-library']){
     const result=await consistentCustomerResponse(response(),new URL('https://example.com'+path)),html=await result.text();
-    assert.match(html,/existing woodrick-browse-page/);assert.match(html,/href="\/products\/">Products/);assert.match(html,/catalogue-presentation.js\?v=20261002-audit1/);assert.match(html,/customer-ui.css/);assert.equal(result.headers.get('content-length'),null);
+    assert.match(html,/existing woodrick-browse-page/);assert.match(html,/href="\/products\/">Products/);assert.match(html,/catalogue-presentation.js\?v=20261003-audit2/);assert.match(html,/customer-ui.css/);assert.equal(result.headers.get('content-length'),null);
   }
   for(const path of ['/admin-products/','/vendor/','/become-a-vendor/','/products/presentation/']){
     const result=await consistentCustomerResponse(response(),new URL('https://example.com'+path));assert.equal(await result.text(),source);
@@ -76,5 +76,35 @@ test('Category library includes legacy PDFs labelled as images without duplicate
   ]);
   assert.equal(items.filter(context.isCataloguePdf).length,3);
   assert.equal(items.filter(x=>x.type==='jpg-page').length,1);
-  assert.equal(items[3].catalogue,'WOODLINE LOUVERS 9.5X6');
+  assert.equal(items[3].catalogue,'Woodline Louvers 9.5x6');
+});
+
+test('Home navigation keeps Services on its service panel after Products links are normalized',async()=>{
+  const source=await readFile(new URL('../index.html',import.meta.url),'utf8');
+  const env={ASSETS:{fetch:async()=>new Response(source,{headers:{'content-type':'text/html'}})}};
+  const html=await(await worker.fetch(new Request('https://example.com/'),env,{waitUntil(){}})).text();
+  const actions=[],services={href:'#products-services'},products={href:'/products/'};
+  const context={window:{addEventListener:(event,fn)=>{if(event==='DOMContentLoaded')actions.push(fn)}},document:{querySelector:selector=>selector.includes('data-open-services')?null:selector.startsWith('.menu')?services:null}};
+  const script=[...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map(m=>m[1]).find(s=>s.includes('var navProduct='));
+  vm.runInNewContext(script,context);actions.forEach(fn=>fn());
+  assert.equal(services.href,'#products-services');assert.equal(products.href,'/products/');
+  assert.match(html,/<a class="btn btn-gold" href="\/catalogues\/">VIEW CATALOGUE<\/a>/);
+});
+
+test('Brand filters include Woodline Louvers and Ristal1mm aliases without including unrelated brands',async()=>{
+  const html=await readFile(new URL('../brands/index.html',import.meta.url),'utf8');
+  const source=html.slice(html.indexOf('const norm='),html.indexOf('function pdfCover('));
+  for(const [brand,yes,no] of [['Woodline','Woodline Louvers','Royal Crown'],['Ristal','Ristal1mm','Woodline']]){
+    const context={requested:brand,title:{},document:{},WoodrickCatalogue:{}};
+    vm.runInNewContext(source+';this.matches=belongs',context);
+    assert.equal(context.matches({brand:yes,type:'pdf'}),true);
+    assert.equal(context.matches({brand:no,type:'pdf'}),false);
+  }
+});
+
+test('Catalogue names preserve decimal dimensions while stripping actual file extensions',async()=>{
+  const source=await readFile(new URL('../worker-product-media-sync.js',import.meta.url),'utf8');
+  const context={};vm.runInNewContext(source.slice(source.indexOf('function catalogueOf('),source.indexOf('\n',source.indexOf('function catalogueOf('))),context);
+  assert.equal(context.catalogueOf({customMetadata:{title:'Woodline Louvers 9.5x6'}}),'Woodline Louvers 9.5x6');
+  assert.equal(context.catalogueOf({customMetadata:{originalName:'Woodline Louvers 9.5x6.pdf'}}),'Woodline Louvers 9.5x6');
 });
