@@ -58,3 +58,23 @@ test('Every HTML route produces syntactically valid inline scripts after live wo
   }
   assert.ok(pages.length>=24);
 });
+
+test('Category library includes legacy PDFs labelled as images without duplicate originals or private files',async()=>{
+  const html=await readFile(new URL('../woodrick-library.html',import.meta.url),'utf8');
+  const context={window:{},Map,WeakSet};
+  vm.runInNewContext(await readFile(new URL('../assets/catalogue-presentation.js',import.meta.url),'utf8'),context);
+  context.WoodrickCatalogue=context.window.WoodrickCatalogue;
+  vm.runInNewContext(html.slice(html.indexOf('function isCataloguePdf('),html.indexOf('async function loadAll(){')),context);
+  const original={key:'library/woodline-louvers/louvers/woodline-louvers-8x5/original/woodline-louvers-8x5.pdf',type:'original-pdf'};
+  const page={key:'library/woodline-louvers/louvers/woodline-louvers-8x5/jpg/page-001.jpg',type:'jpg-page'};
+  const items=context.completeCatalogueItems([original,page],[
+    {key:'product-sync/louvers/woodline-louvers/woodline-louvers-8x5.pdf',sourceKey:original.key,type:'pdf'},
+    {key:'louvers/image/1787636958432-woodline-led-louvers.pdf',type:'image',title:'WOODLINE LED LOUVERS'},
+    {key:'louvers/image/1787636923292-woodline-louvers-9-5x6.pdf',type:'image',title:'WOODLINE LOUVERS 9.5X6'},
+    {key:'private/document.pdf',type:'pdf'},
+    {key:'louvers/image/photo.jpg',type:'image'}
+  ]);
+  assert.equal(items.filter(context.isCataloguePdf).length,3);
+  assert.equal(items.filter(x=>x.type==='jpg-page').length,1);
+  assert.equal(items[3].catalogue,'WOODLINE LOUVERS 9.5X6');
+});

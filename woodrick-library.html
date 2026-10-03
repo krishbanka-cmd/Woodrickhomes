@@ -10,7 +10,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/p
 const $=id=>document.getElementById(id),pageParams=new URLSearchParams(location.search),requestedCategory=pageParams.get('category')||'';let groups=[],missingRequestedCategory=false;
 function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function normalizeDesigns(text=''){const upper=String(text).toUpperCase().replace(/\s+/g,' ');const found=upper.match(/\b[A-Z]{1,6}[\s-]?\d{2,5}[A-Z]?\b/g)||[];const cleaned=found.map(x=>x.replace(/\s*[- ]\s*/,' ')).filter(x=>!/^PAGE\s?\d+$/i.test(x));return [...new Set(cleaned)].slice(0,30)}
-function canonicalBrand(v=''){const value=String(v).trim();if(/^ristal\s*1\s*mm$/i.test(value))return 'Ristal';if(/^woodline\s+louvers?$/i.test(value))return 'Woodline';return value||'Unknown Brand'}
+function canonicalBrand(v=''){const value=String(v).trim();if(/^ristal\s*1\s*mm$/i.test(value))return 'Ristal';if(/^woodline(?:\s+louvers?)?$/i.test(value))return 'Woodline';return value||'Unknown Brand'}
 function canonicalCategory(v=''){const value=String(v).trim();if(/^door\s*skins?$/i.test(value))return 'Door Skin';if(/^louvers?$/i.test(value))return 'Louvers';if(/^laminates?$/i.test(value))return 'Laminates';if(/^acrylic\s+laminates?$/i.test(value))return 'Acrylic Laminates';return value||'Other'}
 function cataloguePresentation(g){const returnTo=location.pathname+location.search;return '/api/media?pdfviewer=1&key='+encodeURIComponent(g.pdf.key)+'&title='+encodeURIComponent(g.catalogue)+'&return='+encodeURIComponent(returnTo)}
 function searchKey(v=''){return String(v).toUpperCase().replace(/[^A-Z0-9]+/g,'')}
@@ -18,12 +18,19 @@ function requestedSku(v=''){const hits=String(v).toUpperCase().match(/\b[A-Z]{1,
 function pageDesigns(g,page){const verified=verifiedDesigns(g,page);return verified.length?verified:(g.designsByPage&&g.designsByPage[page])||[]}
 function verifiedDesigns(g,page){const brand=String(g&&g.brand||'').toLowerCase();const cat=String(g&&g.category||'').toLowerCase();const title=String(g&&g.catalogue||'').toLowerCase();if(brand.includes('woodline')&&cat.includes('louver')&&title.includes('8x5')&&Number(page)===2)return ['WL-147','WL-150','WL-151','WL-152'];return []}
 async function ensureDesigns(g){if(g.designsLoaded)return;g.designsLoaded=true;g.designsByPage={};if(!g.pdf)return;try{const task=pdfjsLib.getDocument({url:g.pdf.url});const pdf=await task.promise;for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i);const tc=await page.getTextContent();const text=(tc.items||[]).map(x=>x.str||'').join(' ');g.designsByPage[i]=normalizeDesigns(text)}}catch(e){g.designError=true}}
+function isCataloguePdf(item){return item.type==='original-pdf'||item.type==='pdf'||/\.pdf(?:$|[?#])/i.test(item.key||'')||/\.pdf$/i.test(item.originalName||'')}
+function completeCatalogueItems(library,publicMedia){
+ const all=[...library],keys=new Set(library.map(x=>x.key)),pdfKeys=new Set(library.filter(isCataloguePdf).map(x=>WoodrickCatalogue.pdfKey(x)));
+ for(const item of publicMedia){if(String(item.key||'').startsWith('private/')||!isCataloguePdf(item)||keys.has(item.key)||keys.has(item.sourceKey)||pdfKeys.has(WoodrickCatalogue.pdfKey(item)))continue;
+  all.push({...item,type:'pdf',catalogue:item.title||item.catalogue||item.originalName||'Catalogue'});keys.add(item.key);pdfKeys.add(WoodrickCatalogue.pdfKey(item));
+ }
+ return all;
+}
 async function loadAll(){
  async function collect(query){let cursor='',all=[],seen=new Set();do{const u='/api/media?'+query+(cursor?'&cursor='+encodeURIComponent(cursor):'')+'&_='+Date.now();const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error('Catalogue service unavailable');const d=await r.json();if(!Array.isArray(d.items))throw new Error('Incomplete catalogue response');all.push(...d.items);const next=d.truncated&&d.cursor?d.cursor:'';if(next&&seen.has(next))throw new Error('Incomplete catalogue response');if(next)seen.add(next);cursor=next}while(cursor);return all}
  const [library,publicMedia]=await Promise.all([collect('prefix=library/'),collect('catalogue=1')]);
- const approved=publicMedia.filter(x=>String(x.key||'').startsWith('vendor-public/')&&x.source==='vendor-approved'&&x.type==='pdf');
- const all=[...new Map([...library,...approved].map(x=>[x.key,x])).values()],map={};
- all.forEach(x=>{const brand=canonicalBrand(x.brand),category=canonicalCategory(x.category),catalogue=x.catalogue||x.title||'Catalogue',k=[category,brand,catalogue].join('||');map[k]??={brand,category,catalogue,pdf:null,jpg:[],designsLoaded:false,designsByPage:{}};if(x.type==='original-pdf'||x.type==='pdf')map[k].pdf=x;else if(x.type==='jpg-page')map[k].jpg.push(x)});
+ const all=completeCatalogueItems(library,publicMedia),map={};
+ all.forEach(x=>{const brand=canonicalBrand(x.brand),category=canonicalCategory(x.category),catalogue=x.catalogue||x.title||'Catalogue',k=[category,brand,catalogue].map(searchKey).join('||');map[k]??={brand,category,catalogue,pdf:null,jpg:[],designsLoaded:false,designsByPage:{}};if(isCataloguePdf(x))map[k].pdf=x;else if(x.type==='jpg-page')map[k].jpg.push(x)});
  groups=Object.values(map).filter(g=>g.pdf||g.jpg.length).map(g=>{g.jpg.sort((a,b)=>Number(a.page||0)-Number(b.page||0));return g}).sort((a,b)=>a.category.localeCompare(b.category)||a.brand.localeCompare(b.brand)||a.catalogue.localeCompare(b.catalogue));fillFilters();applyRequestedCategory();render()
 }
 function fillFilters(){const current=$('category').value;$('category').innerHTML='<option value="">All Categories</option>';[...new Set(groups.map(g=>g.category))].sort().forEach(v=>$('category').insertAdjacentHTML('beforeend',`<option>${esc(v)}</option>`));if(current&&[...$('category').options].some(o=>o.value===current))$('category').value=current;fillBrandFilter()}
