@@ -25,6 +25,9 @@
 <script>
 (function(){
 const params=new URLSearchParams(location.search),requested=(params.get('brand')||'').trim(),title=document.getElementById('brandTitle'),grid=document.getElementById('grid'),status=document.getElementById('status');let items=[],active=['all','pdf','image','video'].includes(params.get('type'))?params.get('type'):'all';
+// Keep Back on the page that opened this brand, including its filters and scroll anchor.
+const backLink=document.querySelector('a.back');
+try{const target=params.get('return');if(target){const destination=new URL(target,location.origin);if(destination.origin===location.origin&&/^\/(?:$|products(?:\/|$)|catalogues(?:\/|$)|woodrick-library(?:\.html)?$)/.test(destination.pathname)){backLink.href=destination.pathname+destination.search+destination.hash;backLink.textContent='← BACK';}}}catch{}
 const esc=v=>String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm=v=>String(v||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 const aliases={'ultratech cement':'ultratech','ultratech building solutions':'ultratech','birla opus paints':'birla opus','griham by supreme':'griham','varmora tiles':'varmora','ristal laminates':'ristal','godrej locks':'godrej','hettich hardware':'hettich','ebco hardware':'ebco','philips lighting':'philips','supreme upvc':'supreme','550d grade steel':'550d'};

@@ -1746,6 +1746,11 @@ document.getElementById('contact-attachment')?.addEventListener('change',functio
 </script>
 
 
+<style id="woodrick-brand-rail-navigation">
+a.hero-brand-mark{color:inherit;text-decoration:none;cursor:pointer}
+a.hero-brand-mark:focus-visible{outline:3px solid #f0c96b;outline-offset:-3px}
+.hero-brand-marquee:focus-within .hero-brand-track{animation-play-state:paused!important}
+</style>
 <script id="woodrick-brand-rail-registry-20260921">
 (function(){
   /* Fallback list keeps the hero stable if the live brand API is temporarily unavailable.
@@ -1779,8 +1784,10 @@ document.getElementById('contact-attachment')?.addEventListener('change',functio
   window.WOODRICK_BRAND_RAIL=fallbackBrands.slice();
 
   function makeBrandCard(item){
-    var card=document.createElement('div');
+    var card=document.createElement('a');
     card.className='hero-brand-mark';
+    card.href='/brands/?brand='+encodeURIComponent(item.brand||item.label||'Brand')+'&return='+encodeURIComponent(location.pathname+location.search+location.hash);
+    card.setAttribute('aria-label','View '+(item.label||item.brand||'Brand')+' catalogues, photos and videos');
     card.dataset.brand=item.brand||item.label||'Brand';
 
     if(item.src){
@@ -1826,7 +1833,7 @@ document.getElementById('contact-attachment')?.addEventListener('change',functio
     window.WOODRICK_BRAND_RAIL=list;
     groups.forEach(function(group,index){
       group.replaceChildren();
-      list.forEach(function(item){group.appendChild(makeBrandCard(item));});
+      list.forEach(function(item){var card=makeBrandCard(item);if(index>0)card.tabIndex=-1;group.appendChild(card);});
       if(index>0)group.setAttribute('aria-hidden','true');
     });
   }
