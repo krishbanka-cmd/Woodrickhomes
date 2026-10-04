@@ -1,5 +1,5 @@
 import {canonicalCatalogueKey,dedupeCatalogueItems} from './worker-catalogue-identity.js';
-import {buildBrandDirectory} from './worker-brand-directory.js';
+import {buildBrandDirectory,canonicalBrand,brandKey} from './worker-brand-directory.js';
 import {consistentCustomerResponse} from './worker-ui-consistency.js';
 import {handleListQuote} from './worker-list-quotes.js';
 import {handleVendor} from './worker-vendors.js';
@@ -38,7 +38,7 @@ function cleanBrandItem(input={},existing={}){
   const fallback=String(input.fallback??existing.fallback??'').trim().slice(0,1200);
   const alt=String(input.alt??existing.alt??(`${label} logo`)).trim().slice(0,140);
   const categories=[...new Set((Array.isArray(input.categories)?input.categories:Array.isArray(existing.categories)?existing.categories:[]).map(v=>String(v).trim().slice(0,80)).filter(Boolean))].slice(0,40);
-  return {brand,label,alt,src,categories,...(fallback?{fallback}:{})};
+  return {brand,label,alt,src,categories,railEnabled:input.railEnabled??existing.railEnabled??true,...(fallback?{fallback}:{})};
 }
 async function loadBrandRail(env){
   if(!env.PRODUCT_MEDIA)return BRAND_RAIL_DEFAULTS.map(x=>({...x}));
@@ -60,7 +60,8 @@ async function handleBrandRail(request,env){
     const managed=await loadBrandRail(env);
     if(new URL(request.url).searchParams.get('scope')==='managed')return brandJson({items:managed});
     const media=await publicMediaList(env).then(r=>r.json());
-    return brandJson({items:buildBrandDirectory(media.items,managed)});
+    const items=buildBrandDirectory(media.items,managed);
+    return brandJson({items:new URL(request.url).searchParams.get('scope')==='all'?items:items.filter(x=>x.railEnabled!==false)});
   }
   if(request.method!=='POST')return brandJson({error:'Method not allowed'},405);
   if(!await brandAuthorized(request,env))return brandJson({error:'Admin login required'},401);
@@ -71,6 +72,12 @@ async function handleBrandRail(request,env){
     const brand=String(data.brand||'').trim();
     if(!brand)return brandJson({error:'Brand is required'},400);
     items=items.filter(x=>x.brand.toLowerCase()!==brand.toLowerCase());
+  }else if(action==='visibility'){
+    const brand=canonicalBrand(data.brand);
+    if(!brand||typeof data.railEnabled!=='boolean')return brandJson({error:'Brand and rail visibility are required'},400);
+    const i=items.findIndex(x=>brandKey(canonicalBrand(x.brand))===brandKey(brand));
+    const item=cleanBrandItem({brand,railEnabled:data.railEnabled},i>=0?items[i]:{});
+    if(i>=0)items[i]=item;else items.push(item);
   }else if(action==='upsert'){
     const input=data.item||{},brand=String(input.brand||'').trim();
     if(!brand)return brandJson({error:'Brand is required'},400);

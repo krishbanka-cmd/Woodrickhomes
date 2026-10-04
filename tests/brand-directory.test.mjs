@@ -24,3 +24,23 @@ test('Saved brand categories survive a directory refresh without requiring uploa
  const merged=buildBrandDirectory([{key:'ambuja.pdf',brand:'Ambuja Cement',category:'Plywood'}],[{brand:'Ambuja Cement',categories:['Cement']}]);
  assert.deepEqual(merged[0].categories,['Cement','Plywood']);
 });
+
+test('Every published brand can be hidden from the hero while remaining editable with its catalogues',async()=>{
+ const {default:app}=await import('../worker-fast.js');let saved=null;
+ const env={ADMIN_UPLOAD_TOKEN:'test-secret',PRODUCT_MEDIA:{
+  get:async key=>key==='_system/brand-rail-v1.json'&&saved?{text:async()=>saved}:null,
+  put:async(key,body)=>{assert.equal(key,'_system/brand-rail-v1.json');saved=body},
+  list:async options=>({objects:options.prefix==='product-sync/'?[{key:'product-sync/royal.pdf',customMetadata:{brand:'Royal Crown',category:'Laminates',catalogue:'Royal Crown 1mm',type:'pdf'}}]:[],truncated:false})
+ }};
+ const post=async(body,authorized=true)=>app.fetch(new Request('https://test/api/brands',{method:'POST',headers:{'content-type':'application/json',...(authorized?{authorization:'Bearer test-secret'}:{})},body:JSON.stringify(body)}),env,{});
+ assert.equal((await post({action:'visibility',brand:'Royal Crown',railEnabled:false},false)).status,401);
+ assert.equal((await post({action:'visibility',brand:'Royal Crown',railEnabled:false})).status,200);
+ const list=async scope=>(await app.fetch(new Request('https://test/api/brands'+scope),env,{})).json();
+ assert.ok(!(await list('')).items.some(x=>x.brand==='Royal Crown'));
+ const hidden=(await list('?scope=all')).items.find(x=>x.brand==='Royal Crown');assert.equal(hidden.railEnabled,false);assert.equal(hidden.mediaCount,1);
+ assert.equal((await post({item:{brand:'Royal Crown',label:'Royal Crown corrected'}})).status,200);
+ assert.ok(!(await list('')).items.some(x=>x.brand==='Royal Crown'));
+ assert.equal((await post({action:'visibility',brand:'Royal Crown',railEnabled:true})).status,200);
+ assert.equal((await list('')).items.find(x=>x.brand==='Royal Crown').label,'Royal Crown corrected');
+ assert.equal(JSON.parse(saved).items.filter(x=>x.brand==='Royal Crown').length,1);
+});

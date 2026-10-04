@@ -1829,7 +1829,7 @@ a.hero-brand-mark:focus-visible{outline:3px solid #f0c96b;outline-offset:-3px}
   function renderHeroBrandRail(items){
     var groups=document.querySelectorAll('.hero-brand-track > .hero-brand-group');
     if(!groups.length)return;
-    var list=Array.isArray(items)&&items.length?items:fallbackBrands;
+    var list=Array.isArray(items)?items:fallbackBrands;
     window.WOODRICK_BRAND_RAIL=list;
     groups.forEach(function(group,index){
       group.replaceChildren();
@@ -1844,7 +1844,7 @@ a.hero-brand-mark:focus-visible{outline:3px solid #f0c96b;outline-offset:-3px}
       var r=await fetch('/api/brands?_='+Date.now(),{cache:'no-store',headers:{'cache-control':'no-cache'}});
       if(!r.ok)throw new Error('Brand API '+r.status);
       var d=await r.json();
-      if(Array.isArray(d.items)&&d.items.length)renderHeroBrandRail(d.items);
+      if(Array.isArray(d.items))renderHeroBrandRail(d.items);
     }catch(e){
       /* Keep fallback rail visible if API/network is unavailable. */
     }

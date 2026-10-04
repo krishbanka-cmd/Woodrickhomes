@@ -43,7 +43,7 @@ const $=id=>document.getElementById(id);const esc=v=>String(v||'').replace(/[&<>
 const CATS=['Plywood','Laminates','Louvers','Acrylic Laminates','Shuttering Plywood','Doors','Door Skin','HDHMR & MDF','WPC Board & Chaukhat','Cement','Tiles','Sanitaryware','Bath Fittings','uPVC Doors & Windows','Hardware','Furniture & Kitchen Hardware','Flooring','Wallpapers','Decorative Panels'];
 
 async function brandApi(action,payload={}){
-  const r=await fetch(action==='get'?'/api/brands':'/api/brands',{method:action==='get'?'GET':'POST',headers:action==='get'?{}:{'content-type':'application/json',...(savedToken('pToken','woodrick_product_token')?{authorization:'Bearer '+savedToken('pToken','woodrick_product_token')}:{})},body:action==='get'?undefined:JSON.stringify(payload),cache:'no-store'});
+  const r=await fetch(action==='get'?'/api/brands?scope=all':'/api/brands',{method:action==='get'?'GET':'POST',headers:action==='get'?{}:{'content-type':'application/json',...(savedToken('pToken','woodrick_product_token')?{authorization:'Bearer '+savedToken('pToken','woodrick_product_token')}:{})},body:action==='get'?undefined:JSON.stringify(payload),cache:'no-store'});
   const d=await r.json().catch(()=>({}));
   if(!r.ok)throw Error(d.error||'Brand update failed');
   return d;
@@ -71,7 +71,7 @@ $('pSaveBrand').onclick=async()=>{
 function renderBrands(){
   const query=$('bSearch').value.trim().toLowerCase();
   const items=(window.BRAND_RAIL_ITEMS||[]).filter(x=>(x.brand+' '+(x.label||'')).toLowerCase().includes(query));
-  $('bList').innerHTML=items.length?items.map(x=>`<div class="item"><div class="brandmeta">${x.src?`<img class="brandthumb" src="${esc(x.src)}" alt="">`:`<div class="brandtextlogo">${esc(x.label||x.brand)}</div>`}<div class="meta"><b>${esc(x.label||x.brand)}</b><br><span>${esc(x.brand)}</span><br><span>${Number(x.mediaCount)||0} catalogue/photo/video items${x.source==='published-media'?' · From published media':''}</span></div></div><div class="item-actions"><button class="rowbtn bedit" data-brand="${esc(x.brand)}">EDIT</button>${x.source==='published-media'?'':`<button class="rowbtn danger bdelete" data-brand="${esc(x.brand)}">REMOVE RAIL SETTINGS</button>`}</div></div>`).join(''):'<div class="item">'+(query?'No brands match your search.':'No brands available.')+'</div>';
+  $('bList').innerHTML=items.length?items.map(x=>`<div class="item"><div class="brandmeta">${x.src?`<img class="brandthumb" src="${esc(x.src)}" alt="">`:`<div class="brandtextlogo">${esc(x.label||x.brand)}</div>`}<div class="meta"><b>${esc(x.label||x.brand)}</b><br><span>${esc(x.brand)}</span><br><span>${Number(x.mediaCount)||0} catalogue/photo/video items${x.source==='published-media'?' · From published media':''} · ${x.railEnabled===false?'Hidden from hero rail':'Visible on hero rail'}</span></div></div><div class="item-actions"><button class="rowbtn bedit" data-brand="${esc(x.brand)}">EDIT</button><button class="rowbtn ${x.railEnabled===false?'':'danger'} brail" data-brand="${esc(x.brand)}" data-enabled="${x.railEnabled===false?'true':'false'}">${x.railEnabled===false?'SHOW ON HERO RAIL':'HIDE FROM HERO RAIL'}</button></div></div>`).join(''):'<div class="item">'+(query?'No brands match your search.':'No brands available.')+'</div>';
 }
 async function loadBrands(){
   const btn=$('bRefresh');if(btn){btn.disabled=true;btn.textContent='REFRESHING…'}
@@ -120,15 +120,21 @@ $('bSave').onclick=async()=>{
 $('bClear').onclick=clearBrandForm;
 $('bRefresh').onclick=loadBrands;
 $('bList').onclick=async e=>{
-  const edit=e.target.closest('.bedit'),del=e.target.closest('.bdelete');
+  const edit=e.target.closest('.bedit'),toggle=e.target.closest('.brail');
   if(edit){
     const x=(window.BRAND_RAIL_ITEMS||[]).find(v=>v.brand===edit.dataset.brand);if(!x)return;
     renderBrandCategories(x.categories||[]);$('bBrand').readOnly=true;$('bBrand').value=x.brand||'';$('bLabel').value=x.label||'';$('bSrc').value=x.src||'';$('bFallback').value=x.fallback||'';
     document.querySelector('[data-view="brands"]').click();$('bLabel').focus();status('bStatus','Editing '+(x.label||x.brand)+'. Correct the display name or logo, then SAVE / UPDATE BRAND.');$('bLabel').scrollIntoView({block:'center',behavior:'smooth'});return;
   }
-  if(!del)return;
-  if(!confirm('Remove saved rail settings for '+del.dataset.brand+'? If published media exists, the brand remains in the website list.'))return;
-  try{await brandApi('post',{action:'delete',brand:del.dataset.brand});await loadBrands()}catch(err){status('bStatus','Delete error: '+err.message,true)}
+  if(!toggle)return;
+  const railEnabled=toggle.dataset.enabled==='true';
+  toggle.disabled=true;
+  try{
+    await brandApi('post',{action:'visibility',brand:toggle.dataset.brand,railEnabled});
+    await loadBrands();
+    status('bStatus',toggle.dataset.brand+(railEnabled?' is visible on the hero rail.':' is hidden from the hero rail. Its catalogues remain available.'));
+  }catch(err){status('bStatus','Rail update error: '+err.message,true)}finally{toggle.disabled=false}
+
 };
 
 async function getPdfJs(){if(window.pdfjsLib)return window.pdfjsLib;await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';s.onload=resolve;s.onerror=()=>reject(Error('PDF converter could not load'));document.head.appendChild(s)});window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';return window.pdfjsLib}
