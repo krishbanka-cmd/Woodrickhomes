@@ -106,3 +106,20 @@ test('Production homepage worker actually includes the category menu',async()=>{
  assert.match(html,/woodrick-category-menu-v4/);
  assert.match(html,/Browse by Category/);
 });
+
+
+test('Legacy Woodline Door Skin records appear with Rainbow in Door Skin without moving files',async()=>{
+ const legacy={key:'product-sync/doors/woodline/woodline-door-skin.pdf',brand:'Woodline',category:'Doors',catalogue:'Woodline Door Skin',type:'pdf'};
+ const directory=buildBrandDirectory([legacy,{key:'rainbow.pdf',brand:'Rainbow',category:'Door Skin'}]);
+ assert.deepEqual(directory.filter(x=>x.categories.includes('Door Skin')).map(x=>x.brand),['Woodline','Rainbow']);
+ assert.equal(directory[0].categoryCounts['Door Skin'],1);
+ assert.ok(!directory[0].categories.includes('Doors'));
+ assert.ok(buildBrandDirectory([{...legacy,key:'woodline-door.pdf',catalogue:'Woodline Doors'}])[0].categories.includes('Doors'));
+ const env={PRODUCT_MEDIA:{list:async options=>({objects:options.prefix==='product-sync/'?[{key:legacy.key,customMetadata:legacy}]:[],truncated:false})}};
+ const result=await publicMediaList(env).then(r=>r.json());
+ const item=result.items.find(x=>x.brand==='Woodline');assert.equal(item.category,'Door Skin');assert.equal(item.key,legacy.key);
+ const {default:app}=await import('../worker-fast.js');
+ env.PRODUCT_MEDIA.get=async()=>({uploaded:new Date(),text:async()=>JSON.stringify({items:[legacy],total:1})});
+ const indexed=await app.fetch(new Request('https://test/api/media'),env,{}).then(r=>r.json());
+ assert.equal(indexed.items.find(x=>x.brand==='Woodline').category,'Door Skin');
+});

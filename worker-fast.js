@@ -1,5 +1,5 @@
 import {canonicalCatalogueKey,dedupeCatalogueItems} from './worker-catalogue-identity.js';
-import {buildBrandDirectory,canonicalBrand,brandKey} from './worker-brand-directory.js';
+import {buildBrandDirectory,canonicalBrand,brandKey,canonicalMediaCategory} from './worker-brand-directory.js';
 import {consistentCustomerResponse} from './worker-ui-consistency.js';
 import {handleListQuote} from './worker-list-quotes.js';
 import {handleVendor} from './worker-vendors.js';
@@ -122,6 +122,8 @@ async function indexedMedia(env){
       if(!visible)changed=true;
       return visible;
     }).map(item=>{
+      const category=canonicalMediaCategory(item);
+      if(category!==item.category){item={...item,category};changed=true}
       const source=String(item&&item.sourceKey||'');
       if(!source.startsWith('library/'))return item;
       const query=new URLSearchParams({source,brand:String(item.brand||''),category:String(item.category||''),catalogue:String(item.catalogue||item.title||'')});
