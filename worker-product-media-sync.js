@@ -1,3 +1,4 @@
+import {canonicalCatalogueKey,dedupeCatalogueItems} from './worker-catalogue-identity.js';
 import app from './worker-admin-layout-polish.js';
 
 export const STATIC_PUBLIC_MEDIA=[{key:'assets/media/senator-showcase.mp4',brand:'Senator',category:'Bath Fittings',title:'Senator Premium Wellness Collection',catalogue:'Senator Premium Wellness Collection',type:'video',originalName:'senator-showcase.mp4',staticUrl:'/assets/media/senator-showcase.mp4',source:'website-asset'}];
@@ -41,7 +42,7 @@ function typeOf(o){const m=o.customMetadata||{},name=String(m.originalName||o.ke
 function catalogueOf(o){const m=o.customMetadata||{};return String(m.catalogue||m.title||m.originalName||'Catalogue').replace(/\.(?:pdf|jpe?g|png|webp|mp4|webm)$/i,'').replace(/\s+page\s*\d+\s*$/i,'').trim()||'Catalogue'}
 function brandOf(o){const m=o.customMetadata||{};if(String(m.brand||'').trim())return String(m.brand).trim();const c=catalogueOf(o),first=(c.match(/^[A-Za-z0-9&+-]+/)||[])[0];return first||'Other'}
 function identity(o){const m=o.customMetadata||{};return [norm(m.vendorId||''),norm(brandOf(o)),norm(canonicalCategory(m.category||'')),typeOf(o),norm(catalogueOf(o))].join('|')}
-function syncKeyFor(o){const m=o.customMetadata||{},brand=brandOf(o),category=canonicalCategory(m.category||'Other'),catalogue=catalogueOf(o);return `product-sync/${slug(category)}/${slug(brand)}/${slug(catalogue)}.pdf`}
+function syncKeyFor(o){const known=canonicalCatalogueKey(o.key);if(known!==o.key)return known;const m=o.customMetadata||{},brand=brandOf(o),category=canonicalCategory(m.category||'Other'),catalogue=catalogueOf(o);return `product-sync/${slug(category)}/${slug(brand)}/${slug(catalogue)}.pdf`}
 
 async function listAll(env,prefix=''){
   const out=[];let cursor;const seen=new Set();
@@ -86,7 +87,7 @@ export async function syncAndClean(env){
   }
   for(const [id,arr] of byId){
     if(arr.length<2&&!libIds.has(id))continue;
-    const preferred=arr.find(o=>String(o.key||'').startsWith('product-sync/'))||arr.slice().sort((a,b)=>String(b.uploaded||'').localeCompare(String(a.uploaded||'')))[0];
+    const preferred=arr.find(o=>o.key===canonicalCatalogueKey((o.customMetadata||{}).sourceKey||o.key)&&canonicalCatalogueKey((o.customMetadata||{}).sourceKey||o.key)!==((o.customMetadata||{}).sourceKey||o.key))||arr.find(o=>String(o.key||'').startsWith('product-sync/'))||arr.slice().sort((a,b)=>String(b.uploaded||'').localeCompare(String(a.uploaded||'')))[0];
     for(const o of arr){if(o.key===preferred.key)continue;await env.PRODUCT_MEDIA.delete(o.key);deleted++}
   }
   return {synced,deleted};
@@ -97,7 +98,8 @@ export async function publicMediaList(env){
   for(const o of objects){const m=o.customMetadata||{};if(String(o.key||'').startsWith('vendor-public/')){if(!vendorCache.has(m.vendorId)){const obj=await env.PRODUCT_MEDIA.get('private/vendors/records/'+m.vendorId+'.json');vendorCache.set(m.vendorId,obj?await obj.json():null)}if(!productCache.has(m.productId)){const obj=await env.PRODUCT_MEDIA.get('private/vendors/products/'+m.productId+'.json');productCache.set(m.productId,obj?await obj.json():null)}const v=vendorCache.get(m.vendorId),p=productCache.get(m.productId);if(v?.status!=='approved'||!p?.publicKeys?.includes(o.key))continue}const title=String(m.title||'').trim();if(/\s+page\s*\d+\s*$/i.test(title))continue;const category=canonicalCategory(m.category||''),brand=m.brand||brandOf(o),catalogue=m.catalogue||catalogueOf(o),source=String(m.sourceKey||''),coverQuery=new URLSearchParams({source,brand,category,catalogue}),dynamicCover=source.startsWith('library/')?('/api/catalogue-cover?'+coverQuery.toString()):'';items.push({key:o.key,size:o.size,uploaded:o.uploaded,url:`/api/media?key=${encodeURIComponent(o.key)}`,...m,category,brand,catalogue,coverUrl:dynamicCover||FAST_COVER_BY_KEY[o.key]})}
   for(const item of STATIC_PUBLIC_MEDIA){if(!items.some(x=>x.key===item.key))items.push({...item,url:'/api/media?key='+encodeURIComponent(item.key)})}
   items.sort((a,b)=>String(b.syncedAt||b.uploadedAt||b.uploaded||'').localeCompare(String(a.syncedAt||a.uploadedAt||a.uploaded||'')));
-  const response=json({items,total:items.length,truncated:false,cursor:null,mode:'library-canonical-product-media-v2-fast-preview'});
+  const visible=dedupeCatalogueItems(items);
+  const response=json({items:visible,total:visible.length,truncated:false,cursor:null,mode:'library-canonical-product-media-v2-fast-preview'});
   response.headers.set('cache-control','public, max-age=30, s-maxage=120, stale-while-revalidate=300');
   return response;
 }

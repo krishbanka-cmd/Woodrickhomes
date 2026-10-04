@@ -14,6 +14,9 @@
   // Older Library originals duplicate PDFs already listed in the product gallery.
   // Send every customer entry point to the product record for these exact files.
   const aliases={
+    'product-sync/laminates/ristal/ristal-82mm.pdf':'product-sync/laminates/ristal/ristal.pdf',
+    'product-sync/laminates/ristal/ristal-solid-colour-92mm.pdf':'product-sync/laminates/ristal/ristal-solid-colour.pdf',
+    'product-sync/laminates/ristal/ristal-75mm.pdf':'laminates/pdf/1787751962530-ristal-slim-75mm.pdf',
     'library/mwud/laminate/mwud-82mm/original/mwud-82mm.pdf':'product-sync/laminates/mwud/mwud.pdf',
     'library/ristal/laminate/ristal-82mm/original/ristal-82mm.pdf':'product-sync/laminates/ristal/ristal.pdf',
     'laminate/original-pdf/1787901460624-ristal1mm.pdf':'product-sync/laminates/ristal1mm/ristal1mm.pdf',
@@ -32,7 +35,7 @@
   };
   window.WoodrickCatalogue={
     title(item){const original=String(item&&item.key||'').toLowerCase(),sibling=original.replace(/\/([^/]+)\/jpg\/[^/]+$/, '/$1/original/$1.pdf'),key=String(aliases[sibling]||sibling).toLowerCase();for(const [suffix,name] of Object.entries(covers))if(key.endsWith(suffix))return titles[name];return String(item&&(item.catalogue||item.title||item.originalName)||'Catalogue').replace(/\.(?:pdf|jpe?g|png|webp|mp4|webm)$/i,'')},
-    pdfKey(item){const key=String(item&&item.key||'');return aliases[key.toLowerCase()]||key},
+    pdfKey(item){const key=String(item&&item.key||'');return key.startsWith('product-sync/')?key:(aliases[key.toLowerCase()]||key)},
     cover(item){
       const original=String(item&&item.key||'').toLowerCase(),key=String(aliases[original]||original).toLowerCase();
       for(const [suffix,name] of Object.entries(covers))if(key.endsWith(suffix))return '/catalogue-covers/'+name+'.webp';

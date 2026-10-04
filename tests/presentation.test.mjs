@@ -10,7 +10,7 @@ test('Customer presentation normalizes versions without changing authenticated p
   const response=()=>new Response(source,{headers:{'content-type':'text/html','content-length':'999'}});
   for(const path of ['/brands/','/products/','/catalogues/','/woodrick-library.html','/woodrick-library']){
     const result=await consistentCustomerResponse(response(),new URL('https://example.com'+path)),html=await result.text();
-    assert.match(html,/existing woodrick-browse-page/);assert.match(html,/href="\/products\/">Products/);assert.match(html,/catalogue-presentation.js\?v=20261003-audit2/);assert.match(html,/customer-ui.css/);assert.equal(result.headers.get('content-length'),null);
+    assert.match(html,/existing woodrick-browse-page/);assert.match(html,/href="\/products\/">Products/);assert.match(html,/catalogue-presentation.js\?v=20261004-catalogue-reliability/);assert.match(html,/customer-ui.css/);assert.equal(result.headers.get('content-length'),null);
   }
   for(const path of ['/admin-products/','/vendor/','/become-a-vendor/','/products/presentation/']){
     const result=await consistentCustomerResponse(response(),new URL('https://example.com'+path));assert.equal(await result.text(),source);

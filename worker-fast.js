@@ -1,3 +1,4 @@
+import {dedupeCatalogueItems} from './worker-catalogue-identity.js';
 import {buildBrandDirectory} from './worker-brand-directory.js';
 import {consistentCustomerResponse} from './worker-ui-consistency.js';
 import {handleListQuote} from './worker-list-quotes.js';
@@ -118,6 +119,7 @@ async function indexedMedia(env){
       if(item.coverUrl===coverUrl)return item;
       changed=true;return{...item,coverUrl};
     });
+    const unique=dedupeCatalogueItems(data.items);if(unique.length!==data.items.length){data.items=unique;changed=true}
     if(data.total!==data.items.length){data.total=data.items.length;changed=true}
     if(changed)body=JSON.stringify(data);
   }catch{return null}

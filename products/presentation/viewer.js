@@ -1,19 +1,7 @@
-import * as pdfjsLib from './vendor/pdf.min.mjs';
+import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliability';
 
 (() => {
   'use strict';
-  const workerReady = Promise.all([
-    '/products/presentation/vendor/pdf.worker.part-1.js',
-    '/products/presentation/vendor/pdf.worker.part-2.js',
-    '/products/presentation/vendor/pdf.worker.part-3.js',
-    '/products/presentation/vendor/pdf.worker.part-4.js'
-  ].map(async url => {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('PDF engine unavailable');
-    return response.text();
-  })).then(parts => {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob(parts, {type: 'text/javascript'}));
-  });
   const params = new URLSearchParams(location.search);
   const key = params.get('key') || '';
   const inferred = decodeURIComponent(key.split('/').pop() || 'Catalogue').replace(/\.pdf$/i, '').replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -32,7 +20,7 @@ import * as pdfjsLib from './vendor/pdf.min.mjs';
     document.getElementById('count').textContent = '– / –';
     return;
   }
-  let pdf = null, current = 1, generation = 0, zoomed = false, referenceAspect = 0, activeRender = null;
+  let pdf = null, current = 1, generation = 0, zoomed = false, referenceAspect = 0, activeRender = null, loadingTask=null;
 
   document.title = catalogueTitle + ' | Woodrick Homes';
   document.getElementById('title').textContent = catalogueTitle;
@@ -40,7 +28,10 @@ import * as pdfjsLib from './vendor/pdf.min.mjs';
 
   function setStatus(message, retry = false) {
     status.replaceChildren(document.createTextNode(message));
-    if (retry) { const button = document.createElement('button'); button.textContent = 'Retry'; button.onclick = start; status.appendChild(button); }
+    if (retry) {
+      const button = document.createElement('button'); button.textContent = 'Retry'; button.onclick = start; status.appendChild(button);
+      const original=document.createElement('a');original.className='link';original.textContent='Open original PDF';original.href=rawUrl;original.target='_blank';original.rel='noopener';status.appendChild(original);
+    }
     status.hidden = false;
   }
   function controls() {
@@ -73,7 +64,7 @@ import * as pdfjsLib from './vendor/pdf.min.mjs';
         try { await previousRender.promise; } catch (_) {}
       }
       if (ticket !== generation) return;
-      const pdfPage = await pdf.getPage(current);
+      const pdfPage = await withDeadline(pdf.getPage(current),20000);
       if (ticket !== generation) return;
       const natural = pdfPage.getViewport({scale: 1});
       if (!referenceAspect) referenceAspect = natural.width / natural.height;
@@ -86,7 +77,7 @@ import * as pdfjsLib from './vendor/pdf.min.mjs';
       canvas.style.height = Math.max(1, Math.floor(natural.height * cssScale)) + 'px';
       const task = pdfPage.render({canvasContext: context, viewport});
       activeRender = task;
-      try { await task.promise; } finally { if (activeRender === task) activeRender = null; }
+      try { await withDeadline(task.promise,20000,()=>task.cancel()); } finally { if (activeRender === task) activeRender = null; }
       if (ticket !== generation) return;
       frame.hidden = false; canvas.hidden = false; status.hidden = true; canvas.setAttribute('aria-label', catalogueTitle + ', page ' + current);
       if (!zoomed) { stage.scrollTop = 0; stage.scrollLeft = 0; }
@@ -95,14 +86,22 @@ import * as pdfjsLib from './vendor/pdf.min.mjs';
     } catch (error) { if (ticket === generation) setStatus('This page could not load. Check your connection and retry. ', true); }
   }
   async function start() {
-    generation++; pdf = null; current = 1; referenceAspect = 0; frame.hidden = true; controls(); setStatus('Preparing catalogue…');
+    generation++;
+    if(activeRender){activeRender.cancel();try{await activeRender.promise}catch{}activeRender=null;}
+    if(loadingTask){const old=loadingTask;loadingTask=null;old.destroy().catch(()=>{});}
+    pdf = null; current = 1; referenceAspect = 0; frame.hidden = true; controls(); setStatus('Preparing catalogue…');
     const ticket=generation;
     const slowTimer=setTimeout(()=>{if(ticket===generation&&!pdf)setStatus('Opening the first page… Large catalogues may take a few moments.');},5000);
     try {
-      await workerReady;
-      const task=pdfjsLib.getDocument({url:rawUrl,rangeChunkSize:262144,disableAutoFetch:true,disableStream:false});
+      const {pdfEngine}=await withDeadline(import('/assets/pdf-engine.mjs?v=20261004-catalogue-reliability'),15000);
+      const pdfjsLib=await withDeadline(pdfEngine(),15000);
+      if(ticket!==generation)return;
+      // Streaming keeps downloading the entire catalogue while range reads also
+      // run. Disable it so first-page reads use bounded byte ranges instead.
+      const task=pdfjsLib.getDocument({url:rawUrl,rangeChunkSize:262144,disableAutoFetch:true,disableStream:true});
+      loadingTask=task;
       task.onProgress=progress=>{if(ticket!==generation||pdf||!progress||!progress.total)return;const percent=Math.min(99,Math.round(progress.loaded/progress.total*100));setStatus('Preparing catalogue… '+percent+'%');};
-      const loaded=await task.promise;
+      const loaded=await withDeadline(task.promise,30000,()=>task.destroy());
       if(ticket!==generation){await loaded.destroy();return;}
       pdf=loaded;clearTimeout(slowTimer);await render(1);
     }
