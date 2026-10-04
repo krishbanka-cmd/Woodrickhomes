@@ -83,3 +83,17 @@ test('Saving upload aliases keeps one brand and preserves corrected labels, logo
  const admin=await readFile(new URL('../admin-products/index.html',import.meta.url),'utf8');const register=admin.slice(admin.indexOf('async function registerBrandName'),admin.indexOf('function clearBrandForm'));
  assert.doesNotMatch(register,/label:brand/);
 });
+
+test('Category menu shows only active admin categories, searches them and routes to matching brands',async()=>{
+ const source=await readFile(new URL('../worker-hero-category-test.js',import.meta.url),'utf8');
+ const patchCtx={};vm.runInNewContext(source.slice(source.indexOf('const patch='),source.indexOf('export default'))+';this.patch=patch',patchCtx);
+ const script=patchCtx.patch.match(/<script[^>]*>([\s\S]*?)<\/script>/)[1];
+ const nodes={woodrickCategorySearch:{value:''},woodrickCategoryGroups:{innerHTML:''},woodrickCategoryStatus:{textContent:''}};
+ const ctx={document:{readyState:'loading',addEventListener(){},getElementById:id=>nodes[id]},fetch:async()=>({ok:true,json:async()=>({categories:['Door Skin','Doors','Tiles','Tiles']})})};
+ vm.runInNewContext(script.replace('})();',';this.menuLoad=load;this.menuRender=render;})();'),ctx);
+ await ctx.menuLoad();const html=nodes.woodrickCategoryGroups.innerHTML;
+ assert.match(html,/Door%20Skin/);assert.match(html,/category=Doors/);assert.doesNotMatch(html,/Plywood/);
+ assert.equal((html.match(/category=Tiles/g)||[]).length,1);
+ nodes.woodrickCategorySearch.value='door';ctx.menuRender();assert.doesNotMatch(nodes.woodrickCategoryGroups.innerHTML,/Tiles/);assert.match(nodes.woodrickCategoryStatus.textContent,/2 categories/);
+ assert.match(script,/aria-haspopup/);assert.match(script,/dialog.showModal/);
+});
