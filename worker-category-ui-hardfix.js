@@ -1,4 +1,4 @@
-import app from './worker-edit-save-fast.js';
+import app from './worker-hero-category-test.js';
 import {backfillDesignIndex} from './worker-design-picker-click-fix.js';
 import {syncAndClean} from './worker-product-media-sync.js';
 

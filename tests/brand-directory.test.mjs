@@ -97,3 +97,12 @@ test('Category menu shows only active admin categories, searches them and routes
  nodes.woodrickCategorySearch.value='door';ctx.menuRender();assert.doesNotMatch(nodes.woodrickCategoryGroups.innerHTML,/Tiles/);assert.match(nodes.woodrickCategoryStatus.textContent,/2 categories/);
  assert.match(script,/aria-haspopup/);assert.match(script,/dialog.showModal/);
 });
+
+test('Production homepage worker actually includes the category menu',async()=>{
+ const {default:app}=await import('../worker-fast.js');
+ const env={ASSETS:{fetch:async()=>new Response('<html><body><nav class="nav-inner"><div class="menu"><a href="/products/">PRODUCTS</a></div></nav></body></html>',{headers:{'content-type':'text/html'}})}};
+ const response=await app.fetch(new Request('https://test/'),env,{waitUntil(){}});
+ const html=await response.text();
+ assert.match(html,/woodrick-category-menu-v4/);
+ assert.match(html,/Browse by Category/);
+});
