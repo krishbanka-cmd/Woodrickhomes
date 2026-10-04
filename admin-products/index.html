@@ -42,16 +42,15 @@
 const $=id=>document.getElementById(id);const esc=v=>String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const CATS=['Plywood','Laminates','Louvers','Acrylic Laminates','Shuttering Plywood','Doors','Door Skin','HDHMR & MDF','WPC Board & Chaukhat','Cement','Tiles','Sanitaryware','Bath Fittings','uPVC Doors & Windows','Hardware','Furniture & Kitchen Hardware','Flooring','Wallpapers','Decorative Panels'];
 
-async function brandApi(action,payload={}){
-  const r=await fetch(action==='get'?'/api/brands?scope=all':'/api/brands',{method:action==='get'?'GET':'POST',headers:action==='get'?{}:{'content-type':'application/json',...(savedToken('pToken','woodrick_product_token')?{authorization:'Bearer '+savedToken('pToken','woodrick_product_token')}:{})},body:action==='get'?undefined:JSON.stringify(payload),cache:'no-store'});
+async function brandApi(action,payload={},uploadToken=''){
+  const r=await fetch(action==='get'?'/api/brands?scope=all':'/api/brands',{method:action==='get'?'GET':'POST',headers:action==='get'?{}:{'content-type':'application/json',...((uploadToken||savedToken('pToken','woodrick_product_token'))?{authorization:'Bearer '+(uploadToken||savedToken('pToken','woodrick_product_token'))}:{})},body:action==='get'?undefined:JSON.stringify(payload),cache:'no-store'});
   const d=await r.json().catch(()=>({}));
   if(!r.ok)throw Error(d.error||'Brand update failed');
   return d;
 }
-async function registerBrandName(brand){
-  brand=String(brand||'').trim();
-  if(!brand)return;
-  try{await brandApi('post',{action:'upsert',item:{brand}})}catch(e){}
+async function registerBrandName(brand,category,uploadToken=''){
+  if(!String(brand||'').trim()||!category)throw Error('Brand and category are required.');
+  await brandApi('post',{action:'associate',brand,category},uploadToken);
 }
 function clearBrandForm(){document.querySelectorAll('#bCategories input').forEach(x=>x.checked=false);$('bBrand').readOnly=false;$('bBrand').value='';$('bLabel').value='';$('bSrc').value='';$('bFallback').value=''}
 function renderBrandCategories(selected=[]){
@@ -63,15 +62,14 @@ $('pSaveBrand').onclick=async()=>{
   if(!brand||!category)return status('pStatus','Enter a brand and select its category.',true);
   const button=$('pSaveBrand');button.disabled=true;
   try{
-    const data=await brandApi('get'),existing=(data.items||[]).find(x=>norm(x.brand)===norm(brand));
-    await brandApi('post',{action:'upsert',item:{brand:existing?.brand||brand,label:existing?.label||brand,categories:[...new Set([...(existing?.categories||[]),category])]}});
+    await registerBrandName(brand,category);
     await loadBrands();status('pStatus',brand+' saved under '+category+'. You can upload its catalogue later.');
   }catch(e){status('pStatus','Brand/category save error: '+e.message,true)}finally{button.disabled=false}
 };
 function renderBrands(){
   const query=$('bSearch').value.trim().toLowerCase();
   const items=(window.BRAND_RAIL_ITEMS||[]).filter(x=>(x.brand+' '+(x.label||'')).toLowerCase().includes(query));
-  $('bList').innerHTML=items.length?items.map(x=>`<div class="item"><div class="brandmeta">${x.src?`<img class="brandthumb" src="${esc(x.src)}" alt="">`:`<div class="brandtextlogo">${esc(x.label||x.brand)}</div>`}<div class="meta"><b>${esc(x.label||x.brand)}</b><br><span>${esc(x.brand)}</span><br><span>${Number(x.mediaCount)||0} catalogue/photo/video items${x.source==='published-media'?' · From published media':''} · ${x.railEnabled===false?'Hidden from hero rail':'Visible on hero rail'}</span></div></div><div class="item-actions"><button class="rowbtn bedit" data-brand="${esc(x.brand)}">EDIT</button><button class="rowbtn ${x.railEnabled===false?'':'danger'} brail" data-brand="${esc(x.brand)}" data-enabled="${x.railEnabled===false?'true':'false'}">${x.railEnabled===false?'SHOW ON HERO RAIL':'HIDE FROM HERO RAIL'}</button></div></div>`).join(''):'<div class="item">'+(query?'No brands match your search.':'No brands available.')+'</div>';
+  $('bList').innerHTML=items.length?items.map(x=>`<div class="item"><div class="brandmeta">${x.src?`<img class="brandthumb" src="${esc(x.src)}" alt="">`:`<div class="brandtextlogo">${esc(x.label||x.brand)}</div>`}<div class="meta"><b>${esc(x.label||x.brand)}</b><br><span>${esc(x.brand)}</span><br><span>${esc((x.categories||[]).join(' · ')||'No category assigned')}<br>${Number(x.mediaCount)||0} catalogue/photo/video items${x.source==='published-media'?' · From published media':''} · ${x.railEnabled===false?'Hidden from hero rail':'Visible on hero rail'}</span></div></div><div class="item-actions"><button class="rowbtn bedit" data-brand="${esc(x.brand)}">EDIT</button><button class="rowbtn ${x.railEnabled===false?'':'danger'} brail" data-brand="${esc(x.brand)}" data-enabled="${x.railEnabled===false?'true':'false'}">${x.railEnabled===false?'SHOW ON HERO RAIL':'HIDE FROM HERO RAIL'}</button></div></div>`).join(''):'<div class="item">'+(query?'No brands match your search.':'No brands available.')+'</div>';
 }
 async function loadBrands(){
   const btn=$('bRefresh');if(btn){btn.disabled=true;btn.textContent='REFRESHING…'}
@@ -80,7 +78,9 @@ async function loadBrands(){
     const d=await brandApi('get'),items=Array.isArray(d.items)?d.items:[];
     window.BRAND_RAIL_ITEMS=items.sort((a,b)=>(a.label||a.brand).localeCompare(b.label||b.brand));
     renderBrands();
-    status('bStatus',`${items.length} website brands available. Search a brand, click EDIT, then SAVE / UPDATE BRAND.`);
+    const integrity=d.integrity;
+    if(integrity&&!integrity.ok)throw Error('Customer directory mismatch: '+integrity.missingBrands.concat(integrity.missingAssociations.map(x=>x.brand+' / '+x.category)).join(', '));
+    status('bStatus',`${items.length} brands synced with the customer directory. ${integrity?.hiddenAssociations?.length||0} category links intentionally hidden. Search a brand, click EDIT, then SAVE / UPDATE BRAND.`);
   }catch(e){status('bStatus','Brand refresh error: '+e.message,true)}
   finally{if(btn){btn.disabled=false;btn.textContent='REFRESH BRANDS'}}
 }
@@ -101,7 +101,7 @@ function filterProducts(){const q=$('pSearch').value.trim().toLowerCase();docume
 $('pSearch').oninput=filterProducts;
 $('pRefresh').addEventListener('click',e=>{e.preventDefault();loadProducts()});
 $('pType').onchange=()=>{const t=$('pType').value;$('pFile').accept=t==='pdf'?'application/pdf':t==='video'?'video/mp4,video/webm,video/quicktime':'image/jpeg,image/png,image/webp';};
-$('pUpload').onclick=async()=>{const f=$('pFile').files[0],brand=$('pBrand').value.trim(),cat=$('pCategory').value,catalogue=$('pCatalogue').value.trim(),type=$('pType').value,t=savedToken('pToken','woodrick_product_token');if(!t||!f||!brand||!catalogue)return status('pStatus','Upload code, category, brand, product/catalogue name and file are required.',true);const valid=type==='pdf'?f.type==='application/pdf':type==='video'?f.type.startsWith('video/'):f.type.startsWith('image/');if(!valid)return status('pStatus','Please select a file matching the chosen media type.',true);try{status('pStatus','Uploading '+type+'…');await apiUpload(t,{category:cat,brand,catalogue,title:catalogue,type},f);await registerBrandName(brand);$('pFile').value='';$('pCatalogue').value='';await loadProducts()}catch(e){status('pStatus',e.message,true)}};
+$('pUpload').onclick=async()=>{const f=$('pFile').files[0],brand=$('pBrand').value.trim(),cat=$('pCategory').value,catalogue=$('pCatalogue').value.trim(),type=$('pType').value,t=savedToken('pToken','woodrick_product_token');if(!t||!f||!brand||!catalogue)return status('pStatus','Upload code, category, brand, product/catalogue name and file are required.',true);const valid=type==='pdf'?f.type==='application/pdf':type==='video'?f.type.startsWith('video/'):f.type.startsWith('image/');if(!valid)return status('pStatus','Please select a file matching the chosen media type.',true);try{status('pStatus','Uploading '+type+'…');await apiUpload(t,{category:cat,brand,catalogue,title:catalogue,type},f);await registerBrandName(brand,cat,t);$('pFile').value='';$('pCatalogue').value='';await loadProducts()}catch(e){status('pStatus',e.message,true)}};
 $('pList').onclick=async e=>{const s=e.target.closest('.pshow'),d=e.target.closest('.pdelete');if(s){const url='/api/media?key='+encodeURIComponent(s.dataset.key);if(s.dataset.type==='pdf')openPdf(s.dataset.title,url);else window.open(url,'_blank','noopener');return}if(!d)return;const pass=prompt(`Enter admin upload code to delete ${d.dataset.title}:`);if(!pass)return;if(!confirm(`Permanently delete ${d.dataset.title}?`))return;try{d.disabled=true;d.textContent='DELETING…';await apiDelete(pass,'delete-media',[d.dataset.key]);await loadProducts()}catch(err){status('pStatus','Delete error: '+err.message,true);d.disabled=false;d.textContent='DELETE CATALOGUE'}};
 async function loadLibrary(){const btn=$('lRefresh');btn.disabled=true;btn.textContent='REFRESHING…';status('lStatus','Refreshing library…');try{const r=await fetch('/api/media?prefix=library/&_='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('Could not refresh library ('+r.status+')');const d=await r.json(),g={};(d.items||[]).forEach(x=>{const k=[x.brand||'Unknown Brand',x.category||'Other',x.catalogue||'Catalogue'].join('||');g[k]??={brand:x.brand||'Unknown Brand',category:x.category||'Other',catalogue:x.catalogue||'Catalogue',pdf:null,jpg:[],keys:[]};g[k].keys.push(x.key);if(x.type==='original-pdf')g[k].pdf=x;else if(x.type==='jpg-page')g[k].jpg.push(x)});window.LIB=g;const a=Object.values(g).sort((x,y)=>x.brand.localeCompare(y.brand)||x.category.localeCompare(y.category)||x.catalogue.localeCompare(y.catalogue));$('lList').innerHTML=a.length?a.map(x=>{const k=esc([x.brand,x.category,x.catalogue].join('||'));return `<div class="item"><div class="meta"><b>${esc(x.brand)} → ${esc(x.category)} → ${esc(x.catalogue)}</b><br>${x.jpg.length} JPG pages</div><div class="item-actions">${x.pdf?`<button class="rowbtn show lshow" data-k="${k}">SHOW CATALOGUE</button><a class="rowbtn" href="${x.pdf.url}&download=1">DOWNLOAD PDF</a>`:''}<button class="rowbtn danger ldelete" data-k="${k}">DELETE CATALOGUE</button></div></div>`}).join(''):'<div class="item">No library catalogues uploaded yet.</div>';status('lStatus',`Library refreshed. ${a.length} catalogue${a.length===1?'':'s'} loaded.`)}catch(e){status('lStatus','Refresh error: '+e.message,true)}finally{btn.disabled=false;btn.textContent='REFRESH LIBRARY'}}
 $('lRefresh').onclick=loadLibrary;
@@ -123,7 +123,7 @@ $('bList').onclick=async e=>{
   const edit=e.target.closest('.bedit'),toggle=e.target.closest('.brail');
   if(edit){
     const x=(window.BRAND_RAIL_ITEMS||[]).find(v=>v.brand===edit.dataset.brand);if(!x)return;
-    renderBrandCategories(x.categories||[]);$('bBrand').readOnly=true;$('bBrand').value=x.brand||'';$('bLabel').value=x.label||'';$('bSrc').value=x.src||'';$('bFallback').value=x.fallback||'';
+    renderBrandCategories(x.assignedCategories||x.categories||[]);$('bBrand').readOnly=true;$('bBrand').value=x.brand||'';$('bLabel').value=x.label||'';$('bSrc').value=x.src||'';$('bFallback').value=x.fallback||'';
     document.querySelector('[data-view="brands"]').click();$('bLabel').focus();status('bStatus','Editing '+(x.label||x.brand)+'. Correct the display name or logo, then SAVE / UPDATE BRAND.');$('bLabel').scrollIntoView({block:'center',behavior:'smooth'});return;
   }
   if(!toggle)return;
@@ -138,7 +138,7 @@ $('bList').onclick=async e=>{
 };
 
 async function getPdfJs(){if(window.pdfjsLib)return window.pdfjsLib;await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';s.onload=resolve;s.onerror=()=>reject(Error('PDF converter could not load'));document.head.appendChild(s)});window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';return window.pdfjsLib}
-$('lUpload').onclick=async()=>{const f=$('lFile').files[0],brand=$('lBrand').value.trim(),cat=$('lCategory').value,catalogue=$('lCatalogue').value.trim(),t=savedToken('lToken','woodrick_library_token');if(!t||!f||!brand||!catalogue)return status('lStatus','Upload code, category, brand, catalogue name and PDF are required.',true);if(f.type!=='application/pdf')return status('lStatus','Please choose a PDF file.',true);try{status('lStatus','Saving original PDF…');await apiUpload(t,{library:'1',brand,category:cat,catalogue,title:catalogue,type:'original-pdf'},f);await registerBrandName(brand);const pdfjs=await getPdfJs(),pdf=await pdfjs.getDocument({data:await f.arrayBuffer()}).promise;for(let i=1;i<=pdf.numPages;i++){status('lStatus',`Converting page ${i}/${pdf.numPages}…`);const p=await pdf.getPage(i),vp=p.getViewport({scale:1.7}),cv=document.createElement('canvas');cv.width=Math.ceil(vp.width);cv.height=Math.ceil(vp.height);await p.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;const blob=await new Promise(res=>cv.toBlob(res,'image/jpeg',.88)),jpg=new File([blob],`page-${String(i).padStart(3,'0')}.jpg`,{type:'image/jpeg'});await apiUpload(t,{library:'1',brand,category:cat,catalogue,title:`${catalogue} page ${i}`,type:'jpg-page',page:String(i)},jpg)}$('lFile').value='';$('lCatalogue').value='';await loadLibrary();await loadProducts()}catch(e){status('lStatus','Upload error: '+e.message,true)}};
+$('lUpload').onclick=async()=>{const f=$('lFile').files[0],brand=$('lBrand').value.trim(),cat=$('lCategory').value,catalogue=$('lCatalogue').value.trim(),t=savedToken('lToken','woodrick_library_token');if(!t||!f||!brand||!catalogue)return status('lStatus','Upload code, category, brand, catalogue name and PDF are required.',true);if(f.type!=='application/pdf')return status('lStatus','Please choose a PDF file.',true);try{status('lStatus','Saving original PDF…');await apiUpload(t,{library:'1',brand,category:cat,catalogue,title:catalogue,type:'original-pdf'},f);await registerBrandName(brand,cat,t);const pdfjs=await getPdfJs(),pdf=await pdfjs.getDocument({data:await f.arrayBuffer()}).promise;for(let i=1;i<=pdf.numPages;i++){status('lStatus',`Converting page ${i}/${pdf.numPages}…`);const p=await pdf.getPage(i),vp=p.getViewport({scale:1.7}),cv=document.createElement('canvas');cv.width=Math.ceil(vp.width);cv.height=Math.ceil(vp.height);await p.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;const blob=await new Promise(res=>cv.toBlob(res,'image/jpeg',.88)),jpg=new File([blob],`page-${String(i).padStart(3,'0')}.jpg`,{type:'image/jpeg'});await apiUpload(t,{library:'1',brand,category:cat,catalogue,title:`${catalogue} page ${i}`,type:'jpg-page',page:String(i)},jpg)}$('lFile').value='';$('lCatalogue').value='';await loadLibrary();await loadProducts()}catch(e){status('lStatus','Upload error: '+e.message,true)}};
 fill();renderBrandCategories();loadProducts();loadLibrary();loadBrands();
 </script>
 </body>

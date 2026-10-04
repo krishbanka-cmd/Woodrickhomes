@@ -132,3 +132,28 @@ test('Confirmed Ambuja Cement availability is listed before catalogue upload and
  const uploaded=buildBrandDirectory([{key:'ambuja.pdf',brand:'Ambuja',category:'Cement'}],[{brand:'Ambuja Cement',label:'Ambuja Cement',src:'/ambuja.svg'}]);
  const matches=uploaded.filter(x=>x.brand==='Ambuja Cement');assert.equal(matches.length,1);assert.equal(matches[0].categoryCounts.Cement,1);assert.equal(matches[0].src,'/ambuja.svg');
 });
+
+
+test('Admin, customer directory and category menu share saved associations and intentional hiding',async()=>{
+ const {default:app}=await import('../worker-fast.js');let saved=JSON.stringify({items:[{brand:'Custom Panels',label:'Premium Custom Panels',categories:['New Panels','Wallpapers'],railEnabled:false,src:'/custom.svg'}]});
+ const env={ADMIN_UPLOAD_TOKEN:'master-secret',PRODUCT_MEDIA:{
+  get:async key=>key==='_system/brand-rail-v1.json'?{text:async()=>saved}:null,
+  put:async(key,body)=>{if(key==='_system/brand-rail-v1.json')saved=body},
+  list:async options=>({objects:options.prefix==='_system/categories-hidden/'?[{key:'hidden',customMetadata:{categoryName:'Wallpapers'}}]:options.prefix==='product-sync/'?[{key:'product-sync/doors/woodline/woodline-door-skin.pdf',customMetadata:{brand:'Woodline',category:'Doors',catalogue:'Woodline Door Skin',type:'pdf'}}]:[],truncated:false})
+ }};
+ const read=async path=>app.fetch(new Request('https://test'+path),env,{}).then(r=>r.json());
+ const admin=await read('/api/brands?scope=all'),customer=await read('/api/brand-directory'),menu=await read('/api/categories');
+ assert.deepEqual(admin.items,customer.items);assert.deepEqual(menu.categories,customer.categories);
+ const custom=customer.items.find(x=>x.brand==='Custom Panels');assert.deepEqual(custom.categories,['New Panels']);assert.equal(custom.mediaCount,0);assert.equal(custom.railEnabled,false);assert.ok(menu.categories.includes('New Panels'));assert.ok(!menu.categories.includes('Wallpapers'));
+ assert.equal(customer.integrity.ok,true);assert.equal(customer.integrity.hiddenAssociations.length,1);assert.deepEqual(customer.integrity.missingBrands,[]);
+ assert.ok(customer.items.find(x=>x.brand==='Woodline').categories.includes('Door Skin'));
+ const associate=async body=>app.fetch(new Request('https://test/api/brands',{method:'POST',headers:{authorization:'Bearer master-secret','content-type':'application/json'},body:JSON.stringify({action:'associate',...body})}),env,{});
+ await associate({brand:'Custom Panels',category:'Plywood'});await associate({brand:'Custom Panels',category:'Plywood'});
+ const refreshed=await read('/api/brand-directory'),updated=refreshed.items.find(x=>x.brand==='Custom Panels');assert.deepEqual(updated.categories,['New Panels','Plywood']);assert.equal(updated.label,'Premium Custom Panels');assert.equal(updated.src,'/custom.svg');assert.equal(updated.railEnabled,false);assert.equal(refreshed.integrity.ok,true);
+ assert.equal(JSON.parse(saved).items.filter(x=>x.brand==='Custom Panels').length,1);
+});
+
+test('Explicit admin category corrections replace brand defaults before media associations are added',()=>{
+ const corrected=buildBrandDirectory([],[{brand:'Woodline',categories:['Door Skin']}]).find(x=>x.brand==='Woodline');
+ assert.deepEqual(corrected.categories,['Door Skin']);
+});

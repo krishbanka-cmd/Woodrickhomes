@@ -13,7 +13,7 @@ export function canonicalMediaCategory(item={}){
 }
 export function buildBrandDirectory(media=[],rail=[]){
  const brands=new Map();
- for(const item of rail){const brand=canonicalBrand(item.brand);if(!brand)continue;const key=brandKey(brand);brands.set(key,{...item,brand,categories:[...new Set([...(categories[key]||[]),...(Array.isArray(item.categories)?item.categories:[]).map(canonicalBrowseCategory)])],mediaCount:0,categoryCounts:{}})}
+ for(const item of rail){const brand=canonicalBrand(item.brand);if(!brand)continue;const key=brandKey(brand);brands.set(key,{...item,brand,categories:[...new Set([...(Array.isArray(item.categories)?item.categories:(categories[key]||[])).map(canonicalBrowseCategory)])],mediaCount:0,categoryCounts:{}})}
  for(const item of media){
   if(String(item.key||'').startsWith('private/')||String(item.sourceKey||'').startsWith('private/'))continue;
   const brand=canonicalBrand(item.brand);if(!brand||brandKey(brand)==='other')continue;
@@ -25,4 +25,27 @@ export function buildBrandDirectory(media=[],rail=[]){
  // Confirmed store range remains discoverable before a catalogue is uploaded.
  if(!brands.has('ambuja cement'))brands.set('ambuja cement',{brand:'Ambuja Cement',label:'Ambuja Cement',src:'',alt:'Ambuja Cement',categories:['Cement'],mediaCount:0,categoryCounts:{},source:'business-range',railEnabled:false});
  return [...brands.values()];
+}
+
+// The admin list, category navigation and customer directory share this result.
+export function buildCatalogMaster(media=[],managed=[],state={}){
+ const hidden=new Set((state.hiddenCategories||[]).map(c=>brandKey(canonicalBrowseCategory(c))));
+ const entries=buildBrandDirectory(media,managed);
+ const items=entries.map(item=>({...item,assignedCategories:item.categories,categories:item.categories.filter(c=>!hidden.has(brandKey(canonicalBrowseCategory(c))))}));
+ const categoryMap=new Map();
+ for(const raw of [...(state.categories||[]),...items.flatMap(item=>item.categories)]){
+  const category=canonicalBrowseCategory(raw),key=brandKey(category);
+  if(category&&key!=='more products'&&!hidden.has(key))categoryMap.set(key,category);
+ }
+ const missingBrands=[],missingAssociations=[],hiddenAssociations=[];
+ for(const saved of managed){
+  const brand=canonicalBrand(saved.brand),entry=items.find(item=>brandKey(item.brand)===brandKey(brand));
+  if(!entry){missingBrands.push(brand);continue}
+  for(const raw of saved.categories||[]){
+   const category=canonicalBrowseCategory(raw),key=brandKey(category);
+   if(hidden.has(key)){hiddenAssociations.push({brand,category});continue}
+   if(!entry.categories.some(c=>brandKey(c)===key))missingAssociations.push({brand,category});
+  }
+ }
+ return {items,categories:[...categoryMap.values()].sort((a,b)=>a.localeCompare(b)),customCategories:state.customCategories||[],hiddenCategories:state.hiddenCategories||[],integrity:{ok:!missingBrands.length&&!missingAssociations.length,missingBrands,missingAssociations,hiddenAssociations}};
 }

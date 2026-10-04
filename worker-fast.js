@@ -1,5 +1,5 @@
 import {canonicalCatalogueKey,dedupeCatalogueItems} from './worker-catalogue-identity.js';
-import {buildBrandDirectory,canonicalBrand,brandKey,canonicalMediaCategory} from './worker-brand-directory.js';
+import {buildBrandDirectory,buildCatalogMaster,canonicalBrowseCategory,canonicalBrand,brandKey,canonicalMediaCategory} from './worker-brand-directory.js';
 import {consistentCustomerResponse} from './worker-ui-consistency.js';
 import {handleListQuote} from './worker-list-quotes.js';
 import {handleVendor} from './worker-vendors.js';
@@ -37,7 +37,7 @@ function cleanBrandItem(input={},existing={}){
   const src=String(input.src??existing.src??'').trim().slice(0,1200);
   const fallback=String(input.fallback??existing.fallback??'').trim().slice(0,1200);
   const alt=String(input.alt??existing.alt??(`${label} logo`)).trim().slice(0,140);
-  const categories=[...new Set((Array.isArray(input.categories)?input.categories:Array.isArray(existing.categories)?existing.categories:[]).map(v=>String(v).trim().slice(0,80)).filter(Boolean))].slice(0,40);
+  const categories=[...new Set((Array.isArray(input.categories)?input.categories:Array.isArray(existing.categories)?existing.categories:[]).map(v=>canonicalBrowseCategory(String(v).trim().slice(0,80))).filter(Boolean))].slice(0,40);
   return {brand,label,alt,src,categories,railEnabled:input.railEnabled??existing.railEnabled??true,...(fallback?{fallback}:{})};
 }
 async function loadBrandRail(env){
@@ -57,13 +57,17 @@ async function saveBrandRail(env,items){
   const body=JSON.stringify({version:1,updatedAt:new Date().toISOString(),items});
   await env.PRODUCT_MEDIA.put(BRAND_RAIL_KEY,body,{httpMetadata:{contentType:'application/json'}});
 }
-async function handleBrandRail(request,env){
+async function loadCatalogMaster(request,env,ctx){
+ const url=new URL(request.url);
+ const [media,managed,state]=await Promise.all([publicMediaList(env).then(r=>r.json()),loadBrandRail(env),app.fetch(new Request(new URL('/api/categories',url)),env,ctx).then(r=>r.json())]);
+ return buildCatalogMaster(media.items,managed,state);
+}
+async function handleBrandRail(request,env,ctx){
   if(request.method==='GET'){
     const managed=await loadBrandRail(env);
     if(new URL(request.url).searchParams.get('scope')==='managed')return brandJson({items:managed});
-    const media=await publicMediaList(env).then(r=>r.json());
-    const items=buildBrandDirectory(media.items,managed);
-    return brandJson({items:new URL(request.url).searchParams.get('scope')==='all'?items:items.filter(x=>x.railEnabled!==false)});
+    const master=await loadCatalogMaster(request,env,ctx);
+    return brandJson({...master,items:new URL(request.url).searchParams.get('scope')==='all'?master.items:master.items.filter(x=>x.railEnabled!==false)});
   }
   if(request.method!=='POST')return brandJson({error:'Method not allowed'},405);
   if(!await brandAuthorized(request,env))return brandJson({error:'Admin login required'},401);
@@ -79,6 +83,13 @@ async function handleBrandRail(request,env){
     if(!brand||typeof data.railEnabled!=='boolean')return brandJson({error:'Brand and rail visibility are required'},400);
     const i=items.findIndex(x=>brandKey(canonicalBrand(x.brand))===brandKey(brand));
     const item=cleanBrandItem({brand,railEnabled:data.railEnabled},i>=0?items[i]:{});
+    if(i>=0)items[i]=item;else items.push(item);
+  }else if(action==='associate'){
+    const brand=canonicalBrand(data.brand),category=canonicalBrowseCategory(data.category);
+    if(!brand||!category)return brandJson({error:'Brand and category are required'},400);
+    const i=items.findIndex(x=>brandKey(x.brand)===brandKey(brand));
+    const existing=i>=0?items[i]:buildBrandDirectory([],items).find(x=>brandKey(x.brand)===brandKey(brand))||{};
+    const item=cleanBrandItem({brand,categories:[...new Set([...(existing.categories||[]),category])]},existing);
     if(i>=0)items[i]=item;else items.push(item);
   }else if(action==='upsert'){
     const input=data.item||{},brand=canonicalBrand(input.brand);
@@ -184,12 +195,7 @@ export default{
       const target=new URL('/products/brands/',url);target.search=url.search;
       return Response.redirect(target.href,302);
     }
-    if(request.method==='GET'&&url.pathname==='/api/brand-directory'){
-      const [media,rail,state]=await Promise.all([publicMediaList(env).then(r=>r.json()),loadBrandRail(env),app.fetch(new Request(new URL('/api/categories',url)),env,ctx).then(r=>r.json())]);
-      const hidden=new Set((state.hiddenCategories||[]).map(x=>String(x).toLowerCase()));
-      const items=buildBrandDirectory(media.items,rail).map(x=>({...x,categories:x.categories.filter(c=>!hidden.has(c.toLowerCase()))}));
-      return brandJson({items,categories:state.categories||[]});
-    }
+    if(request.method==='GET'&&['/api/brand-directory','/api/catalog-master','/api/categories'].includes(url.pathname))return brandJson(await loadCatalogMaster(request,env,ctx));
     if((request.method==='GET'||request.method==='HEAD')&&url.pathname==='/api/media'){
       const asset=STATIC_PUBLIC_MEDIA.find(item=>item.key===url.searchParams.get('key'));
       if(asset)return env.ASSETS.fetch(new Request(new URL(asset.staticUrl,url),request));
@@ -223,7 +229,7 @@ export default{
         url.searchParams.set('key',canonical);return Response.redirect(url.href,302);
       }
     }
-    if(url.pathname==='/api/brands'&&(request.method==='GET'||request.method==='POST'))return handleBrandRail(request,env);
+    if(url.pathname==='/api/brands'&&(request.method==='GET'||request.method==='POST'))return handleBrandRail(request,env,ctx);
     if((request.method==='GET'||request.method==='HEAD')){
       const pdf=await rangedPdf(request,url,env);if(pdf)return pdf;
     }
