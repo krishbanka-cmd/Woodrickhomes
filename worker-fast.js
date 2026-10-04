@@ -1,4 +1,4 @@
-import {dedupeCatalogueItems} from './worker-catalogue-identity.js';
+import {canonicalCatalogueKey,dedupeCatalogueItems} from './worker-catalogue-identity.js';
 import {buildBrandDirectory} from './worker-brand-directory.js';
 import {consistentCustomerResponse} from './worker-ui-consistency.js';
 import {handleListQuote} from './worker-list-quotes.js';
@@ -142,9 +142,10 @@ async function cachedCatalogueCover(request,env){
 
 async function rangedPdf(request,url,env){
   if(!env.PRODUCT_MEDIA)return null;
-  const key=url.searchParams.get('key')||'';
+  let key=url.searchParams.get('key')||'';
   if(url.pathname!=='/api/media'||url.searchParams.get('raw')!=='1'||!/\.pdf$/i.test(key))return null;
-  const head=await env.PRODUCT_MEDIA.head(key);
+  let head=await env.PRODUCT_MEDIA.head(key);
+  if(!head&&canonicalCatalogueKey(key)!==key){key=canonicalCatalogueKey(key);head=await env.PRODUCT_MEDIA.head(key);}
   if(!head)return new Response('Not found',{status:404});
   const headers=new Headers();head.writeHttpMetadata(headers);headers.set('etag',head.httpEtag);headers.set('accept-ranges','bytes');headers.set('cache-control','public, max-age=86400, stale-while-revalidate=604800');headers.set('x-content-type-options','nosniff');
   const range=request.headers.get('range');
@@ -202,6 +203,14 @@ export default{
     }
     if(url.pathname==='/api/enquiries')return handleEnquiries(request,env);
     if(url.pathname==='/api/media'&&((url.searchParams.get('key')||'').startsWith('private/')||(url.searchParams.get('prefix')||'').startsWith('private/')))return brandJson({error:'Not found'},404);
+    // Previously rendered/bookmarked cards may refer to a retired sync copy.
+    // Preserve their original/download links after scheduled cleanup too.
+    if((request.method==='GET'||request.method==='HEAD')&&url.pathname==='/api/media'&&url.searchParams.get('download')==='1'){
+      const key=url.searchParams.get('key')||'',canonical=canonicalCatalogueKey(key);
+      if(canonical!==key&&!await env.PRODUCT_MEDIA.head(key)&&await env.PRODUCT_MEDIA.head(canonical)){
+        url.searchParams.set('key',canonical);return Response.redirect(url.href,302);
+      }
+    }
     if(url.pathname==='/api/brands'&&(request.method==='GET'||request.method==='POST'))return handleBrandRail(request,env);
     if((request.method==='GET'||request.method==='HEAD')){
       const pdf=await rangedPdf(request,url,env);if(pdf)return pdf;
@@ -278,4 +287,3 @@ export default{
     ]));
   }
 };
-

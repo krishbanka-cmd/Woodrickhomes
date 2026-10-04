@@ -76,3 +76,14 @@ test('PDF range reads return only requested bytes; invalid/private reads are ref
   const privateFile=await worker.fetch(new Request('https://example.com/api/media?raw=1&key=private/kyc.pdf'),env,{});
   assert.equal(privateFile.status,404);
 });
+
+test('A card opened before cleanup still reads and downloads its surviving original',async()=>{
+  const [stable,retired]=originals[2],seen=[];
+  const env={PRODUCT_MEDIA:{head:async key=>key===stable?{size:4,httpEtag:'"v1"',writeHttpMetadata:h=>h.set('content-type','application/pdf')}:null,
+    get:async key=>{seen.push(key);return {body:new Uint8Array(4)}}}};
+  const base='https://example.com/api/media?key='+encodeURIComponent(retired);
+  const raw=await worker.fetch(new Request(base+'&raw=1'),env,{});
+  assert.equal(raw.status,200);assert.deepEqual(seen,[stable]);
+  const download=await worker.fetch(new Request(base+'&download=1'),env,{});
+  assert.equal(download.status,302);assert.equal(new URL(download.headers.get('location')).searchParams.get('key'),stable);
+});
