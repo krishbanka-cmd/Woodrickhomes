@@ -8,7 +8,7 @@ function canonicalCategory(v=''){
   const map={
     'louver':'Louvers','louvers':'Louvers','louver panel':'Louvers','louver panels':'Louvers',
     'laminate':'Laminates','laminates':'Laminates',
-    'door skin':'Doors','door skins':'Doors','door':'Doors','doors':'Doors',
+    'door skin':'Door Skin','door skins':'Door Skin','doorskin':'Door Skin','doorskins':'Door Skin','door':'Doors','doors':'Doors',
     'acrylic':'Acrylic Laminates','acrylic laminate':'Acrylic Laminates','acrylic laminates':'Acrylic Laminates',
     'plywood':'Plywood','plywoods':'Plywood'
   };
