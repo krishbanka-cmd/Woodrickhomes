@@ -16,3 +16,13 @@
 
 /* Compact fields expand with their content. */
 .vendor-coverage-editor textarea.coverage-input{min-height:40px;height:40px;padding:8px 10px;font-size:12px;line-height:1.5;resize:none;overflow:hidden}.vendor-coverage-editor .grid{gap:12px 18px}
+
+/* Comfortable touch controls without enlarging desktop forms or card labels. */
+@media (hover:none) and (pointer:coarse){
+ .category-toggle{min-height:44px}
+ .category-choice,.category-list .category-choice{min-height:44px}
+ .category-popup input[type=search]{font-size:16px;min-height:44px}
+ .field input:not([type=checkbox]):not([type=file]),.field select,.field textarea{font-size:16px;min-height:44px}
+ .field input:not([type=checkbox]):not([type=file]),.field select{height:44px}
+ .vendor-coverage-editor textarea.coverage-input{font-size:16px;min-height:44px}
+}
