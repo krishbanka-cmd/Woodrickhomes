@@ -7,7 +7,7 @@ async function adminHarness(){
  const source=await readFile(new URL('../assets/vendor-panel.js',import.meta.url),'utf8');
  const rows={children:[],classList:{toggle(){}},replaceChildren(...items){this.children=items},append(item){this.children.push(item)}};
  const controls={'admin-items':rows,'status-filter':{value:''},search:{value:''},'admin-more':{hidden:true}},pending=[],messages=[];
- const context={URLSearchParams,$:id=>controls[id],node:(tag,text)=>({tag,text}),vendorCard:item=>({kind:'vendor',id:item.id}),productCard:item=>({kind:'product',id:item.id}),message:(id,text)=>messages.push(text),location:{href:''},api:url=>new Promise((resolve,reject)=>pending.push({url,resolve,reject}))};
+ const context={syncVendorViews(){},URLSearchParams,$:id=>controls[id],node:(tag,text)=>({tag,text}),vendorCard:item=>({kind:'vendor',id:item.id}),productCard:item=>({kind:'product',id:item.id}),message:(id,text)=>messages.push(text),location:{href:''},api:url=>new Promise((resolve,reject)=>pending.push({url,resolve,reject}))};
  vm.createContext(context);vm.runInContext("let adminTab='vendors',adminCursor=null,loading=false,adminLoading=false,adminLoadVersion=0;"+source.slice(source.indexOf('async function loadAdmin('),source.indexOf('async function adminPage(')),context);
  return {context,rows,pending,messages,controls,load:more=>context.loadAdmin(more),tab:value=>vm.runInContext('adminTab='+JSON.stringify(value),context)};
 }
@@ -51,4 +51,16 @@ test('500 MB client upload sends bounded parts and reports progress before compl
 test('Client retries a failed part and aborts immediately for authentication failures',async()=>{
  const transient=await catalogueHarness(503);await transient.upload(21*1024*1024);assert.equal(transient.parts.length,4);assert.equal(transient.parts[0].url,transient.parts[1].url);
  const unauthorized=await catalogueHarness(401);await assert.rejects(()=>unauthorized.upload(21*1024*1024),/Network error/);assert.equal(unauthorized.parts.length,1);assert.match(unauthorized.posts.at(-1).url,/abort/);
+});
+
+
+test('Vendor status lists request the selected status and ignore an earlier list response',async()=>{
+ const h=await adminHarness();h.controls['status-filter'].value='pending';const pending=h.load(false);
+ assert.match(h.pending[0].url,/status=pending/);
+ h.controls['status-filter'].value='approved';const approved=h.load(false);assert.match(h.pending[1].url,/status=approved/);
+ h.pending[1].resolve({items:[{id:'approved-vendor'}],cursor:null});await approved;
+ h.pending[0].resolve({items:[{id:'pending-vendor'}],cursor:null});await pending;
+ assert.equal(h.rows.children[0].id,'approved-vendor');
+ h.controls['status-filter'].value='';const all=h.load(false);assert.doesNotMatch(h.pending[2].url,/status=/);
+ h.pending[2].resolve({items:[],cursor:null});await all;
 });
