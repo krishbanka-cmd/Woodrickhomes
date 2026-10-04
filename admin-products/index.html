@@ -42,7 +42,7 @@ const $=id=>document.getElementById(id);const esc=v=>String(v||'').replace(/[&<>
 const CATS=['Plywood','Laminates','Louvers','Acrylic Laminates','Shuttering Plywood','Doors','Door Skin','HDHMR & MDF','WPC Board & Chaukhat','Cement','Tiles','Sanitaryware','Bath Fittings','uPVC Doors & Windows','Hardware','Furniture & Kitchen Hardware','Flooring','Wallpapers','Decorative Panels'];
 
 async function brandApi(action,payload={}){
-  const r=await fetch('/api/brands',{method:action==='get'?'GET':'POST',headers:action==='get'?{}:{'content-type':'application/json'},body:action==='get'?undefined:JSON.stringify(payload),cache:'no-store'});
+  const r=await fetch(action==='get'?'/api/brands?scope=managed':'/api/brands',{method:action==='get'?'GET':'POST',headers:action==='get'?{}:{'content-type':'application/json'},body:action==='get'?undefined:JSON.stringify(payload),cache:'no-store'});
   const d=await r.json().catch(()=>({}));
   if(!r.ok)throw Error(d.error||'Brand update failed');
   return d;

@@ -95,7 +95,7 @@ test('Brand filters include Woodline Louvers and Ristal1mm aliases without inclu
   const html=await readFile(new URL('../brands/index.html',import.meta.url),'utf8');
   const source=html.slice(html.indexOf('const norm='),html.indexOf('function pdfCover('));
   for(const [brand,yes,no] of [['Woodline','Woodline Louvers','Royal Crown'],['Ristal','Ristal1mm','Woodline']]){
-    const context={requested:brand,title:{},document:{},WoodrickCatalogue:{}};
+    const context={requested:brand,params:new URLSearchParams(),title:{},document:{},WoodrickCatalogue:{}};
     vm.runInNewContext(source+';this.matches=belongs',context);
     assert.equal(context.matches({brand:yes,type:'pdf'}),true);
     assert.equal(context.matches({brand:no,type:'pdf'}),false);

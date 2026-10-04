@@ -1,10 +1,11 @@
+import {buildBrandDirectory} from './worker-brand-directory.js';
 import {consistentCustomerResponse} from './worker-ui-consistency.js';
 import {handleListQuote} from './worker-list-quotes.js';
 import {handleVendor} from './worker-vendors.js';
 import {handleEnquiries} from './worker-enquiries.js';
 import app from './worker-design-extraction.js';
 import {backfillDesignIndex} from './worker-design-picker-click-fix.js';
-import {PUBLIC_MEDIA_INDEX_KEY,refreshPublicMediaIndex,syncAndClean,STATIC_PUBLIC_MEDIA} from './worker-product-media-sync.js';
+import {PUBLIC_MEDIA_INDEX_KEY,refreshPublicMediaIndex,syncAndClean,STATIC_PUBLIC_MEDIA,publicMediaList} from './worker-product-media-sync.js';
 
 const BRAND_RAIL_KEY='_system/brand-rail-v1.json';
 const BRAND_RAIL_DEFAULTS=[
@@ -53,7 +54,12 @@ async function saveBrandRail(env,items){
   await env.PRODUCT_MEDIA.put(BRAND_RAIL_KEY,body,{httpMetadata:{contentType:'application/json'}});
 }
 async function handleBrandRail(request,env){
-  if(request.method==='GET')return brandJson({items:await loadBrandRail(env)});
+  if(request.method==='GET'){
+    const managed=await loadBrandRail(env);
+    if(new URL(request.url).searchParams.get('scope')==='managed')return brandJson({items:managed});
+    const media=await publicMediaList(env).then(r=>r.json());
+    return brandJson({items:buildBrandDirectory(media.items,managed)});
+  }
   if(request.method!=='POST')return brandJson({error:'Method not allowed'},405);
   if(!await brandAuthorized(request,env))return brandJson({error:'Admin login required'},401);
   let data;try{data=await request.json()}catch{return brandJson({error:'Invalid JSON'},400)}
@@ -159,6 +165,16 @@ async function rangedPdf(request,url,env){
 export default{
   async fetch(request,env,ctx){
     const url=new URL(request.url);
+    if(request.method==='GET'&&['/products/','/products','/products/index.html'].includes(url.pathname)&&url.searchParams.get('category')){
+      const target=new URL('/products/brands/',url);target.search=url.search;
+      return Response.redirect(target.href,302);
+    }
+    if(request.method==='GET'&&url.pathname==='/api/brand-directory'){
+      const [media,rail,state]=await Promise.all([publicMediaList(env).then(r=>r.json()),loadBrandRail(env),app.fetch(new Request(new URL('/api/categories',url)),env,ctx).then(r=>r.json())]);
+      const hidden=new Set((state.hiddenCategories||[]).map(x=>String(x).toLowerCase()));
+      const items=buildBrandDirectory(media.items,rail).map(x=>({...x,categories:x.categories.filter(c=>!hidden.has(c.toLowerCase()))}));
+      return brandJson({items,categories:state.categories||[]});
+    }
     if((request.method==='GET'||request.method==='HEAD')&&url.pathname==='/api/media'){
       const asset=STATIC_PUBLIC_MEDIA.find(item=>item.key===url.searchParams.get('key'));
       if(asset)return env.ASSETS.fetch(new Request(new URL(asset.staticUrl,url),request));
