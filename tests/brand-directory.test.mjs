@@ -123,3 +123,12 @@ test('Legacy Woodline Door Skin records appear with Rainbow in Door Skin without
  const indexed=await app.fetch(new Request('https://test/api/media'),env,{}).then(r=>r.json());
  assert.equal(indexed.items.find(x=>x.brand==='Woodline').category,'Door Skin');
 });
+
+
+test('Confirmed Ambuja Cement availability is listed before catalogue upload and aliases merge once',()=>{
+ const initial=buildBrandDirectory([],[{brand:'UltraTech',label:'UltraTech Cement'}]);
+ assert.deepEqual(initial.filter(x=>x.categories.includes('Cement')).map(x=>x.brand),['UltraTech','Ambuja Cement']);
+ const ambuja=initial.find(x=>x.brand==='Ambuja Cement');assert.equal(ambuja.mediaCount,0);assert.equal(ambuja.railEnabled,false);
+ const uploaded=buildBrandDirectory([{key:'ambuja.pdf',brand:'Ambuja',category:'Cement'}],[{brand:'Ambuja Cement',label:'Ambuja Cement',src:'/ambuja.svg'}]);
+ const matches=uploaded.filter(x=>x.brand==='Ambuja Cement');assert.equal(matches.length,1);assert.equal(matches[0].categoryCounts.Cement,1);assert.equal(matches[0].src,'/ambuja.svg');
+});

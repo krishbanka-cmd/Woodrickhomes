@@ -1,6 +1,6 @@
 // Both the public rail and category browser derive vendor brands from published media.
-const aliases={'woodline louvers':'Woodline','woodline louver':'Woodline','ristal1mm':'Ristal','ristal 1 mm':'Ristal','ristal laminates':'Ristal','ebco hardware':'EBCO'};
-const categories={centuryply:['Plywood'],greenply:['Plywood'],greenpanel:['HDHMR & MDF'],ultratech:['Cement'],'birla opus':['Paints'],'asian paints':['Paints'],supreme:['uPVC Doors & Windows'],hettich:['Furniture & Kitchen Hardware'],ebco:['Furniture & Kitchen Hardware'],godrej:['Hardware'],merino:['Laminates'],'royale touche':['Laminates'],ristal:['Laminates'],woodline:['Laminates','Louvers','Acrylic Laminates','Door Skin'],mwud:['Laminates'],nilkamal:['Furniture & Storage']};
+const aliases={'ambuja':'Ambuja Cement','woodline louvers':'Woodline','woodline louver':'Woodline','ristal1mm':'Ristal','ristal 1 mm':'Ristal','ristal laminates':'Ristal','ebco hardware':'EBCO'};
+const categories={'ambuja cement':['Cement'],centuryply:['Plywood'],greenply:['Plywood'],greenpanel:['HDHMR & MDF'],ultratech:['Cement'],'birla opus':['Paints'],'asian paints':['Paints'],supreme:['uPVC Doors & Windows'],hettich:['Furniture & Kitchen Hardware'],ebco:['Furniture & Kitchen Hardware'],godrej:['Hardware'],merino:['Laminates'],'royale touche':['Laminates'],ristal:['Laminates'],woodline:['Laminates','Louvers','Acrylic Laminates','Door Skin'],mwud:['Laminates'],nilkamal:['Furniture & Storage']};
 export const brandKey=value=>String(value||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 export function canonicalBrand(value){const clean=String(value||'').trim();return aliases[brandKey(clean)]||clean}
 export function canonicalBrowseCategory(value){const clean=String(value||'').trim(),key=brandKey(clean);return ({laminate:'Laminates',laminates:'Laminates',louver:'Louvers',louvers:'Louvers',plywood:'Plywood',plywoods:'Plywood','door skin':'Door Skin','door skins':'Door Skin',doorskin:'Door Skin',doorskins:'Door Skin',doors:'Doors',door:'Doors'})[key]||clean}
@@ -22,5 +22,7 @@ export function buildBrandDirectory(media=[],rail=[]){
   const entry=brands.get(key);entry.mediaCount++;
   if(category){if(!entry.categories.some(c=>brandKey(c)===brandKey(category)))entry.categories.push(category);entry.categoryCounts[category]=(entry.categoryCounts[category]||0)+1}
  }
+ // Confirmed store range remains discoverable before a catalogue is uploaded.
+ if(!brands.has('ambuja cement'))brands.set('ambuja cement',{brand:'Ambuja Cement',label:'Ambuja Cement',src:'',alt:'Ambuja Cement',categories:['Cement'],mediaCount:0,categoryCounts:{},source:'business-range',railEnabled:false});
  return [...brands.values()];
 }
