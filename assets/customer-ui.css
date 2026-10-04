@@ -1,14 +1,30 @@
 /* Customer page type scale; catalogue cards use catalogue-presentation.css. */
-.woodrick-browse-page .hero h1,.woodrick-browse-page .intro h1{font-size:clamp(28px,3vw,34px);line-height:1.2}
+.woodrick-browse-page .hero h1,.woodrick-browse-page .intro h1{font-size:clamp(26px,2.6vw,32px);line-height:1.2}
 .woodrick-workflow-page .hero h1{font-size:clamp(28px,3vw,36px);line-height:1.2}
 .woodrick-workflow-page .panel h2,.woodrick-workflow-page .card h2,.woodrick-workflow-page .form h2,.woodrick-workflow-page .stage h2,.woodrick-workflow-page .ai-box h2{font-size:24px;line-height:1.3}
 .woodrick-browse-page .hero p,.woodrick-workflow-page .hero p{font-size:14px;line-height:1.6}
-.woodrick-browse-page .head h2{font-size:28px;line-height:1.25}
-.woodrick-browse-page #categories .card h3{font-size:21px;line-height:1.25}
+.woodrick-browse-page .head h2{font-size:26px;line-height:1.25}
+.woodrick-browse-page #categories .card h3{font-size:18px;line-height:1.25}
 /* Legacy media hierarchy styles previously forced a fixed details height. */
 #media .catalogue-tile .catalogue-details{height:auto;flex:1;min-height:0;padding:12px}
-#media .catalogue-tile .catalogue-name{font-size:18px;line-height:1.3!important;min-height:0}
+#media .catalogue-tile .catalogue-name{font-size:16px;line-height:1.3!important;min-height:0}
 #media .catalogue-tile .catalogue-buttons{margin-top:auto!important;padding-top:10px}
 .woodrick-browse-page .catalogue-grid{width:100%;max-width:1074px;margin-inline:auto;gap:16px;grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(max-width:850px){.woodrick-browse-page .catalogue-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.woodrick-browse-page .catalogue-grid{grid-template-columns:1fr}.woodrick-workflow-page .panel h2,.woodrick-workflow-page .card h2{font-size:22px}}
+
+/* One compact type scale across category directories and brand collections. */
+.woodrick-browse-page .heading h1{font-size:clamp(26px,2.6vw,32px);line-height:1.2;margin-bottom:10px}
+.woodrick-browse-page #intro{font-size:14px;line-height:1.6}
+.woodrick-browse-page .eyebrow{font-size:11px;letter-spacing:1.2px}
+.woodrick-browse-page .categories a{font-size:13px;line-height:1.4;padding:10px 12px;min-height:44px;display:inline-flex;align-items:center}
+.woodrick-browse-page .brand-details{padding:14px 16px}
+.woodrick-browse-page .brand-details h2{font-size:16px;line-height:1.35;font-weight:600;margin-bottom:7px}
+.woodrick-browse-page .brand-details p{font-size:13px;line-height:1.5;margin-bottom:12px}
+.woodrick-browse-page .brand-action{font-size:13px;font-weight:600}
+.woodrick-browse-page .brand-wordmark{font-size:22px;line-height:1.3}
+.woodrick-browse-page .search{font-size:13px}
+.woodrick-browse-page .card:not(.catalogue-tile) .title{font-size:18px;line-height:1.35;min-height:0}
+.woodrick-browse-page .catalogue-grid .catalogue-tile .catalogue-name,
+.woodrick-browse-page #media .catalogue-grid .catalogue-tile .catalogue-name{font-size:16px;line-height:1.35}
+@media(max-width:560px){.woodrick-browse-page .heading h1,.woodrick-browse-page .hero h1{font-size:26px}.woodrick-browse-page .head h2{font-size:24px}}
