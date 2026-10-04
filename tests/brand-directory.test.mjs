@@ -70,3 +70,16 @@ test('Rainbow Door Skin remains separate from Doors in the public list and brand
  const env={PRODUCT_MEDIA:{list:async options=>({objects:options.prefix==='product-sync/'?[{key:'product-sync/door-skin/rainbow/catalogue.pdf',customMetadata:media[0]}]:[],truncated:false})}};
  const listed=await publicMediaList(env).then(r=>r.json());assert.equal(listed.items.find(x=>x.brand==='Rainbow').category,'Door Skin');
 });
+
+test('Saving upload aliases keeps one brand and preserves corrected labels, logos and visibility',async()=>{
+ const {default:app}=await import('../worker-fast.js');let saved=null;
+ const env={ADMIN_UPLOAD_TOKEN:'test-secret',PRODUCT_MEDIA:{get:async()=>saved?{text:async()=>saved}:null,put:async(key,body)=>{saved=body}}};
+ const post=async body=>app.fetch(new Request('https://test/api/brands',{method:'POST',headers:{authorization:'Bearer test-secret','content-type':'application/json'},body:JSON.stringify(body)}),env,{});
+ await post({item:{brand:'Ristal',label:'Ristal Laminates',src:'/ristal-logo.svg',categories:['Laminates'],railEnabled:false}});
+ await post({item:{brand:'Ristal1mm'}});
+ const ristal=JSON.parse(saved).items.filter(x=>x.brand==='Ristal');assert.equal(ristal.length,1);assert.equal(ristal[0].label,'Ristal Laminates');assert.equal(ristal[0].src,'/ristal-logo.svg');assert.equal(ristal[0].railEnabled,false);
+ await post({action:'replace',items:[]});
+ const response=await app.fetch(new Request('https://test/api/brands?scope=managed'),env,{});assert.deepEqual((await response.json()).items,[]);
+ const admin=await readFile(new URL('../admin-products/index.html',import.meta.url),'utf8');const register=admin.slice(admin.indexOf('async function registerBrandName'),admin.indexOf('function clearBrandForm'));
+ assert.doesNotMatch(register,/label:brand/);
+});

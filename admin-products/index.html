@@ -39,7 +39,7 @@
 </main>
 <div id="modal" class="modal"><div class="box"><div class="mhead"><b id="mTitle">Catalogue</b><button id="mClose" class="btn primary" type="button">CLOSE / BACK</button></div><iframe id="mFrame" class="frame"></iframe></div></div>
 <script>
-const $=id=>document.getElementById(id);const esc=v=>String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+const $=id=>document.getElementById(id);const esc=v=>String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const CATS=['Plywood','Laminates','Louvers','Acrylic Laminates','Shuttering Plywood','Doors','Door Skin','HDHMR & MDF','WPC Board & Chaukhat','Cement','Tiles','Sanitaryware','Bath Fittings','uPVC Doors & Windows','Hardware','Furniture & Kitchen Hardware','Flooring','Wallpapers','Decorative Panels'];
 
 async function brandApi(action,payload={}){
@@ -51,7 +51,7 @@ async function brandApi(action,payload={}){
 async function registerBrandName(brand){
   brand=String(brand||'').trim();
   if(!brand)return;
-  try{await brandApi('post',{action:'upsert',item:{brand,label:brand}})}catch(e){}
+  try{await brandApi('post',{action:'upsert',item:{brand}})}catch(e){}
 }
 function clearBrandForm(){document.querySelectorAll('#bCategories input').forEach(x=>x.checked=false);$('bBrand').readOnly=false;$('bBrand').value='';$('bLabel').value='';$('bSrc').value='';$('bFallback').value=''}
 function renderBrandCategories(selected=[]){

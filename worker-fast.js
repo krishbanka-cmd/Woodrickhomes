@@ -32,7 +32,7 @@ function brandCookie(request,name){const raw=request.headers.get('cookie')||'';f
 async function brandSession(secret){const key=await crypto.subtle.importKey('raw',BRAND_ENC.encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign']);const sig=await crypto.subtle.sign('HMAC',key,BRAND_ENC.encode('woodrick-admin-session-v1'));return Array.from(new Uint8Array(sig)).map(b=>b.toString(16).padStart(2,'0')).join('')}
 async function brandAuthorized(request,env){if(!env.ADMIN_UPLOAD_TOKEN)return false;const auth=request.headers.get('authorization')||'';if(auth===`Bearer ${env.ADMIN_UPLOAD_TOKEN}`)return true;return brandCookie(request,'woodrick_admin')===await brandSession(env.ADMIN_UPLOAD_TOKEN)}
 function cleanBrandItem(input={},existing={}){
-  const brand=String(input.brand??existing.brand??'').trim().slice(0,80);
+  const brand=canonicalBrand(input.brand??existing.brand??'').slice(0,80);
   const label=String(input.label??existing.label??brand).trim().slice(0,100)||brand;
   const src=String(input.src??existing.src??'').trim().slice(0,1200);
   const fallback=String(input.fallback??existing.fallback??'').trim().slice(0,1200);
@@ -46,8 +46,10 @@ async function loadBrandRail(env){
     const obj=await env.PRODUCT_MEDIA.get(BRAND_RAIL_KEY);
     if(!obj)return BRAND_RAIL_DEFAULTS.map(x=>({...x}));
     const data=JSON.parse(await obj.text());
-    if(!Array.isArray(data.items)||!data.items.length)return BRAND_RAIL_DEFAULTS.map(x=>({...x}));
-    return data.items.map(x=>cleanBrandItem(x)).filter(x=>x.brand);
+    if(!Array.isArray(data.items))return BRAND_RAIL_DEFAULTS.map(x=>({...x}));
+    const unique=new Map();
+    for(const raw of data.items){const item=cleanBrandItem(raw);if(item.brand)unique.set(brandKey(item.brand),item)}
+    return [...unique.values()];
   }catch{return BRAND_RAIL_DEFAULTS.map(x=>({...x}))}
 }
 async function saveBrandRail(env,items){
@@ -69,9 +71,9 @@ async function handleBrandRail(request,env){
   const action=String(data&&data.action||'upsert');
   let items=await loadBrandRail(env);
   if(action==='delete'){
-    const brand=String(data.brand||'').trim();
+    const brand=canonicalBrand(data.brand);
     if(!brand)return brandJson({error:'Brand is required'},400);
-    items=items.filter(x=>x.brand.toLowerCase()!==brand.toLowerCase());
+    items=items.filter(x=>brandKey(canonicalBrand(x.brand))!==brandKey(brand));
   }else if(action==='visibility'){
     const brand=canonicalBrand(data.brand);
     if(!brand||typeof data.railEnabled!=='boolean')return brandJson({error:'Brand and rail visibility are required'},400);
@@ -79,10 +81,10 @@ async function handleBrandRail(request,env){
     const item=cleanBrandItem({brand,railEnabled:data.railEnabled},i>=0?items[i]:{});
     if(i>=0)items[i]=item;else items.push(item);
   }else if(action==='upsert'){
-    const input=data.item||{},brand=String(input.brand||'').trim();
+    const input=data.item||{},brand=canonicalBrand(input.brand);
     if(!brand)return brandJson({error:'Brand is required'},400);
-    const i=items.findIndex(x=>x.brand.toLowerCase()===brand.toLowerCase());
-    const item=cleanBrandItem(input,i>=0?items[i]:{});
+    const i=items.findIndex(x=>brandKey(canonicalBrand(x.brand))===brandKey(brand));
+    const item=cleanBrandItem({...input,brand},i>=0?items[i]:{});
     if(i>=0)items[i]=item;else items.push(item);
   }else if(action==='replace'&&Array.isArray(data.items)){
     items=data.items.map(x=>cleanBrandItem(x)).filter(x=>x.brand);
