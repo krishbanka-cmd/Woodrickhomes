@@ -17,3 +17,10 @@ test('Brand media stays within the selected category while including brand alias
  const html=await readFile(new URL('../brands/index.html',import.meta.url),'utf8'),source=html.slice(html.indexOf('const norm='),html.indexOf('function pdfCover(')),ctx={requested:'Woodline',params:new URLSearchParams({category:'Louvers'}),title:{},document:{}};vm.runInNewContext(source+';this.matches=belongs',ctx);
  assert.equal(ctx.matches({brand:'Woodline Louvers',category:'Louvers',type:'pdf'}),true);assert.equal(ctx.matches({brand:'Woodline',category:'Laminates',type:'pdf'}),false);assert.equal(ctx.matches({brand:'Royal Crown',category:'Louvers',type:'pdf'}),false);
 });
+
+test('Saved brand categories survive a directory refresh without requiring uploaded media',()=>{
+ const items=buildBrandDirectory([],[{brand:'Ambuja Cement',label:'Ambuja Cement',categories:['Cement','Tiles','Cement']}]);
+ assert.deepEqual(items[0].categories,['Cement','Tiles']);
+ const merged=buildBrandDirectory([{key:'ambuja.pdf',brand:'Ambuja Cement',category:'Plywood'}],[{brand:'Ambuja Cement',categories:['Cement']}]);
+ assert.deepEqual(merged[0].categories,['Cement','Plywood']);
+});

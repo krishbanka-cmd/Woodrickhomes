@@ -6,7 +6,7 @@ export function canonicalBrand(value){const clean=String(value||'').trim();retur
 export function canonicalBrowseCategory(value){const clean=String(value||'').trim(),key=brandKey(clean);return ({laminate:'Laminates',laminates:'Laminates',louver:'Louvers',louvers:'Louvers',plywood:'Plywood',plywoods:'Plywood','door skin':'Doors',doors:'Doors',door:'Doors'})[key]||clean}
 export function buildBrandDirectory(media=[],rail=[]){
  const brands=new Map();
- for(const item of rail){const brand=canonicalBrand(item.brand);if(!brand)continue;const key=brandKey(brand);brands.set(key,{...item,brand,categories:[...(categories[key]||[])],mediaCount:0,categoryCounts:{}})}
+ for(const item of rail){const brand=canonicalBrand(item.brand);if(!brand)continue;const key=brandKey(brand);brands.set(key,{...item,brand,categories:[...new Set([...(categories[key]||[]),...(Array.isArray(item.categories)?item.categories:[]).map(canonicalBrowseCategory)])],mediaCount:0,categoryCounts:{}})}
  for(const item of media){
   if(String(item.key||'').startsWith('private/')||String(item.sourceKey||'').startsWith('private/'))continue;
   const brand=canonicalBrand(item.brand);if(!brand||brandKey(brand)==='other')continue;

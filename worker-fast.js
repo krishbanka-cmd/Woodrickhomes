@@ -37,7 +37,8 @@ function cleanBrandItem(input={},existing={}){
   const src=String(input.src??existing.src??'').trim().slice(0,1200);
   const fallback=String(input.fallback??existing.fallback??'').trim().slice(0,1200);
   const alt=String(input.alt??existing.alt??(`${label} logo`)).trim().slice(0,140);
-  return {brand,label,alt,src,...(fallback?{fallback}:{})};
+  const categories=[...new Set((Array.isArray(input.categories)?input.categories:Array.isArray(existing.categories)?existing.categories:[]).map(v=>String(v).trim().slice(0,80)).filter(Boolean))].slice(0,40);
+  return {brand,label,alt,src,categories,...(fallback?{fallback}:{})};
 }
 async function loadBrandRail(env){
   if(!env.PRODUCT_MEDIA)return BRAND_RAIL_DEFAULTS.map(x=>({...x}));
