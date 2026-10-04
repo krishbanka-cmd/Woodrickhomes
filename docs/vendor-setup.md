@@ -27,3 +27,5 @@ Use `google-apps-script/vendor-backup.gs` with a dedicated Sheet. Set Apps Scrip
 Run `node --experimental-default-type=module --test tests/vendors.test.mjs` with Node 22. Synthetic tests cover owner isolation, private KYC, mobile-verification gates, single-use links, OTP provider integration, moderation, duplicate preservation across vendors, suspension, paginated search beyond 1,000 vendors and cross-origin write protection. Deployment runs these tests before publishing.
 
 PDF catalogues support up to 500 MB per file. Files over 20 MB use authenticated 8 MB multipart uploads to private storage, with progress and automatic part retries. Completed uploads remain private until product approval. Upload sessions expire after 24 hours; unfinished R2 multipart uploads are removed by R2 after its default seven-day lifecycle.
+
+Alternatively, signed-in admins can save the Apps Script URL and token under Google Sheet backup settings. These are stored only in private R2 settings and never returned by APIs. Server environment secrets take precedence. Retry Sheet backup confirms actual delivery instead of merely queuing it.

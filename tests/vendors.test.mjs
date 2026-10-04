@@ -197,3 +197,28 @@ test('Aborted/expired multipart uploads cannot be attached or completed',async()
  const form=product(id,0);form.set('catalogueUpload',start.id);assert.equal((await call(s,'/api/vendor/products',{cookie:signed.cookie,body:form})).status,409);
  const expired=await data(await call(s,'/api/vendor/catalogue-upload/start',{cookie:signed.cookie,body:{productId:id,revision:0,size:30,name:'test.pdf',contentType:'application/pdf'}}));const key='private/vendors/catalogue-uploads/'+expired.id+'.json',record=await s.storage.get(key).then(r=>r.json());await s.storage.put(key,JSON.stringify({...record,expires:0}));assert.equal((await call(s,'/api/vendor/catalogue-upload/complete?id='+expired.id,{cookie:signed.cookie,body:{}})).status,409);
 });
+
+
+test('Sheet settings require admin, reject unsafe URLs and keep tokens private',async()=>{
+ const s=setup(),path='/api/vendor-applications/backup-settings',body={url:'https://script.google.com/macros/s/'+'A'.repeat(30)+'/exec',token:'secret'.repeat(12)};
+ assert.equal((await call(s,path,{body})).status,401);
+ assert.equal((await call(s,path,{admin:true,body:{...body,url:'https://evil.test/exec'}})).status,400);
+ assert.equal((await call(s,path,{admin:true,body:{...body,token:'short'}})).status,400);
+ const saved=await data(await call(s,path,{admin:true,body}));assert.equal(saved.ok,true);assert.equal(saved.token,undefined);
+ const config=await data(await call(s,'/api/vendor-applications/config',{admin:true}));assert.equal(config.sheetBackupAvailable,true);assert.equal(config.token,undefined);
+ const raw=new Request('https://example.test'+path,{method:'POST',headers:{origin:'https://evil.test',authorization:'Bearer '+s.env.ADMIN_UPLOAD_TOKEN,'content-type':'application/json'},body:JSON.stringify(body)});
+ assert.equal((await app.fetch(raw,s.env,s.ctx)).status,403);
+ assert.equal((await call(s,'/api/media?key=private/vendors/settings/sheet-backup.json')).status,404);
+});
+
+test('Sheet retry confirms actual delivery and preserves pending records on failure',async()=>{
+ const s=setup(),v=await create(s,'9876543210'),body={url:'https://script.google.com/macros/s/'+'A'.repeat(30)+'/exec',token:'secret'.repeat(12)};
+ await call(s,'/api/vendor-applications/backup-settings',{admin:true,body});
+ const original=globalThis.fetch;let accepted=true;const sent=[];
+ globalThis.fetch=async(url,opts)=>{sent.push({url,payload:JSON.parse(opts.body)});return new Response(JSON.stringify({ok:accepted}))};
+ try{
+ const ok=await data(await call(s,'/api/vendor-applications/backup-retry',{admin:true,body:{id:v.id}}));assert.equal(ok.synced,true);assert.equal(sent[0].url,body.url);assert.equal(sent[0].payload.token,body.token);assert.equal(sent[0].payload.event.id,v.id);assert.equal(sent[0].payload.event.documentKey,undefined);
+ accepted=false;const failed=await data(await call(s,'/api/vendor-applications/backup-retry',{admin:true,body:{id:v.id}}));assert.equal(failed.synced,false);
+ assert.equal((await (await s.storage.get('private/vendors/backup/'+v.id+'.json')).json()).state,'pending');
+ }finally{globalThis.fetch=original}
+});
