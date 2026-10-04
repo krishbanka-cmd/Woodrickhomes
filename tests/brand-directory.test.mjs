@@ -44,3 +44,16 @@ test('Every published brand can be hidden from the hero while remaining editable
  assert.equal((await list('')).items.find(x=>x.brand==='Royal Crown').label,'Royal Crown corrected');
  assert.equal(JSON.parse(saved).items.filter(x=>x.brand==='Royal Crown').length,1);
 });
+
+test('Home shows Royal Crown and its navigation retains the catalogue identity after display-name edits',async()=>{
+ const html=await readFile(new URL('../index.html',import.meta.url),'utf8');
+ assert.match(html,/<div class="trusted-name">Royal Crown<\/div>/);
+ assert.doesNotMatch(html,/<div class="trusted-name">Royale Touche<\/div>/);
+ assert.doesNotMatch(html,/'Royal Crown':.*royale-touche/);
+ const worker=await readFile(new URL('../worker-home.js',import.meta.url),'utf8');
+ const go=worker.slice(worker.indexOf('function go(c)'),worker.indexOf('function bind()'));
+ const ctx={m:{},location:{},encodeURIComponent};vm.runInNewContext(go+';this.navigate=go',ctx);
+ ctx.navigate({dataset:{libraryBrand:'Royal Crown'},querySelector:()=>({textContent:'Royal Crown Laminates'})});
+ assert.equal(ctx.location.href,'/brands/?brand=Royal%20Crown');
+ assert.match(worker,/fetch\('\/api\/brand-directory'/);
+});
