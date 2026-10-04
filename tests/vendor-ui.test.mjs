@@ -36,3 +36,19 @@ test('Load more cannot duplicate a pending page, and refresh can supersede it',a
  h.pending[1].resolve({items:[{id:'vendor-old'}],cursor:null});await more;
  assert.equal(h.rows.children.length,1);assert.equal(h.rows.children[0].id,'vendor-new');
 });
+
+async function catalogueHarness(failPart){
+ const source=await readFile(new URL('../assets/vendor-panel.js',import.meta.url),'utf8'),posts=[],parts=[],messages=[];let attempts=0;
+ const context={TextDecoder,post:async(url,body)=>{posts.push({url,body});return url.endsWith('/start')?{id:'upload-test',partSize:8*1024*1024,total:Math.ceil(body.size/(8*1024*1024))}:{ok:true}},api:async(url,options)=>{parts.push({url,size:options.body.size});if(failPart&&attempts++===0)throw Object.assign(new Error('Network error'),{status:failPart});return {ok:true}},message:(id,text)=>messages.push(text),setTimeout:fn=>fn()};
+ vm.createContext(context);vm.runInContext(source.slice(source.indexOf('async function uploadCatalogue('),source.indexOf('async function submitVendorProduct(')),context);
+ const file=size=>({name:'test.pdf',size,slice:(start,end)=>({size:Math.min(end,size)-start,arrayBuffer:async()=>new TextEncoder().encode('%PDF-').buffer})});
+ return {posts,parts,messages,upload:size=>context.uploadCatalogue(file(size),'product-test',0)};
+}
+test('500 MB client upload sends bounded parts and reports progress before completion',async()=>{
+ const h=await catalogueHarness();assert.equal(await h.upload(500*1024*1024),'upload-test');assert.equal(h.parts.length,63);assert.ok(h.parts.every(p=>p.size<=8*1024*1024));assert.equal(h.parts.at(-1).size,4*1024*1024);assert.match(h.messages.at(-1),/100%/);assert.match(h.posts.at(-1).url,/complete/);
+ const tooLarge=await catalogueHarness();await assert.rejects(()=>tooLarge.upload(500*1024*1024+1),/500 MB/);assert.equal(tooLarge.posts.length,0);
+});
+test('Client retries a failed part and aborts immediately for authentication failures',async()=>{
+ const transient=await catalogueHarness(503);await transient.upload(21*1024*1024);assert.equal(transient.parts.length,4);assert.equal(transient.parts[0].url,transient.parts[1].url);
+ const unauthorized=await catalogueHarness(401);await assert.rejects(()=>unauthorized.upload(21*1024*1024),/Network error/);assert.equal(unauthorized.parts.length,1);assert.match(unauthorized.posts.at(-1).url,/abort/);
+});

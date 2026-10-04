@@ -5,11 +5,10 @@ import {readFile} from 'node:fs/promises';
 import app from '../worker-fast.js';
 import {syncAndClean} from '../worker-product-media-sync.js';
 
-test('Vendor catalogues accept 50 MB and reject larger PDFs',async()=>{
+test('Vendor catalogue upload accepts 500 MB and rejects larger declarations',async()=>{
  const s=setup(),v=await create(s,'9876543210');await approve(s,v);const signed=await login(s,v);
- for(const [size,expected] of [[50*1024*1024,201],[50*1024*1024+1,400]]){
-  const bytes=new Uint8Array(size);bytes.set(new TextEncoder().encode('%PDF-1.7\n'));const form=product();form.delete('photo');form.set('catalogue',new File([bytes],'catalogue.pdf',{type:'application/pdf'}));
-  const result=await data(await call(s,'/api/vendor/products',{cookie:signed.cookie,body:form}));assert.equal(result.status,expected);if(expected===201)assert.equal(result.product.files[0].size,size);else assert.match(result.error,/Catalogue is too large/);
+ for(const [size,expected] of [[500*1024*1024,201],[500*1024*1024+1,400]]){
+  const result=await data(await call(s,'/api/vendor/catalogue-upload/start',{cookie:signed.cookie,body:{productId:crypto.randomUUID(),revision:0,size,name:'catalogue.pdf',contentType:'application/pdf'}}));assert.equal(result.status,expected);if(expected===201)assert.equal(result.total,63);else assert.match(result.error,/500 MB/);
  }
 });
 
@@ -104,7 +103,9 @@ test('Login history is admin-only, newest first, and records successful sign-ins
 });
 
 class MemoryR2{
- constructor(){this.rows=new Map();this.version=0}
+ constructor(){this.rows=new Map();this.version=0;this.multipart=new Map()}
+ async createMultipartUpload(key,options){const uploadId=crypto.randomUUID();this.multipart.set(uploadId,{key,options,parts:new Map()});return {...this.resumeMultipartUpload(key,uploadId),uploadId}}
+ resumeMultipartUpload(key,uploadId){const store=this;return {uploadId,async uploadPart(partNumber,bytes){const u=store.multipart.get(uploadId);if(!u||u.key!==key)throw Error('No upload');u.parts.set(partNumber,Buffer.from(bytes));return {partNumber,etag:'part-'+partNumber}},async complete(parts){const u=store.multipart.get(uploadId);if(!u||u.key!==key)throw Error('No upload');const buffers=parts.map(p=>{assert.equal(p.etag,'part-'+p.partNumber);return u.parts.get(p.partNumber)});const result=await store.put(key,Buffer.concat(buffers),u.options);store.multipart.delete(uploadId);return result},async abort(){store.multipart.delete(uploadId)}}}
  async get(key){const row=this.rows.get(key);if(!row)return null;return {...row,body:row.bytes,text:async()=>row.bytes.toString(),json:async()=>JSON.parse(row.bytes.toString()),writeHttpMetadata(h){h.set('content-type',row.httpMetadata?.contentType||'application/octet-stream')}}}
  async head(key){return this.get(key)}
  async put(key,body,options={}){const old=this.rows.get(key),condition=options.onlyIf;if(condition?.etagMatches&&old?.etag!==condition.etagMatches)return null;if(condition?.etagDoesNotMatch==='*'&&old)return null;const bytes=typeof body==='string'?Buffer.from(body):Buffer.from(await new Response(body).arrayBuffer());const row={key,bytes,size:bytes.length,etag:String(++this.version),uploaded:new Date(),httpMetadata:options.httpMetadata,customMetadata:options.customMetadata};this.rows.set(key,row);return row}
@@ -168,4 +169,31 @@ test('Resubmission, malformed documents and orphan public copies cannot bypass r
  assert.equal((await call(s,'/api/media?key='+encodeURIComponent(orphan))).status,404);assert.equal((await publicItems(s)).some(x=>x.key===orphan),false);
  assert.equal((await review(s,p)).status,200);const stored=await (await s.storage.get('private/vendors/products/'+p.id+'.json')).json();const key=stored.publicKeys[0];assert.equal((await call(s,'/api/media?key='+encodeURIComponent(key))).status,200);
  assert.equal((await call(s,'/api/vendor/products/archive',{cookie:signed.cookie,body:{id:p.id}})).status,200);assert.equal((await call(s,'/api/media?key='+encodeURIComponent(key))).status,404);assert.equal((await publicItems(s)).some(x=>x.productId===p.id),false);
+});
+
+test('Multipart PDFs validate parts, isolate vendors, attach privately and publish only after review',async()=>{
+ const s=setup(),v=await create(s,'9876543210');await approve(s,v);const signed=await login(s,v),other=await create(s,'9876543211');await approve(s,other);const second=await login(s,other),productId=crypto.randomUUID(),size=8*1024*1024+20;
+ const start=await data(await call(s,'/api/vendor/catalogue-upload/start',{cookie:signed.cookie,body:{productId,revision:0,size,name:'catalogue.pdf',contentType:'application/pdf'}}));assert.equal(start.status,201);
+ const route='/api/vendor/catalogue-upload/',query='?id='+start.id;
+ const raw=async(bytes,part,cookie=signed.cookie,origin='https://example.test')=>data(await app.fetch(new Request('https://example.test'+route+'part'+query+'&part='+part,{method:'POST',headers:{cookie,origin,'content-type':'application/octet-stream'},body:bytes}),s.env,s.ctx));
+ assert.equal((await call(s,route+'complete'+query,{cookie:signed.cookie,body:{}})).status,409);
+ assert.equal((await raw(new Uint8Array(20),2,second.cookie)).status,404);assert.equal((await raw(new Uint8Array(20),2,signed.cookie,'https://attacker.test')).status,403);
+ assert.equal((await raw(new Uint8Array(21),2)).status,413);
+ const bytes=new Uint8Array(start.partSize);assert.equal((await raw(bytes,1)).status,400);bytes.set(new TextEncoder().encode('%PDF-1.7'));assert.equal((await raw(bytes,1)).status,200);
+ assert.equal((await raw(new Uint8Array(20),2)).status,200);assert.equal((await call(s,route+'complete'+query,{cookie:signed.cookie,body:{}})).status,200);assert.equal((await call(s,route+'complete'+query,{cookie:signed.cookie,body:{}})).status,200);
+ const form=product(productId,0);form.delete('photo');form.set('catalogueUpload',start.id);
+ assert.equal((await call(s,'/api/vendor/products',{cookie:second.cookie,body:form})).status,409);
+ const submitted=await data(await call(s,'/api/vendor/products',{cookie:signed.cookie,body:form}));assert.equal(submitted.status,201);assert.equal(submitted.product.files[0].size,size);assert.equal(submitted.product.status,'pending');assert.ok(!(await publicItems(s)).some(p=>p.productId===productId));
+ // A lost submit response followed by cleanup must not delete the saved product file.
+ assert.equal((await call(s,route+'abort'+query,{cookie:signed.cookie,body:{}})).status,200);assert.ok(await s.storage.head(submitted.product.files[0].key));
+ assert.equal((await review(s,submitted.product)).status,200);assert.ok((await publicItems(s)).some(p=>p.productId===productId));
+ assert.equal((await call(s,'/api/vendor/products',{cookie:signed.cookie,body:form})).status,409);
+});
+test('Aborted/expired multipart uploads cannot be attached or completed',async()=>{
+ const s=setup(),v=await create(s,'9876543210');await approve(s,v);const signed=await login(s,v),id=crypto.randomUUID();
+ const start=await data(await call(s,'/api/vendor/catalogue-upload/start',{cookie:signed.cookie,body:{productId:id,revision:0,size:30,name:'test.pdf',contentType:'application/pdf'}}));const query='?id='+start.id;
+ assert.equal((await call(s,'/api/vendor/catalogue-upload/abort'+query,{cookie:signed.cookie,body:{}})).status,200);
+ assert.equal((await call(s,'/api/vendor/catalogue-upload/complete'+query,{cookie:signed.cookie,body:{}})).status,409);
+ const form=product(id,0);form.set('catalogueUpload',start.id);assert.equal((await call(s,'/api/vendor/products',{cookie:signed.cookie,body:form})).status,409);
+ const expired=await data(await call(s,'/api/vendor/catalogue-upload/start',{cookie:signed.cookie,body:{productId:id,revision:0,size:30,name:'test.pdf',contentType:'application/pdf'}}));const key='private/vendors/catalogue-uploads/'+expired.id+'.json',record=await s.storage.get(key).then(r=>r.json());await s.storage.put(key,JSON.stringify({...record,expires:0}));assert.equal((await call(s,'/api/vendor/catalogue-upload/complete?id='+expired.id,{cookie:signed.cookie,body:{}})).status,409);
 });

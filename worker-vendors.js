@@ -50,6 +50,58 @@ async function unpublish(env,p){if(p.publicKeys?.length)await env.PRODUCT_MEDIA.
 async function publish(env,p,v){const keys=[];for(const f of p.files||[]){const o=await env.PRODUCT_MEDIA.get(f.key);if(!o)fail('A product file is missing. Ask the vendor to upload it again.',409);const key='vendor-public/'+v.id+'/'+p.id+'/'+p.revision+'/'+f.kind+'.'+f.ext;const meta={vendorId:v.id,productId:p.id,supplier:v.business,brand:p.brand,category:p.category,title:p.title,catalogue:p.title,type:f.kind,originalName:f.name,uploadedAt:new Date().toISOString(),source:'vendor-approved'};await env.PRODUCT_MEDIA.put(key,o.body,{httpMetadata:{contentType:f.contentType},customMetadata:meta});keys.push(key)}const old=p.publicKeys||[];p.publicKeys=keys;for(const key of old)if(!keys.includes(key))await env.PRODUCT_MEDIA.delete(key)}
 async function createApplication(req,env,ctx,isAdmin){const claims=await session(req,env);if(!isAdmin&&!claims&&otpReady(env))fail('Verify your mobile number before applying.',401);if(!(req.headers.get('content-type')||'').includes('multipart/form-data'))fail('Upload form required.',415);const form=await req.formData();if(clean(form.get('website')))fail('Unable to submit.');const number=mobile(form.get('mobile'));if(!validMobile(number))fail('Enter a valid Indian mobile number.');if(!isAdmin&&claims&&number!==claims.mobile)fail('Mobile number does not match verification.',403);const business=clean(form.get('business'),120),contact=clean(form.get('contact'),100),city=clean(form.get('city'),100),categories=businessCategories(form),category=categories.join(', '),coverage=vendorCoverage(form),gst=clean(form.get('gst'),15).toUpperCase();if(business.length<2||contact.length<2||city.length<2||!category)fail('Business, contact person, city and category are required.');if(gst&&!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(gst))fail('Please check GSTIN.');const file=await checkFile(form.get('file'),'Business document',5*1024*1024);if(!file)fail('Upload a business registration or GST document (PDF/photo, max 5 MB).');const identityFiles=await optionalKYC(form);const existing=await findVendor(env,number);if(existing)fail('This mobile already has a vendor application. Sign in to view it.',409);await rateLimit(req,env,'applications',req.headers.get('cf-connecting-ip')||'unknown',isAdmin?100:5,3600000);const id=crypto.randomUUID(),key=ROOT+'files/'+id+'/business.'+file.ext;await env.PRODUCT_MEDIA.put(key,file.file.stream(),{httpMetadata:{contentType:file.type}});const now=new Date().toISOString(),item={id,business,contact,mobile:number,city,category,categories,...coverage,gst,note:clean(form.get('note'),500),documentKey:key,status:'pending',mobileVerified:!!(claims&&claims.mobile===number),createdBy:isAdmin?'admin':'vendor',createdAt:now,reviewedAt:null,reviewNote:''};const indexKey=await phoneKey(env,number);const reserved=await write(env,indexKey,{id},{etagDoesNotMatch:'*'});if(!reserved){await env.PRODUCT_MEDIA.delete(key);fail('An application for this mobile is already being created.',409)}try{Object.assign(item,await storeKYC(env,id,identityFiles));await write(env,vendorKey(id),item)}catch(error){await env.PRODUCT_MEDIA.delete([indexKey,key,...[item.aadhaarKey,item.panKey].filter(Boolean)]);throw error};await audit(env,'application',id,{actor:isAdmin?'admin':'vendor'});await backup(env,item,ctx);return reply({ok:true,vendor:publicVendor(item),id},201,!isAdmin&&claims?{'set-cookie':await signedCookie(env,{mobile:number,vendorId:id})}:{})}
 
+const CATALOGUE_MAX=500*1024*1024, CATALOGUE_PART=8*1024*1024;
+const catalogueUploadKey=id=>ROOT+'catalogue-uploads/'+id+'.json';
+async function catalogueUpload(req,env,url){
+ const v=await ownVendor(req,env);if(v.status!=='approved')fail('Catalogue upload is available after vendor approval.',403);
+ const action=url.pathname.split('/').pop();
+ if(action==='start'){
+  const data=await req.json(),size=Number(data.size),productId=clean(data.productId,40),baseRevision=Number(data.revision||0);
+  if(!Number.isSafeInteger(size)||size<5||size>CATALOGUE_MAX)fail('PDF catalogue must be within 500 MB.');
+  if(data.contentType!=='application/pdf'||!String(data.name||'').toLowerCase().endsWith('.pdf'))fail('Catalogue must be a PDF.');
+  if(!UUID.test(productId)||!Number.isSafeInteger(baseRevision)||baseRevision<0)fail('Invalid product.');
+  const p=await read(env,productKey(productId));if(p&&(p.vendorId!==v.id||p.revision!==baseRevision))fail('Product changed. Refresh before uploading.',409);if(!p&&baseRevision!==0)fail('Product not found.',404);
+  await rateLimit(req,env,'catalogue-start',v.id,20,3600000);
+  const id=crypto.randomUUID(),key=ROOT+'product-files/'+v.id+'/'+productId+'/'+(baseRevision+1)+'/'+id+'/catalogue.pdf';
+  const multipart=await env.PRODUCT_MEDIA.createMultipartUpload(key,{httpMetadata:{contentType:'application/pdf'}});
+  try{await write(env,catalogueUploadKey(id),{id,vendorId:v.id,productId,revision:baseRevision+1,key,uploadId:multipart.uploadId,name:clean(data.name,160),size,partSize:CATALOGUE_PART,total:Math.ceil(size/CATALOGUE_PART),state:'uploading',expires:Date.now()+24*3600000})}catch(e){await multipart.abort();throw e}
+  return reply({ok:true,id,partSize:CATALOGUE_PART,total:Math.ceil(size/CATALOGUE_PART)},201);
+ }
+ const id=clean(url.searchParams.get('id'),40);if(!UUID.test(id))fail('Upload not found.',404);
+ const upload=await read(env,catalogueUploadKey(id));if(!upload||upload.vendorId!==v.id)fail('Upload not found.',404);
+ if(action==='part'){
+  if(upload.state!=='uploading'||upload.expires<Date.now())fail('Upload expired. Please upload the PDF again.',409);
+  const part=Number(url.searchParams.get('part'));if(!Number.isInteger(part)||part<1||part>upload.total)fail('Invalid upload part.');
+  const expected=part===upload.total?upload.size-(part-1)*upload.partSize:upload.partSize;
+  const declared=req.headers.get('content-length');if(declared&&Number(declared)!==expected)fail('Upload part has the wrong size.',413);
+  // Bound every request even when Content-Length is absent or incorrect.
+  const reader=req.body?.getReader();if(!reader)fail('Upload part is empty.');const chunks=[];let size=0;
+  for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>expected){await reader.cancel();fail('Upload part is too large.',413)}chunks.push(value)}
+  if(size!==expected)fail('Upload part has the wrong size.');const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength}
+  if(part===1&&!new TextDecoder().decode(bytes.subarray(0,5)).startsWith('%PDF-'))fail('The PDF file content does not match its format.');
+  const result=await env.PRODUCT_MEDIA.resumeMultipartUpload(upload.key,upload.uploadId).uploadPart(part,bytes);
+  await write(env,ROOT+'catalogue-parts/'+id+'/'+part+'.json',{partNumber:result.partNumber,etag:result.etag,size});
+  return reply({ok:true,part});
+ }
+ if(action==='complete'||action==='abort')return productLock(env,'catalogue-'+id,async()=>{
+  const current=await read(env,catalogueUploadKey(id));
+  if(action==='abort')return productLock(env,current.productId,async()=>{
+   const product=await read(env,productKey(current.productId));if(product?.files?.some(f=>f.key===current.key))return reply({ok:true});
+   if(current.state==='uploading')await env.PRODUCT_MEDIA.resumeMultipartUpload(current.key,current.uploadId).abort();
+   if(current.state==='complete')await env.PRODUCT_MEDIA.delete(current.key);
+   await write(env,catalogueUploadKey(id),{...current,state:'aborted'});return reply({ok:true});
+  });
+  if(current.state==='complete')return reply({ok:true,id});
+  if(current.state!=='uploading'||current.expires<Date.now())fail('Upload expired. Please upload the PDF again.',409);
+  const parts=await Promise.all(Array.from({length:current.total},(_,i)=>read(env,ROOT+'catalogue-parts/'+id+'/'+(i+1)+'.json')));
+  if(parts.some((p,i)=>!p||p.partNumber!==i+1||p.size!==(i===current.total-1?current.size-i*current.partSize:current.partSize)))fail('PDF upload is incomplete. Retry the missing part.',409);
+  const completed=await env.PRODUCT_MEDIA.resumeMultipartUpload(current.key,current.uploadId).complete(parts.map(({partNumber,etag})=>({partNumber,etag})));
+  if(completed.size!==current.size){await env.PRODUCT_MEDIA.delete(current.key);fail('PDF upload size did not match. Please try again.',409)}
+  await write(env,catalogueUploadKey(id),{...current,state:'complete'});return reply({ok:true,id});
+ });
+ fail('Not found.',404);
+}
+
 export async function handleVendor(req,env,ctx){
  if(!env.PRODUCT_MEDIA)return reply({error:'Vendor service is unavailable.'},503);
  const url=new URL(req.url),path=url.pathname;
@@ -57,6 +109,7 @@ export async function handleVendor(req,env,ctx){
   if(!['GET','HEAD','POST'].includes(req.method))return reply({error:'Method not allowed'},405);
   if(req.method==='POST'&&!originOK(req))return reply({error:'Invalid origin'},403);
   if(Number(req.headers.get('content-length')||0)>120*1024*1024)fail('Request is too large.',413);
+  if(path.startsWith('/api/vendor/catalogue-upload/')&&req.method==='POST')return await catalogueUpload(req,env,url);
   if(path==='/api/vendor/config'&&req.method==='GET')return reply({otpAvailable:otpReady(env),sessionAvailable:!!(env.VENDOR_SESSION_SECRET||env.ADMIN_UPLOAD_TOKEN)});
   if(path==='/api/vendor/logout'&&req.method==='POST')return reply({ok:true},200,{'set-cookie':'woodrick_vendor=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0'});
   if(path==='/api/vendor/otp/start'&&req.method==='POST'){
@@ -88,8 +141,10 @@ export async function handleVendor(req,env,ctx){
   if(path==='/api/vendor/products'&&req.method==='POST'){
    const v=await ownVendor(req,env);if(v.status!=='approved')fail('Product submission is available after vendor approval.',403);
    if(!(req.headers.get('content-type')||'').includes('multipart/form-data'))fail('Upload form required.',415);const form=await req.formData(),id=clean(form.get('id'),40)||crypto.randomUUID();if(!UUID.test(id))fail('Invalid product.');return await productLock(env,id,async()=>{const object=await env.PRODUCT_MEDIA.get(productKey(id)),old=object?JSON.parse(await object.text()):null;if(old&&old.vendorId!==v.id)fail('Product not found.',404);if(old&&Number(form.get('revision'))!==old.revision)fail('Product changed. Refresh before editing.',409);const title=clean(form.get('title'),120),brand=clean(form.get('brand'),100),category=clean(form.get('category'),100),description=clean(form.get('description'),1500),priceText=clean(form.get('price'),30),price=priceText===''?null:Number(priceText);if(title.length<2||brand.length<2||!category)fail('Product name, brand and category are required.');if(price!==null&&(!Number.isFinite(price)||price<0||price>1e9))fail('Enter a valid price.');const revision=(old?.revision||0)+1,files=[...(old?.files||[])];
-   for(const [name,kind,label,max] of [['photo','image','Photo',5*1024*1024],['catalogue','pdf','Catalogue',50*1024*1024],['video','video','Video',100*1024*1024]]){const checked=await checkFile(form.get(name),label,max);if(!checked)continue;if(kind==='pdf'&&checked.type!=='application/pdf')fail('Catalogue must be a PDF.');const key=ROOT+'product-files/'+v.id+'/'+id+'/'+revision+'/'+crypto.randomUUID()+'/'+name+'.'+checked.ext;await env.PRODUCT_MEDIA.put(key,checked.file.stream(),{httpMetadata:{contentType:checked.type}});const f={key,kind,ext:checked.ext,name:clean(checked.file.name,160),contentType:checked.type,size:checked.file.size};const i=files.findIndex(x=>x.kind===kind);if(i>=0)files[i]=f;else files.push(f)}
-   if(!files.length)fail('Attach at least one product photo, PDF or video.');const p={...(old||{}),id,vendorId:v.id,supplier:v.business,title,brand,category,description,price,files,revision,status:'pending',publicKeys:old?.publicKeys||[],createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString(),reviewNote:''};await saveProduct(env,p,object?.etag);await audit(env,'product-submitted',id,{vendorId:v.id,revision});return reply({ok:true,product:p},old?200:201);});
+   for(const [name,kind,label,max] of [['photo','image','Photo',5*1024*1024],['catalogue','pdf','Catalogue',CATALOGUE_MAX],['video','video','Video',100*1024*1024]]){const checked=await checkFile(form.get(name),label,max);if(!checked)continue;if(kind==='pdf'&&checked.type!=='application/pdf')fail('Catalogue must be a PDF.');const key=ROOT+'product-files/'+v.id+'/'+id+'/'+revision+'/'+crypto.randomUUID()+'/'+name+'.'+checked.ext;await env.PRODUCT_MEDIA.put(key,checked.file.stream(),{httpMetadata:{contentType:checked.type}});const f={key,kind,ext:checked.ext,name:clean(checked.file.name,160),contentType:checked.type,size:checked.file.size};const i=files.findIndex(x=>x.kind===kind);if(i>=0)files[i]=f;else files.push(f)}
+   const uploadId=clean(form.get('catalogueUpload'),40);let staged;
+   if(uploadId){if(!UUID.test(uploadId))fail('Invalid catalogue upload.');staged=await read(env,catalogueUploadKey(uploadId));if(!staged||staged.vendorId!==v.id||staged.productId!==id||staged.revision!==revision||staged.state!=='complete'||staged.expires<Date.now())fail('Catalogue upload expired or belongs to a different product. Please upload again.',409);const head=await env.PRODUCT_MEDIA.head(staged.key);if(!head||head.size!==staged.size||head.size>CATALOGUE_MAX)fail('Catalogue upload is incomplete.',409);const file={key:staged.key,kind:'pdf',ext:'pdf',name:staged.name,contentType:'application/pdf',size:staged.size};const index=files.findIndex(x=>x.kind==='pdf');if(index>=0)files[index]=file;else files.push(file)}
+   if(!files.length)fail('Attach at least one product photo, PDF or video.');const p={...(old||{}),id,vendorId:v.id,supplier:v.business,title,brand,category,description,price,files,revision,status:'pending',publicKeys:old?.publicKeys||[],createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString(),reviewNote:''};await saveProduct(env,p,object?.etag);if(staged)await write(env,catalogueUploadKey(staged.id),{...staged,state:'consumed'});await audit(env,'product-submitted',id,{vendorId:v.id,revision});return reply({ok:true,product:p},old?200:201);});
   }
   if(path==='/api/vendor/products/archive'&&req.method==='POST'){
    const v=await ownVendor(req,env),body=await req.json();if(!UUID.test(body.id||''))fail('Invalid product.');return await productLock(env,body.id,async()=>{const p=await read(env,productKey(body.id));if(!p||p.vendorId!==v.id)fail('Product not found.',404);await unpublish(env,p);p.status='archived';p.updatedAt=new Date().toISOString();await saveProduct(env,p);await audit(env,'product-archived',p.id,{actor:'vendor',vendorId:v.id});return reply({ok:true});});
