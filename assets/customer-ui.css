@@ -28,3 +28,21 @@
 .woodrick-browse-page .catalogue-grid .catalogue-tile .catalogue-name,
 .woodrick-browse-page #media .catalogue-grid .catalogue-tile .catalogue-name{font-size:16px;line-height:1.35}
 @media(max-width:560px){.woodrick-browse-page .heading h1,.woodrick-browse-page .hero h1{font-size:26px}.woodrick-browse-page .head h2{font-size:24px}}
+
+/* Compact brand boxes, with full logos and wrapping labels. */
+.woodrick-browse-page .brand-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.woodrick-browse-page .brand-card{min-width:0}
+.woodrick-browse-page .brand-identity{height:96px;padding:14px}
+.woodrick-browse-page .brand-identity img{max-height:68px}
+.woodrick-browse-page .brand-details{padding:12px}
+.woodrick-browse-page .brand-details h2,.woodrick-browse-page .brand-details p{overflow-wrap:anywhere}
+.woodrick-home-page #brands .trusted-grid{grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:10px!important}
+.woodrick-home-page #brands .trusted-card{min-height:144px!important;padding:10px!important;transform:none}
+.woodrick-home-page #brands .trusted-logo{height:50px!important;margin-bottom:4px!important}
+.woodrick-home-page #brands .trusted-logo img{max-width:100%!important;max-height:48px!important;object-fit:contain!important}
+.woodrick-home-page #brands .trusted-name{font-size:14px!important;line-height:1.3!important}
+.woodrick-home-page #brands .trusted-desc{font-size:12px!important;line-height:1.4!important;min-height:0!important;overflow-wrap:anywhere}
+.woodrick-home-page .hero-brand-mark{height:84px!important;padding:6px!important}
+@media(max-width:1180px){.woodrick-home-page #brands .trusted-grid{grid-template-columns:repeat(5,minmax(0,1fr))!important}}
+@media(max-width:850px){.woodrick-browse-page .brand-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.woodrick-home-page #brands .trusted-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+@media(max-width:620px){.woodrick-browse-page .brand-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.woodrick-browse-page .brand-identity{height:86px;padding:12px}.woodrick-browse-page .brand-identity img{max-height:62px}.woodrick-browse-page .brand-details h2{font-size:15px}.woodrick-browse-page .brand-wordmark{font-size:20px}.woodrick-home-page #brands .trusted-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.woodrick-home-page #brands .trusted-card{min-height:136px!important;padding:10px 8px!important}.woodrick-home-page .hero-brand-mark{height:80px!important}}
