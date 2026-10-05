@@ -29,3 +29,6 @@ Run `node --experimental-default-type=module --test tests/vendors.test.mjs` with
 PDF catalogues support up to 500 MB per file. Files over 20 MB use authenticated 8 MB multipart uploads to private storage, with progress and automatic part retries. Completed uploads remain private until product approval. Upload sessions expire after 24 hours; unfinished R2 multipart uploads are removed by R2 after its default seven-day lifecycle.
 
 Alternatively, signed-in admins can save the Apps Script URL and token under Google Sheet backup settings. These are stored only in private R2 settings and never returned by APIs. Server environment secrets take precedence. Retry Sheet backup confirms actual delivery instead of merely queuing it.
+
+## Homepage login and passwords
+Homepage Vendor Login opens a login popup. New vendors use Register your business. Approved, mobile-verified vendors use an OTP or a one-time admin link once to set a password in their dashboard. They can then sign in from any device using mobile + password without further access links. Password recovery requires fresh OTP verification or a new admin-issued link. Passwords are salted PBKDF2 hashes stored in private credential records, never included in public responses or Sheet backups.

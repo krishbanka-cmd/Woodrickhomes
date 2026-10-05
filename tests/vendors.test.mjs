@@ -222,3 +222,19 @@ test('Sheet retry confirms actual delivery and preserves pending records on fail
  assert.equal((await (await s.storage.get('private/vendors/backup/'+v.id+'.json')).json()).state,'pending');
  }finally{globalThis.fetch=original}
 });
+
+test('Approved vendors set passwords after verified access and sign in on another device',async()=>{
+ const s=setup(),v=await create(s,'9876543210');
+ assert.equal((await call(s,'/api/vendor/password',{body:{password:'a strong password 123'}})).status,401);
+ const pending=await login(s,v);assert.equal((await call(s,'/api/vendor/password',{cookie:pending.cookie,body:{password:'a strong password 123'}})).status,403);
+ await approve(s,v);const signed=await login(s,v);
+ assert.equal((await call(s,'/api/vendor/password',{cookie:signed.cookie,body:{password:'short'}})).status,400);
+ assert.equal((await call(s,'/api/vendor/password',{cookie:signed.cookie,body:{password:'a strong password 123'}})).status,200);
+ const stored=await (await s.storage.get('private/vendors/credentials/'+v.id+'.json')).json();assert.ok(stored.hash);assert.ok(stored.salt);assert.ok(!JSON.stringify(stored).includes('a strong password'));
+ assert.equal((await call(s,'/api/vendor/password/login',{body:{mobile:'9876543210',password:'wrong password 123'}})).status,401);
+ const result=await call(s,'/api/vendor/password/login',{body:{mobile:'9876543210',password:'a strong password 123'}});assert.equal(result.status,200);
+ const cookie=result.headers.get('set-cookie').split(';')[0];const session=await data(await call(s,'/api/vendor/session',{cookie}));assert.equal(session.vendor.id,v.id);assert.equal(session.canSetPassword,false);assert.ok(!JSON.stringify(session).includes(stored.hash));
+ assert.equal((await call(s,'/api/vendor/password',{cookie,body:{password:'another password 123'}})).status,403);
+ await call(s,'/api/vendor-applications/status',{admin:true,body:{id:v.id,status:'suspended',note:'Test suspension'}});
+ assert.equal((await call(s,'/api/vendor/password/login',{body:{mobile:'9876543210',password:'a strong password 123'}})).status,401);
+});
