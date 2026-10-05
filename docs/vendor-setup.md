@@ -32,3 +32,5 @@ Alternatively, signed-in admins can save the Apps Script URL and token under Goo
 
 ## Homepage login and passwords
 Homepage Vendor Login opens a login popup. New vendors use Register your business. Approved, mobile-verified vendors use an OTP or a one-time admin link once to set a password in their dashboard. They can then sign in from any device using mobile + password without further access links. Password recovery requires fresh OTP verification or a new admin-issued link. Passwords are salted PBKDF2 hashes stored in private credential records, never included in public responses or Sheet backups.
+
+Vendor registration accepts Gmail and domain email addresses. Existing vendors add an email under Email for login in their dashboard. Admins must verify ownership with the vendor before selecting Enable email login. Verified email + existing password and mobile + password both sign into the same account. Email changes disable email login until reverified; email OTP delivery is not configured. Updated Sheet script appends email columns and requires redeployment to mirror them.

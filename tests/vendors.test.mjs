@@ -238,3 +238,23 @@ test('Approved vendors set passwords after verified access and sign in on anothe
  await call(s,'/api/vendor-applications/status',{admin:true,body:{id:v.id,status:'suspended',note:'Test suspension'}});
  assert.equal((await call(s,'/api/vendor/password/login',{body:{mobile:'9876543210',password:'a strong password 123'}})).status,401);
 });
+
+test('Vendor email registration, ownership verification and email password login',async()=>{
+ const s=setup(),form=application('9876543210');form.set('email','Vendor.Owner@Gmail.com');
+ const created=await data(await call(s,'/api/vendor-applications',{admin:true,body:form}));assert.equal(created.status,201);const v=created.vendor;assert.equal(v.email,'vendor.owner@gmail.com');assert.equal(v.emailVerified,false);
+ await approve(s,v);const signed=await login(s,v);await call(s,'/api/vendor/password',{cookie:signed.cookie,body:{password:'vendor password 1234'}});
+ const signIn=email=>call(s,'/api/vendor/password/login',{body:{identifier:email,password:'vendor password 1234'}});
+ assert.equal((await signIn('vendor.owner@gmail.com')).status,401);
+ assert.equal((await call(s,'/api/vendor-applications/email-verify',{cookie:signed.cookie,body:{id:v.id,email:v.email,confirmed:true}})).status,401);
+ assert.equal((await call(s,'/api/vendor-applications/email-verify',{admin:true,body:{id:v.id,email:v.email,confirmed:false}})).status,400);
+ assert.equal((await call(s,'/api/vendor-applications/email-verify',{admin:true,body:{id:v.id,email:v.email,confirmed:true}})).status,200);
+ const response=await signIn('VENDOR.OWNER@gmail.com');assert.equal(response.status,200);const cookie=response.headers.get('set-cookie').split(';')[0];assert.equal((await data(await call(s,'/api/vendor/session',{cookie}))).vendor.id,v.id);
+ const other=await create(s,'9876543211');await approve(s,other);const otherLogin=await login(s,other);await call(s,'/api/vendor/email',{cookie:otherLogin.cookie,body:{email:v.email}});
+ assert.equal((await call(s,'/api/vendor-applications/email-verify',{admin:true,body:{id:other.id,email:v.email,confirmed:true}})).status,409);
+ assert.equal((await call(s,'/api/vendor/email',{body:{email:'new@example.com'}})).status,401);
+ assert.equal((await call(s,'/api/vendor/email',{cookie,body:{email:'bad-email'}})).status,400);
+ assert.equal((await call(s,'/api/vendor/email',{cookie,body:{email:'new@example.com',id:other.id}})).status,200);
+ assert.equal((await signIn(v.email)).status,401);
+ assert.equal((await call(s,'/api/vendor/password/login',{body:{identifier:'9876543210',password:'vendor password 1234'}})).status,200);
+ const otherSession=await data(await call(s,'/api/vendor/session',{cookie:otherLogin.cookie}));assert.equal(otherSession.vendor.email,v.email);
+});
