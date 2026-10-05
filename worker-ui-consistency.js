@@ -1,4 +1,4 @@
-const revision='20261004-compact-brands';
+const revision='20261005-brand-tagline-spacing';
 const browse=/^\/(?:products(?:\/|$)|brands(?:\/|$)|catalogues(?:\/|$)|woodrick-library(?:\.html)?$)/;
 const workflow=/^\/(?:design-your-space|voice-design-assistant|design-requirements-confirmed|ai-auto-select|material-placement|auto-layout|auto-layout-result|3d-design-preview)(?:\.html)?$/;
 
