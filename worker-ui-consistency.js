@@ -1,4 +1,4 @@
-const revision='20261005-brand-tagline-spacing';
+const revision='20261005-welcome-contrast';
 const browse=/^\/(?:products(?:\/|$)|brands(?:\/|$)|catalogues(?:\/|$)|woodrick-library(?:\.html)?$)/;
 const workflow=/^\/(?:design-your-space|voice-design-assistant|design-requirements-confirmed|ai-auto-select|material-placement|auto-layout|auto-layout-result|3d-design-preview)(?:\.html)?$/;
 

@@ -47,3 +47,6 @@
 @media(max-width:1180px){.woodrick-home-page #brands .trusted-grid{grid-template-columns:repeat(5,minmax(0,1fr))!important}}
 @media(max-width:850px){.woodrick-browse-page .brand-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.woodrick-home-page #brands .trusted-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
 @media(max-width:620px){.woodrick-browse-page .brand-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.woodrick-browse-page .brand-identity{height:86px;padding:12px}.woodrick-browse-page .brand-identity img{max-height:62px}.woodrick-browse-page .brand-details h2{font-size:15px}.woodrick-browse-page .brand-wordmark{font-size:20px}.woodrick-home-page #brands .trusted-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.woodrick-home-page #brands .trusted-card{min-height:136px!important;padding:10px 8px!important}.woodrick-home-page .hero-brand-mark{height:104px!important}}
+
+/* Keep the welcome message readable on the black header strip. */
+.woodrick-home-page .topbar .container span:first-of-type{color:#f5d895!important;font-size:12px!important;font-weight:700!important;opacity:1!important}
