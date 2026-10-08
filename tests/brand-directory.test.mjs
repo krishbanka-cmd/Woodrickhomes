@@ -193,3 +193,12 @@ test('Charcoal Moulding remains a product but never appears in public brand rail
  assert.equal(charcoal.mediaCount,1);
  assert.equal(items.filter(x=>x.railEnabled!==false).some(x=>x.brand==='Charcoal'),false);
 });
+
+test('Legacy Charcoal-labelled uploads are categorized as Charcoal Moulding without losing media',()=>{
+ const items=buildBrandDirectory([{key:'vendor-public/v/p/old.pdf',brand:'Charcoal',category:'Louvers'}]);
+ const product=items.find(x=>x.brand==='Charcoal');
+ assert.ok(product);
+ assert.equal(product.mediaCount,1);
+ assert.deepEqual(product.categories,['Charcoal Moulding']);
+ assert.equal(product.railEnabled,false);
+});
