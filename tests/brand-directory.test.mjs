@@ -170,3 +170,16 @@ test('Legacy brand logos resolve to hosted files while admin settings and custom
  for(const tag of html.matchAll(/<div class="hero-brand-mark"[^>]*><img[^>]*src="([^"]+)"/g)){assert.ok(tag[1].startsWith('/assets/brand-logos/'));await readFile(new URL('..'+tag[1],import.meta.url));}
  for(const item of data.items.filter(x=>x.src.startsWith('/assets/')))await readFile(new URL('..'+item.src,import.meta.url));
 });
+
+test('Every trusted-brand logo uses a website-hosted asset that exists',async()=>{
+ const html=await readFile(new URL('../index.html',import.meta.url),'utf8');
+ const section=html.match(/<script id="woodrick-trusted-brand-logos-20260924">([\\s\\S]*?)<\\/script>/);
+ assert.ok(section,'trusted brand script should exist');
+ const entries=[...section[1].matchAll(/^\\s*'([^']+)'\\s*:\\s*['"]([^'"]+)['"]/gm)];
+ assert.equal(entries.length,22,'all curated trusted brands should be covered');
+ for(const [,brand,src] of entries){
+  assert.match(src,/^assets\\/brand-logos\\/[\\w.-]+$/,`${brand} must use a hosted logo`);
+  const bytes=await readFile(new URL('../'+src,import.meta.url));
+  assert.ok(bytes.length>0,`${brand} logo must not be empty`);
+ }
+});
