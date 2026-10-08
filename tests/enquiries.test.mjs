@@ -34,3 +34,14 @@ test('admin can page through more than 100 private enquiries',async()=>{
   const next=await (await handleEnquiries(new Request('https://woodrickhomes.com/api/enquiries?cursor='+encodeURIComponent(first.cursor),{headers:{authorization:'Bearer test-admin'}}),env)).json();
   assert.equal(next.items.length,5);assert.equal(next.truncated,false);
 });
+
+test('Finance enquiries use the existing private inbox and retain their finance source',async()=>{
+ const storage=bucket(),env={PRODUCT_MEDIA:storage,ADMIN_UPLOAD_TOKEN:'test-admin'};
+ for(const source of ['woodrickhomes.com/finance','https://untrusted.example']){
+  const response=await handleEnquiries(request('POST',{name:'Test Customer',mobile:'9999999999',requirement:'Bank Finance · Term Loan',source}),env);
+  assert.equal(response.status,201);const {id}=await response.json();
+  const record=JSON.parse(storage.data.get('private/enquiries/records/'+id+'.json'));
+  assert.equal(record.requirement,'Bank Finance · Term Loan');
+  assert.equal(record.source,source==='woodrickhomes.com/finance'?source:'woodrickhomes.com');
+ }
+});

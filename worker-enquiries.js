@@ -32,7 +32,7 @@ export async function handleEnquiries(req,env){
       const rate=await rateKey(req,env),previous=await env.PRODUCT_MEDIA.get(rate),count=previous?Number(await previous.text()):0;
       if(count>=10)return reply({error:'Too many enquiries. Please call us directly.'},429);
       const id=crypto.randomUUID(),attachmentId=clean(body.attachment_request_id,40);
-      const item={id,name,mobile,email,city,requirement,message,attachmentId:/^[a-f0-9-]{36}$/.test(attachmentId)?attachmentId:'',source:'woodrickhomes.com',status:'new',createdAt:new Date().toISOString()};
+      const item={id,name,mobile,email,city,requirement,message,attachmentId:/^[a-f0-9-]{36}$/.test(attachmentId)?attachmentId:'',source:body.source==='woodrickhomes.com/finance'?'woodrickhomes.com/finance':'woodrickhomes.com',status:'new',createdAt:new Date().toISOString()};
       await env.PRODUCT_MEDIA.put(ROOT+'records/'+id+'.json',JSON.stringify(item),{httpMetadata:{contentType:'application/json'}});
       await env.PRODUCT_MEDIA.put(rate,String(count+1));
       return reply({ok:true,id,message:'Your enquiry has been received.'},201);

@@ -16,6 +16,8 @@ on:
       - 'vendor/**'
       - 'tests/**'
       - 'catalogues/**'
+      - 'finance/**'
+      - 'sitemap.xml'
       - 'products/**'
       - 'brands/**'
       - 'assets/**'
