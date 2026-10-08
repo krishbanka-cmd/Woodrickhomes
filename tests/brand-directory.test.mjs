@@ -183,3 +183,13 @@ test('Every trusted-brand logo uses a website-hosted asset that exists',async()=
   assert.ok(bytes.length>0,`${brand} logo must not be empty`);
  }
 });
+
+test('Charcoal Moulding remains a product but never appears in public brand rail',()=>{
+ const items=buildBrandDirectory([{key:'vendor-public/v/p/charcoal.pdf',brand:'Charcoal',category:'Charcoal Moulding'}],[{brand:'Charcoal',railEnabled:true}]);
+ const charcoal=items.find(x=>x.brand==='Charcoal');
+ assert.ok(charcoal);
+ assert.equal(charcoal.railEnabled,false);
+ assert.deepEqual(charcoal.categories,['Charcoal Moulding']);
+ assert.equal(charcoal.mediaCount,1);
+ assert.equal(items.filter(x=>x.railEnabled!==false).some(x=>x.brand==='Charcoal'),false);
+});
