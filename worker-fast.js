@@ -10,22 +10,29 @@ import {PUBLIC_MEDIA_INDEX_KEY,refreshPublicMediaIndex,syncAndClean,STATIC_PUBLI
 
 const BRAND_RAIL_KEY='_system/brand-rail-v1.json';
 const BRAND_RAIL_DEFAULTS=[
-  {brand:'UltraTech',label:'UltraTech Cement',alt:'UltraTech Cement logo',src:'https://www.ultratechcement.com/content/dam/ultratechcementwebsite/solutions/3d-corporate-logo-full.jpg',fallback:'assets/brand-logos/ultratech.svg'},
-  {brand:'Birla Opus',label:'Birla Opus Paints',alt:'Birla Opus Paints logo',src:'https://assets.birlaopus.com/is/image/grasimindustries/footer-opus-logo-resize?dpr=off&ts=1740568574949',fallback:'assets/brand-logos/birla-opus.svg'},
-  {brand:'Asian Paints',label:'Asian Paints',alt:'Asian Paints logo',src:'https://www.asianpaints.com/media_1c958864309c45699aabc2a96ceec44f7a9a6343d.avif?format=avif&optimize=medium&width=750',fallback:'assets/brand-logos/asian-paints.svg'},
-  {brand:'Supreme',label:'Supreme',alt:'Supreme Industries logo',src:'assets/brand-logos/supreme-real.png'},
-  {brand:'CenturyPly',label:'CenturyPly',alt:'CenturyPly logo',src:'https://upload.wikimedia.org/wikipedia/commons/1/16/Centuryply.png',fallback:'https://delhisales.in/brand_image/1396010809.jpg'},
-  {brand:'Greenpanel',label:'Greenpanel',alt:'Greenpanel logo',src:'assets/brand-logos/greenpanel-real.svg'},
-  {brand:'Nilkamal',label:'Nilkamal',alt:'Nilkamal logo',src:'assets/brand-logos/nilkamal-real.png'},
-  {brand:'Godrej',label:'Godrej',alt:'Godrej logo',src:'assets/brand-logos/godrej-real.svg'},
-  {brand:'Hettich',label:'Hettich',alt:'Hettich logo',src:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Logo_of_Hettich_%28company%29.svg/1280px-Logo_of_Hettich_%28company%29.svg.png',fallback:'https://upload.wikimedia.org/wikipedia/commons/1/15/Logo_of_Hettich_%28company%29.svg'},
-  {brand:'Greenply',label:'Greenply',alt:'Greenply Plywood logo',src:'https://cdn.shopify.com/s/files/1/0634/6283/4312/files/plywood-suppliers-and-manufacturers-in-the-world-3.jpg?v=1748284691'},
-  {brand:'Merino',label:'Merino',alt:'Merino Laminates logo',src:'https://3adeal.com/images/thumbnails/904/500/detailed/5/merino_logo.png?t=1736319929'},
-  {brand:'Ristal',label:'Ristal',alt:'Ristal Laminates logo',src:'https://www.ristallam.com/ristal-img/logo.png'},
-  {brand:'Woodline',label:'Woodline',alt:'Woodline Laminates logo',src:'https://qliqo.in/get_image_services.php?id=1845'},
-  {brand:'MWUD',label:'MWUD',alt:'MWUD logo',src:'https://mwud.in/assets/images/resources/logo-1.png'},
-  {brand:'EBCO',label:'EBCO',alt:'EBCO logo',src:'https://www.sainiworld.in/cdn/shop/collections/ebco_logo.jpg?v=1667629036'}
+  {brand:'UltraTech',label:'UltraTech Cement',alt:'UltraTech Cement logo',src:'/assets/brand-logos/ultratech-hosted.jpg'},
+  {brand:'Birla Opus',label:'Birla Opus Paints',alt:'Birla Opus Paints logo',src:'/assets/brand-logos/birla-opus-hosted.jpg'},
+  {brand:'Asian Paints',label:'Asian Paints',alt:'Asian Paints logo',src:'/assets/brand-logos/asian-paints-hosted.png'},
+  {brand:'Supreme',label:'Supreme',alt:'Supreme Industries logo',src:'/assets/brand-logos/supreme-real.png'},
+  {brand:'CenturyPly',label:'CenturyPly',alt:'CenturyPly logo',src:'/assets/brand-logos/centuryply-hosted.png'},
+  {brand:'Greenpanel',label:'Greenpanel',alt:'Greenpanel logo',src:'/assets/brand-logos/greenpanel-real.svg'},
+  {brand:'Nilkamal',label:'Nilkamal',alt:'Nilkamal logo',src:'/assets/brand-logos/nilkamal-real.png'},
+  {brand:'Godrej',label:'Godrej',alt:'Godrej logo',src:'/assets/brand-logos/godrej-real.svg'},
+  {brand:'Hettich',label:'Hettich',alt:'Hettich logo',src:'/assets/brand-logos/hettich-hosted.png'},
+  {brand:'Greenply',label:'Greenply',alt:'Greenply Plywood logo',src:'/assets/brand-logos/greenply-hosted.jpg'},
+  {brand:'Merino',label:'Merino',alt:'Merino Laminates logo',src:'/assets/brand-logos/merino-hosted.png'},
+  {brand:'Ristal',label:'Ristal',alt:'Ristal Laminates logo',src:'/assets/brand-logos/ristal-official.png'},
+  {brand:'Woodline',label:'Woodline',alt:'Woodline Laminates logo',src:'/assets/brand-logos/woodline-official.svg'},
+  {brand:'MWUD',label:'MWUD',alt:'MWUD logo',src:'/assets/brand-logos/mwud-hosted.png'},
+  {brand:'EBCO',label:'EBCO',alt:'EBCO logo',src:'/assets/brand-logos/ebco-hosted.jpg'}
 ];
+// Migrate legacy remote/embedded logos on read without changing admin names,
+// categories, visibility, or custom uploads already stored on this website.
+const HOSTED_BRAND_LOGOS=new Map(BRAND_RAIL_DEFAULTS.map(item=>[brandKey(item.brand),item.src]));
+function hostedBrandLogo(brand,src){
+  const hosted=HOSTED_BRAND_LOGOS.get(brandKey(brand));
+  return hosted&&(!src||/^(?:https?:|\/\/|data:)/i.test(src))?hosted:src;
+}
 const BRAND_ENC=new TextEncoder();
 function brandJson(data,status=200){return new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}})}
 function brandCookie(request,name){const raw=request.headers.get('cookie')||'';for(const part of raw.split(';')){const [k,...rest]=part.trim().split('=');if(k===name)return rest.join('=')}return''}
@@ -34,8 +41,8 @@ async function brandAuthorized(request,env){if(!env.ADMIN_UPLOAD_TOKEN)return fa
 function cleanBrandItem(input={},existing={}){
   const brand=canonicalBrand(input.brand??existing.brand??'').slice(0,80);
   const label=String(input.label??existing.label??brand).trim().slice(0,100)||brand;
-  const src=String(input.src??existing.src??'').trim().slice(0,1200);
-  const fallback=String(input.fallback??existing.fallback??'').trim().slice(0,1200);
+  const src=hostedBrandLogo(brand,String(input.src??existing.src??'').trim().slice(0,1200));
+  const fallback=hostedBrandLogo(brand,String(input.fallback??existing.fallback??'').trim().slice(0,1200));
   const alt=String(input.alt??existing.alt??(`${label} logo`)).trim().slice(0,140);
   const categories=[...new Set((Array.isArray(input.categories)?input.categories:Array.isArray(existing.categories)?existing.categories:[]).map(v=>canonicalBrowseCategory(String(v).trim().slice(0,80))).filter(Boolean))].slice(0,40);
   return {brand,label,alt,src,categories,railEnabled:input.railEnabled??existing.railEnabled??true,...(fallback?{fallback}:{})};

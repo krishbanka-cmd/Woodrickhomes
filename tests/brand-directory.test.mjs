@@ -157,3 +157,16 @@ test('Explicit admin category corrections replace brand defaults before media as
  const corrected=buildBrandDirectory([],[{brand:'Woodline',categories:['Door Skin']}]).find(x=>x.brand==='Woodline');
  assert.deepEqual(corrected.categories,['Door Skin']);
 });
+
+test('Legacy brand logos resolve to hosted files while admin settings and custom uploads survive',async()=>{
+ const {default:app}=await import('../worker-fast.js');
+ const saved={items:[{brand:'Asian Paints',label:'Asian Paints',src:'https://old.example/logo.avif',categories:['Paints'],railEnabled:false},{brand:'CenturyPly',src:'https://upload.wikimedia.org/old.png',fallback:'https://old.example/fallback.png'},{brand:'Woodline',src:'/api/media?key=custom-logo.png',categories:['Louvers']},{brand:'New Brand',src:'/api/media?key=new-logo.png'}]};
+ const env={PRODUCT_MEDIA:{get:async key=>key==='_system/brand-rail-v1.json'?{text:async()=>JSON.stringify(saved)}:null}};
+ const res=await app.fetch(new Request('https://test/api/brands?scope=managed'),env,{}),data=await res.json();
+ const asian=data.items.find(x=>x.brand==='Asian Paints');assert.equal(asian.src,'/assets/brand-logos/asian-paints-hosted.png');assert.equal(asian.railEnabled,false);assert.deepEqual(asian.categories,['Paints']);
+ const century=data.items.find(x=>x.brand==='CenturyPly');assert.equal(century.src,'/assets/brand-logos/centuryply-hosted.png');assert.equal(century.fallback,century.src);
+ assert.equal(data.items.find(x=>x.brand==='Woodline').src,'/api/media?key=custom-logo.png');assert.equal(data.items.find(x=>x.brand==='New Brand').src,'/api/media?key=new-logo.png');
+ const html=await readFile(new URL('../index.html',import.meta.url),'utf8');
+ for(const tag of html.matchAll(/<div class="hero-brand-mark"[^>]*><img[^>]*src="([^"]+)"/g)){assert.ok(tag[1].startsWith('/assets/brand-logos/'));await readFile(new URL('..'+tag[1],import.meta.url));}
+ for(const item of data.items.filter(x=>x.src.startsWith('/assets/')))await readFile(new URL('..'+item.src,import.meta.url));
+});
