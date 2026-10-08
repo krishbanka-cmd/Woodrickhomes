@@ -9,6 +9,9 @@ export function canonicalBrowseCategory(value){const clean=String(value||'').tri
 export function canonicalMediaCategory(item={}){
  const category=canonicalBrowseCategory(item.category);
  const title=[item.catalogue,item.title,item.originalName,item.key,item.sourceKey].filter(Boolean).join(' ');
+ // Older uploads may have entered the product name in the brand field.
+ // Keep their original media URLs while classifying them under the product category.
+ if(/^charcoal(?: mouldings?| moldings?)?$/i.test(String(item.brand||'').trim()))return 'Charcoal Moulding';
  return category==='Doors'&&/\bdoor[\s_-]*skins?\b/i.test(title)?'Door Skin':category;
 }
 export function buildBrandDirectory(media=[],rail=[]){
@@ -22,6 +25,8 @@ export function buildBrandDirectory(media=[],rail=[]){
   const entry=brands.get(key);entry.mediaCount++;
   if(category){if(!entry.categories.some(c=>brandKey(c)===brandKey(category)))entry.categories.push(category);entry.categoryCounts[category]=(entry.categoryCounts[category]||0)+1}
  }
+ // Charcoal Moulding is a product, never a brand-rail entry; preserve its media/category association.
+ for(const entry of brands.values())if(/^charcoal(?: mouldings?| moldings?)?$/i.test(entry.brand.trim()))entry.railEnabled=false;
  // Confirmed store range remains discoverable before a catalogue is uploaded.
  if(!brands.has('ambuja cement'))brands.set('ambuja cement',{brand:'Ambuja Cement',label:'Ambuja Cement',src:'',alt:'Ambuja Cement',categories:['Cement'],mediaCount:0,categoryCounts:{},source:'business-range',railEnabled:false});
  return [...brands.values()];
