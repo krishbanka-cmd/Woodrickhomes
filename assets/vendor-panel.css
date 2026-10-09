@@ -62,3 +62,13 @@ html.vendor-embedded #password-login .primary{min-height:34px}
 html.vendor-embedded #password-status:empty{display:none}
 html.vendor-embedded .login .footer-note{margin:8px 0 0}
 @media(max-width:560px){html.vendor-embedded .login.panel{padding:12px}html.vendor-embedded main{padding:0 8px 6px}}
+
+/* One-time vendor activation uses the same compact design as vendor login. */
+.activation-panel{max-width:520px;margin:14px auto}
+.activation-panel .field{margin-top:12px}
+.activation-panel .activation-separator{text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:10px 0}
+.activation-panel .help{font-size:12px}
+html.vendor-embedded .activation-panel{margin:4px auto;padding:14px 16px;box-shadow:none}
+html.vendor-embedded .activation-panel h1{font-size:23px;margin:8px 0}
+html.vendor-embedded .activation-panel p{font-size:12px;line-height:1.45;margin:6px 0}
+@media(max-width:560px){.activation-panel{margin:8px auto;padding:16px}}
