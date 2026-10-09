@@ -32,3 +32,16 @@
 
 /* Vendor login clarity; other dashboard sections retain their styles. */
 .login-modes{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}.login-modes button{flex:1;min-width:130px;background:#f6f7f3;border:1px solid #cad4ca;color:#33433b}.login-modes button.active{background:#215940;color:#fff;border-color:#215940}.password-visibility{margin:-2px 10px 12px 0;padding:6px 10px;min-height:32px;font-size:12px}.login [hidden]{display:none!important}
+
+/* Embed only: compact vendor sign-in inside the homepage dialog. */
+html.vendor-embedded .top{display:none!important}
+html.vendor-embedded body{background:#f6f7f3}
+html.vendor-embedded main{max-width:540px;margin:12px auto;padding:0 14px 18px}
+html.vendor-embedded .login{max-width:100%;margin:0 auto}
+html.vendor-embedded .login.panel{padding:18px 20px;box-shadow:none}
+html.vendor-embedded .login h1{font-size:24px;margin:5px 0 9px}
+html.vendor-embedded .login p{font-size:12px;line-height:1.5;margin:7px 0 11px}
+html.vendor-embedded .login-modes{margin:12px 0}
+html.vendor-embedded .login-modes button{font-size:12px;padding:8px}
+html.vendor-embedded .login .field{margin-bottom:12px}
+@media(max-width:560px){html.vendor-embedded main{margin:8px auto;padding:0 8px 12px}html.vendor-embedded .login.panel{padding:15px 13px}html.vendor-embedded .login-modes button{min-width:125px;font-size:11px}}

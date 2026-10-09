@@ -11,6 +11,9 @@ import {PUBLIC_MEDIA_INDEX_KEY,refreshPublicMediaIndex,syncAndClean,STATIC_PUBLI
 const isHiddenMediaKey = key => /^(?:private|_system|_config)\//i.test(String(key||''));
 
 const BRAND_RAIL_KEY='_system/brand-rail-v1.json';
+// Charcoal denotes the Charcoal Moulding product, not a manufacturer brand.
+// Keep existing product media and admin records intact; exclude only from public hero rail.
+const PRODUCT_ONLY_RAIL_ENTRIES=new Set(['charcoal','charcoal moulding']);
 const BRAND_RAIL_DEFAULTS=[
   {brand:'UltraTech',label:'UltraTech Cement',alt:'UltraTech Cement logo',src:'/assets/brand-logos/ultratech-hosted.jpg'},
   {brand:'Birla Opus',label:'Birla Opus Paints',alt:'Birla Opus Paints logo',src:'/assets/brand-logos/birla-opus-hosted.jpg'},
@@ -76,7 +79,7 @@ async function handleBrandRail(request,env,ctx){
     const managed=await loadBrandRail(env);
     if(new URL(request.url).searchParams.get('scope')==='managed')return brandJson({items:managed});
     const master=await loadCatalogMaster(request,env,ctx);
-    return brandJson({...master,items:new URL(request.url).searchParams.get('scope')==='all'?master.items:master.items.filter(x=>x.railEnabled!==false)});
+    return brandJson({...master,items:new URL(request.url).searchParams.get('scope')==='all'?master.items:master.items.filter(x=>x.railEnabled!==false&&!PRODUCT_ONLY_RAIL_ENTRIES.has(brandKey(x.brand)))});
   }
   if(request.method!=='POST')return brandJson({error:'Method not allowed'},405);
   if(!await brandAuthorized(request,env))return brandJson({error:'Admin login required'},401);
