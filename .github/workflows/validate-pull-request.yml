@@ -29,3 +29,9 @@ jobs:
         run: node --check assets/vendor-panel.js
       - name: Run site regression tests
         run: node --experimental-default-type=module --test tests/*.test.mjs
+      - name: Measure live catalogue and PDF response times (read only)
+        run: node tests/live-catalogue-speed-probe.mjs
+      - name: Scan all public PDF folders for missing files and broken ranges
+        run: node tests/live-all-folders-scan.mjs
+      - name: Measure first visible PDF page in headless Chrome (read only)
+        run: node tests/live-pdf-browser-benchmark.mjs
