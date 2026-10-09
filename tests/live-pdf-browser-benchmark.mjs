@@ -27,12 +27,17 @@ async function main(){
  ws=new WebSocket(pages[0].webSocketDebuggerUrl);
  await new Promise((resolve,reject)=>{ws.onopen=resolve;ws.onerror=reject});
  let serial=0;
- const pending=new Map(),failures=[],r2Responses=[];
+ const pending=new Map(),failures=[],r2Responses=[],allResponses=[],exceptions=[];
  ws.onmessage=event=>{
   const p=JSON.parse(event.data);
   if(p.id){const entry=pending.get(p.id);if(entry){pending.delete(p.id);if(p.error)entry.reject(Error(JSON.stringify(p.error)));else entry.resolve(p.result)}return}
-  if(p.method==='Network.loadingFailed'&&p.params?.errorText)failures.push(p.params.errorText);
-  if(p.method==='Network.responseReceived'&&p.params?.response?.url?.includes('/api/media?'))r2Responses.push({status:p.params.response.status,url:p.params.response.url.split('&key=')[0]});
+  if(p.method==='Network.loadingFailed'&&p.params?.errorText)failures.push({error:p.params.errorText,blocked:p.params.blockedReason,type:p.params.type});
+  if(p.method==='Runtime.exceptionThrown')exceptions.push(p.params.exceptionDetails?.text);
+  if(p.method==='Network.responseReceived'){
+   const response=p.params?.response;
+   if(response?.url)allResponses.push({status:response.status,url:response.url.slice(0,110)});
+   if(response?.url?.includes('/api/media?'))r2Responses.push({status:response.status,url:response.url.split('&key=')[0]});
+  }
  };
  function call(method,params={}){
   return new Promise((resolve,reject)=>{
@@ -42,14 +47,15 @@ async function main(){
   });
  }
  await call('Page.enable');await call('Runtime.enable');await call('Network.enable');
- const expression="(()=>{const p=document.getElementById('page'),s=document.getElementById('status'),c=document.getElementById('count');return {ready:!!p&&!p.hidden&&!!s&&s.hidden,count:c?.textContent||'',status:s?.textContent||'',resources:performance.getEntriesByType('resource').filter(r=>/pdf|worker/.test(r.name)).length};})()";
+ const expression="(()=>{const p=document.getElementById('page'),s=document.getElementById('status'),c=document.getElementById('count');return {ready:!!p&&!p.hidden&&!!s&&s.hidden,url:location.href,title:document.title,readyState:document.readyState,bodyText:document.body?.innerText?.slice(0,150)||'',count:c?.textContent||'',status:s?.textContent||'',resources:performance.getEntriesByType('resource').filter(r=>/pdf|worker/.test(r.name)).length};})()";
  for(const item of selected){
-  failures.length=0;r2Responses.length=0;
+  failures.length=0;r2Responses.length=0;allResponses.length=0;exceptions.length=0;
   const url=base+'/products/presentation/?key='+encodeURIComponent(item.key)+'&title='+encodeURIComponent(item.title||item.catalogue||item.brand);
   const started=performance.now();
-  await call('Page.navigate',{url});
+  const navigation=await call('Page.navigate',{url});
+  console.log('BROWSER NAV '+JSON.stringify(navigation));
   let check={status:'No viewer content'},elapsed=0;
-  const deadline=Date.now()+50000;
+  const deadline=Date.now()+17000;
   while(Date.now()<deadline){
    try{
     const r=await call('Runtime.evaluate',{expression,returnByValue:true});
@@ -59,7 +65,7 @@ async function main(){
    await delay(350);
   }
   elapsed=Math.round(performance.now()-started);
-  console.log('BROWSER RESULT '+JSON.stringify({brand:item.brand,name:item.title||item.catalogue||'',pdfSize:item.size,firstPageVisible:!!check.ready,firstPageMs:check.ready?elapsed:null,elapsedMs:elapsed,viewerStatus:check.status,pageCount:check.count,requestStatuses:r2Responses.slice(0,12).map(x=>x.status),failedRequests:failures.slice(0,6),resources:check.resources}));
+  console.log('BROWSER RESULT '+JSON.stringify({brand:item.brand,name:item.title||item.catalogue||'',pdfSize:item.size,firstPageVisible:!!check.ready,firstPageMs:check.ready?elapsed:null,elapsedMs:elapsed,viewerStatus:check.status,pageCount:check.count,requestStatuses:r2Responses.slice(0,12).map(x=>x.status),failedRequests:failures.slice(0,6),allResponses:allResponses.slice(0,20),exceptions:exceptions.slice(0,5),url:check.url,title:check.title,bodyText:check.bodyText,readyState:check.readyState,resources:check.resources}));
  }
 }
 try{await main()}catch(e){console.log('BROWSER FAILED '+String(e.stack||e).slice(0,1800));process.exitCode=1}
