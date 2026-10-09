@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
- const dialog=document.createElement('dialog');dialog.setAttribute('aria-label','Vendor login');dialog.style.cssText='padding:0;border:1px solid #dccda9;border-radius:16px;width:min(560px,calc(100vw - 28px));max-width:560px;max-height:calc(100dvh - 24px);overflow:hidden;background:#f6f7f3;box-shadow:0 22px 76px #0005';
+ const dialog=document.createElement('dialog');dialog.setAttribute('aria-label','Vendor login');dialog.style.cssText='position:fixed;inset:auto;top:50%;left:50%;right:auto;bottom:auto;transform:translate(-50%,-50%);margin:0;box-sizing:border-box;padding:0;border:1px solid #dccda9;border-radius:16px;width:min(560px,calc(100vw - 28px));max-width:560px;max-height:calc(100dvh - 24px);overflow:hidden;background:#f6f7f3;box-shadow:0 22px 76px #0005';
  const header=document.createElement('div');header.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid #e3e5df;background:#fff';
  const brand=document.createElement('strong');brand.textContent='WOODRICK HOMES · VENDOR LOGIN';brand.style.cssText='font:800 13px/1.4 Arial,sans-serif;letter-spacing:.8px;color:#263a2f';
  const close=document.createElement('button');close.textContent='Close ×';close.type='button';close.setAttribute('aria-label','Close vendor login');close.style.cssText='flex-shrink:0;padding:8px 11px;background:white;border:1px solid #ddd;border-radius:8px;cursor:pointer';close.onclick=()=>dialog.close();
