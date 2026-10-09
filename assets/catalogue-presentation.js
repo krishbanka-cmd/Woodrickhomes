@@ -44,29 +44,95 @@
   };
 })();
 
-// Shared, lazy first-page preview for new catalogues without a saved cover.
+// Shared catalogue-cover rendering: show a useful cover instantly.
+// Never fetch large vendor PDFs simply to paint the listing card.
 (function(){
-  const previews=new Map(),queued=new WeakSet();let observer,queue=[],active=0,engineModule;
+  const previews=new Map(),queued=new WeakSet();
+  const MAX_PREVIEW_MS=7000;
+  let observer,queue=[],active=0,engineModule;
+  function fallback(el){
+    const card=document.createElement('div');
+    card.className='cover-fallback';
+    const heading=document.createElement('strong');
+    heading.textContent=el.dataset.catalogueTitle||'Product catalogue';
+    const label=document.createElement('span');
+    label.textContent='PDF CATALOGUE';
+    label.style.cssText='display:block;margin-top:8px;font:700 11px Arial,sans-serif;letter-spacing:1.5px;color:#846b48';
+    card.append(heading,label);
+    el.replaceChildren(card);
+  }
   async function firstPage(url){
     if(previews.has(url))return previews.get(url);
-    const pending=(async()=>{let task;try{
-      engineModule=engineModule||import('/assets/pdf-engine.mjs?v=20261002-audit1');
-      const {pdfEngine}=await engineModule,engine=await pdfEngine();
-      task=engine.getDocument({url});const pdf=await task.promise,page=await pdf.getPage(1),base=page.getViewport({scale:1}),view=page.getViewport({scale:Math.min(1.5,900/base.width)}),canvas=document.createElement('canvas');
-      canvas.width=Math.ceil(view.width);canvas.height=Math.ceil(view.height);
-      await page.render({canvasContext:canvas.getContext('2d'),viewport:view,background:'#fff'}).promise;
-      return canvas.toDataURL('image/jpeg',.88);
-    }finally{if(task)await task.destroy()}})();
-    previews.set(url,pending);pending.catch(()=>previews.delete(url));return pending;
+    const pending=(async()=>{
+      let task,timer;
+      try{
+        const work=(async()=>{
+          engineModule=engineModule||import('/assets/pdf-engine.mjs?v=20261002-audit1');
+          const {pdfEngine}=await engineModule,engine=await pdfEngine();
+          task=engine.getDocument({url,disableAutoFetch:true,rangeChunkSize:65536});
+          const pdf=await task.promise,page=await pdf.getPage(1),base=page.getViewport({scale:1});
+          const view=page.getViewport({scale:Math.min(1,700/base.width)}),canvas=document.createElement('canvas');
+          canvas.width=Math.ceil(view.width);canvas.height=Math.ceil(view.height);
+          await page.render({canvasContext:canvas.getContext('2d'),viewport:view,background:'#fff'}).promise;
+          return canvas.toDataURL('image/jpeg',.75);
+        })();
+        return await Promise.race([work,new Promise((_,reject)=>{
+          timer=setTimeout(()=>reject(new Error('Catalogue cover preview timed out')),MAX_PREVIEW_MS);
+        })]);
+      }finally{
+        clearTimeout(timer);
+        if(task)Promise.resolve().then(()=>task.destroy()).catch(()=>{});
+      }
+    })();
+    previews.set(url,pending);
+    pending.catch(()=>previews.delete(url));
+    return pending;
   }
-  function drain(){while(active<2&&queue.length){const el=queue.shift();if(!el.isConnected)continue;active++;
-    const url=el.dataset.cataloguePdf;firstPage(url).then(src=>{if(!el.isConnected)return;const img=document.createElement('img');img.src=src;img.alt=el.dataset.catalogueTitle||'Catalogue cover';el.replaceChildren(img)}).catch(()=>{if(el.isConnected)el.textContent='Preview unavailable · Open catalogue to view';queued.delete(el)}).finally(()=>{active--;drain()});
-  }}
-  function schedule(el){if(queued.has(el))return;queued.add(el);el.textContent='Loading cover…';queue.push(el);drain()}
-  function watch(el){if(!observer&&'IntersectionObserver' in window)observer=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){observer.unobserve(e.target);schedule(e.target)}})},{rootMargin:'160px'});if(observer)observer.observe(el);else schedule(el)}
-  window.WoodrickCatalogue.observe=function(root=document){root.querySelectorAll('[data-catalogue-pdf]').forEach(el=>{
-    const image=el.querySelector('img');if(!image){watch(el);return}
-    image.addEventListener('error',()=>{el.replaceChildren();watch(el)},{once:true});
-    if(image.complete&&!image.naturalWidth){el.replaceChildren();watch(el)}
-  })};
+  function drain(){
+    while(active<2&&queue.length){
+      const el=queue.shift();
+      if(!el.isConnected)continue;
+      active++;
+      const url=el.dataset.cataloguePdf;
+      firstPage(url).then(src=>{
+        if(!el.isConnected)return;
+        const img=document.createElement('img');
+        img.alt=el.dataset.catalogueTitle||'Catalogue cover';
+        img.src=src;
+        el.replaceChildren(img);
+      }).catch(()=>{if(el.isConnected)fallback(el)}).finally(()=>{active--;drain()});
+    }
+  }
+  function schedule(el){
+    if(queued.has(el))return;
+    queued.add(el);
+    fallback(el);
+    // Preview only explicitly marked small PDF files (<=4 MB).
+    // All other catalogues render their brand/title immediately, without downloads.
+    if(el.dataset.cataloguePreview!=='small')return;
+    queue.push(el);
+    drain();
+  }
+  function watch(el){
+    if(el.dataset.cataloguePreview!=='small'){schedule(el);return}
+    if(!observer&&'IntersectionObserver' in window){
+      observer=new IntersectionObserver(entries=>{
+        entries.forEach(entry=>{if(entry.isIntersecting){observer.unobserve(entry.target);schedule(entry.target)}})
+      },{rootMargin:'160px'});
+    }
+    if(observer)observer.observe(el);else schedule(el);
+  }
+  window.WoodrickCatalogue.observe=function(root=document){
+    root.querySelectorAll('[data-catalogue-pdf]').forEach(el=>{
+      const image=el.querySelector('img');
+      if(!image){watch(el);return}
+      let settled=false;
+      const done=()=>{settled=true;clearTimeout(watchdog)};
+      const fail=()=>{if(!el.isConnected)return;done();el.replaceChildren();watch(el)};
+      const watchdog=setTimeout(()=>{if(!settled&&!image.complete)fail()},7000);
+      image.addEventListener('load',done,{once:true});
+      image.addEventListener('error',fail,{once:true});
+      if(image.complete){if(image.naturalWidth)done();else fail()}
+    });
+  };
 })();
