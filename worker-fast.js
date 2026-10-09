@@ -284,10 +284,19 @@ export default{
     if((request.method==='GET'||request.method==='HEAD')&&url.pathname.startsWith('/products/presentation/')){
       const asset=await env.ASSETS.fetch(request);
       const headers=new Headers(asset.headers);
-      headers.set('cache-control','no-store, no-cache, must-revalidate, max-age=0');
-      headers.set('pragma','no-cache');
-      headers.set('expires','0');
-      if(request.method==='HEAD'||!(headers.get('content-type')||'').includes('text/html'))return new Response(asset.body,{status:asset.status,statusText:asset.statusText,headers});
+      // All catalogue folders use this one PDF viewer. It used to send no-store
+      // for every 430KB PDF.js module and 1.2MB worker, forcing a cold download
+      // on every catalogue opened. Cache *only* public static assets; the
+      // dynamic viewer HTML still receives fresh no-store headers.
+      const isHtml=(headers.get('content-type')||'').includes('text/html');
+      if(asset.ok&&!isHtml){
+        headers.set('cache-control','public, max-age=86400, s-maxage=86400');
+        headers.delete('pragma');headers.delete('expires');
+      }else{
+        headers.set('cache-control','no-store, no-cache, must-revalidate, max-age=0');
+        headers.set('pragma','no-cache');headers.set('expires','0');
+      }
+      if(request.method==='HEAD'||!isHtml)return new Response(asset.body,{status:asset.status,statusText:asset.statusText,headers});
       let html=await asset.text();
       const fixedBack='<script id="woodrick-fixed-catalogue-back">(function(){var b=document.getElementById("catalogueBack"),p=new URLSearchParams(location.search),back=p.get("return")||"/catalogues/";if(!b)return;b.href=back.startsWith("/")&&!back.startsWith("//")?back:"/catalogues/";})();</script>';
       if(!html.includes('woodrick-fixed-catalogue-back'))html=html.replace('</body>',fixedBack+'\n</body>');

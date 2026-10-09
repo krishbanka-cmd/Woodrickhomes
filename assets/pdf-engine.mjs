@@ -5,7 +5,7 @@ export async function pdfEngine(){
   if(!ready)ready=Promise.all([1,2,3,4].map(async n=>{
     const controller=new AbortController();
     return withDeadline((async()=>{
-      const r=await fetch('/products/presentation/vendor/pdf.worker.part-'+n+'.js',{signal:controller.signal,cache:'no-cache'});
+      const r=await fetch('/products/presentation/vendor/pdf.worker.part-'+n+'.js',{signal:controller.signal,cache:'default'});
       if(!r.ok)throw new Error('PDF engine unavailable');
       return r.text();
     })(),15000,()=>controller.abort());

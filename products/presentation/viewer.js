@@ -26,6 +26,12 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
   document.getElementById('title').textContent = catalogueTitle;
   document.getElementById('download').href = '/api/media?download=1&key=' + encodeURIComponent(key);
 
+  const loadStarted = performance.now();
+  // Local browser performance markers help audit every brand/category via
+  // Performance panel; never send catalogue keys or account data anywhere.
+  function stageTiming(stageName) {
+    try { performance.mark('woodrick-pdf-'+stageName); } catch {}
+  }
   function setStatus(message, retry = false) {
     status.replaceChildren(document.createTextNode(message));
     if (retry) {
@@ -80,6 +86,7 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
       try { await withDeadline(task.promise,20000,()=>task.cancel()); } finally { if (activeRender === task) activeRender = null; }
       if (ticket !== generation) return;
       frame.hidden = false; canvas.hidden = false; status.hidden = true; canvas.setAttribute('aria-label', catalogueTitle + ', page ' + current);
+      if(current===1)stageTiming('first-page-visible');
       if (!zoomed) { stage.scrollTop = 0; stage.scrollLeft = 0; }
       const neighbor = current < pdf.numPages ? current + 1 : current - 1;
       if (neighbor > 0) pdf.getPage(neighbor).catch(() => {});
@@ -93,7 +100,7 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
     const ticket=generation;
     const slowTimer=setTimeout(()=>{if(ticket===generation&&!pdf)setStatus('Opening the first page… Large catalogues may take a few moments.');},5000);
     try {
-      const {pdfEngine}=await withDeadline(import('/assets/pdf-engine.mjs?v=20261004-catalogue-reliability'),15000);
+      const {pdfEngine}=await withDeadline(import('/assets/pdf-engine.mjs?v=20261010-shared-cache'),15000);
       const pdfjsLib=await withDeadline(pdfEngine(),15000);
       if(ticket!==generation)return;
       // Streaming keeps downloading the entire catalogue while range reads also
@@ -103,7 +110,7 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
       task.onProgress=progress=>{if(ticket!==generation||pdf||!progress||!progress.total)return;const percent=Math.min(99,Math.round(progress.loaded/progress.total*100));setStatus('Preparing catalogue… '+percent+'%');};
       const loaded=await withDeadline(task.promise,30000,()=>task.destroy());
       if(ticket!==generation){await loaded.destroy();return;}
-      pdf=loaded;clearTimeout(slowTimer);await render(1);
+      pdf=loaded;clearTimeout(slowTimer);stageTiming('document-ready');await render(1);
     }
     catch (error) { clearTimeout(slowTimer);if(ticket!==generation)return;console.error('Catalogue load failed:', error); setStatus('This catalogue could not load. Check your connection and retry. ', true); }
   }
