@@ -1,5 +1,7 @@
 function json(data,status=200){return new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store, no-cache, must-revalidate','pragma':'no-cache','expires':'0'}})}
 
+const isHiddenMediaKey = key => /^(?:private|_system|_config)\//i.test(String(key||''));
+
 function unslug(v=''){return String(v).split('-').filter(Boolean).map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ')}
 function inferLibraryMeta(key=''){
   const p=String(key).split('/');
@@ -56,6 +58,7 @@ export async function onRequestGet({request,env}){
   const url=new URL(request.url);
   const key=url.searchParams.get('key');
   if(key){
+    if(isHiddenMediaKey(key))return json({error:'Not found'},404);
     const obj=await env.PRODUCT_MEDIA.get(key);
     if(!obj)return new Response('Not found',{status:404});
     const headers=new Headers();
@@ -70,18 +73,19 @@ export async function onRequestGet({request,env}){
   }
 
   const prefix=url.searchParams.get('prefix')||'';
+  if(isHiddenMediaKey(prefix))return json({error:'Not found'},404);
   const requestedCursor=url.searchParams.get('cursor')||undefined;
 
   if(prefix.startsWith('library/')&&!requestedCursor){
     const all=await listAll(env,prefix);
-    const items=all.objects.map(toItem).sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));
+    const items=all.objects.filter(o=>!isHiddenMediaKey(o.key)).map(toItem).sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));
     return json({items,truncated:all.truncated,cursor:all.cursor,pages:all.pages,total:items.length,mode:'full-library-path-recovery'});
   }
 
   const opts={limit:500,prefix,include:['customMetadata','httpMetadata']};
   if(requestedCursor)opts.cursor=requestedCursor;
   const listed=await env.PRODUCT_MEDIA.list(opts);
-  const items=listed.objects.map(toItem).sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));
+  const items=listed.objects.filter(o=>!isHiddenMediaKey(o.key)).map(toItem).sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));
   return json({items,truncated:listed.truncated,cursor:listed.cursor||null,total:items.length,mode:'paged'});
 }
 
