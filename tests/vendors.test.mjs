@@ -287,3 +287,52 @@ test('Admin-controlled login link remains a working OTP-free sign-in and passwor
  assert.notEqual(anotherToken,token);
  assert.equal((await call(s,'/api/vendor/activate',{body:{token:anotherToken}})).status,200);
 });
+
+test('Admin corrects approved vendor email without changing approval, password or mobile verification',async()=>{
+ const s=setup(),form=application('9876543210');form.set('email','old@example.com');
+ const created=await data(await call(s,'/api/vendor-applications',{admin:true,body:form})),v=created.vendor;
+ assert.equal(created.status,201);
+ assert.equal((await call(s,'/api/vendor-applications/email-correct',{body:{id:v.id,email:'new@example.com'}})).status,401);
+ assert.equal((await call(s,'/api/vendor-applications/email-correct',{admin:true,body:{id:v.id,email:'new@example.com'}})).status,403,'only approved vendors editable');
+ await approve(s,v);
+ const verified=await data(await call(s,'/api/vendor-applications/email-verify',{admin:true,body:{id:v.id,email:'old@example.com',confirmed:true}}));
+ assert.equal(verified.status,200);
+ const signed=await login(s,v),password='strong vendor password 2026';
+ assert.equal((await call(s,'/api/vendor/password',{cookie:signed.cookie,body:{password}})).status,200);
+ const signIn=(identifier)=>call(s,'/api/vendor/password/login',{body:{identifier,password}});
+ assert.equal((await signIn('old@example.com')).status,200);
+ assert.equal((await call(s,'/api/vendor-applications/email-correct',{admin:true,body:{id:v.id,email:'bad email'}})).status,400);
+ assert.equal((await signIn('old@example.com')).status,200,'invalid correction must not change login');
+ const saved=await data(await call(s,'/api/vendor-applications/email-correct',{admin:true,body:{id:v.id,email:'NEW@EXAMPLE.COM'}}));
+ assert.equal(saved.status,200);
+ assert.equal(saved.vendor.email,'new@example.com');
+ assert.equal(saved.vendor.emailVerified,false);
+ assert.equal(saved.vendor.status,'approved');
+ assert.equal(saved.vendor.mobile,'9876543210');
+ assert.equal(saved.vendor.mobileVerified,true);
+ assert.equal((await signIn('old@example.com')).status,401,'old email must stop being a login identity');
+ assert.equal((await signIn('new@example.com')).status,401,'unverified email must not be usable');
+ assert.equal((await signIn('9876543210')).status,200,'password and mobile login remain active');
+ const same=await data(await call(s,'/api/vendor-applications/email-correct',{admin:true,body:{id:v.id,email:'new@example.com'}}));
+ assert.equal(same.unchanged,true);
+ const newVerified=await data(await call(s,'/api/vendor-applications/email-verify',{admin:true,body:{id:v.id,email:'new@example.com',confirmed:true}}));
+ assert.equal(newVerified.status,200);
+ assert.equal(newVerified.vendor.emailVerified,true);
+ assert.equal((await signIn('new@example.com')).status,200);
+ assert.equal((await signIn('old@example.com')).status,401);
+ const row=await data(await call(s,'/api/vendor-applications',{admin:true}));
+ assert.equal(row.items.find(x=>x.id===v.id).email,'new@example.com');
+ const audit=await s.storage.list({prefix:'private/vendors/audit/'+v.id+'/'});
+ assert.ok(audit.objects.length>0);
+});
+
+test('Approved vendor email correction cannot claim another vendor email',async()=>{
+ const s=setup(),v1=await create(s,'9876543210'),v2=await create(s,'9876543211');
+ await approve(s,v1);await approve(s,v2);
+ assert.equal((await call(s,'/api/vendor-applications/email-correct',{admin:true,body:{id:v1.id,email:'first@example.com'}})).status,200);
+ assert.equal((await call(s,'/api/vendor-applications/email-verify',{admin:true,body:{id:v1.id,email:'first@example.com',confirmed:true}})).status,200);
+ const conflict=await call(s,'/api/vendor-applications/email-correct',{admin:true,body:{id:v2.id,email:'first@example.com'}});
+ assert.equal(conflict.status,409);
+ const row=await data(await call(s,'/api/vendor-applications',{admin:true}));
+ assert.notEqual(row.items.find(x=>x.id===v2.id).email,'first@example.com');
+});

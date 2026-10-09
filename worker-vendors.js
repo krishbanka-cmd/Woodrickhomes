@@ -199,6 +199,30 @@ export async function handleVendor(req,env,ctx){
    if(path==='/api/vendor-applications/status'&&req.method==='POST'){
     const body=await req.json(),v=await vendor(env,clean(body.id,40)),status=clean(body.status,30),note=clean(body.note,500);if(!v)fail('Vendor not found.',404);if(!['pending','approved','rejected','suspended'].includes(status))fail('Invalid status.');if(status==='approved'&&body.manualVerified===true){v.mobileVerified=true;v.mobileVerificationMethod='admin-confirmed'}if(status==='approved'&&!v.mobileVerified)fail('Verify the mobile by OTP or confirm that your team has verified it.');if(status==='approved'&&!v.documentKey)fail('Business KYC document is required before approval.');if(['rejected','suspended'].includes(status)&&!note)fail('Add a review note for the vendor.');const previous=v.status;v.status=status;v.reviewNote=note;v.reviewedAt=new Date().toISOString();await write(env,vendorKey(v.id),v);if(status!=='approved'){let cursor;do{const page=await env.PRODUCT_MEDIA.list({prefix:ROOT+'product-index/'+v.id+'/',limit:100,...(cursor?{cursor}:{})});for(const entry of page.objects){const index=await read(env,entry.key),p=await read(env,productKey(index.id));if(p?.publicKeys?.length){await unpublish(env,p);p.status='pending';await saveProduct(env,p)}}cursor=page.truncated?page.cursor:null}while(cursor)}await audit(env,'vendor-reviewed',v.id,{actor:'admin',previous,status,note});await backup(env,v,ctx);return reply({ok:true,vendor:publicVendor(v)});
    }
+   if(path==='/api/vendor-applications/email-correct'&&req.method==='POST'){
+    const body=await req.json(),id=clean(body.id,40);
+    if(!UUID.test(id))fail('Invalid vendor.',400);
+    const email=emailAddress(body.email);
+    if(!email)fail('Enter the corrected vendor email address.',400);
+    const key=vendorKey(id),object=await env.PRODUCT_MEDIA.get(key);
+    if(!object)fail('Vendor not found.',404);
+    const v=JSON.parse(await object.text());
+    if(v.status!=='approved')fail('Email correction here is for approved vendors. Review the application first.',403);
+    await rateLimit(req,env,'admin-email-correct',id,10,3600000);
+    if(email===v.email)return reply({ok:true,unchanged:true,vendor:publicVendor(v)});
+    const owner=await read(env,await emailKey(env,email));
+    if(owner&&owner.id!==v.id)fail('This email belongs to another vendor account.',409);
+    const previousEmail=v.email||'',previousVerified=!!v.emailVerified;
+    Object.assign(v,{email,emailVerified:false,updatedAt:new Date().toISOString()});
+    if(!await write(env,key,v,{etagMatches:object.etag}))fail('Vendor details changed. Refresh and retry.',409);
+    if(previousEmail&&previousVerified){
+     const previousKey=await emailKey(env,previousEmail),previousOwner=await read(env,previousKey);
+     if(previousOwner?.id===id)await env.PRODUCT_MEDIA.delete(previousKey);
+    }
+    await audit(env,'admin-vendor-email-corrected',id,{actor:'admin',previousEmail,email,previousVerified});
+    await backup(env,v,ctx);
+    return reply({ok:true,vendor:publicVendor(v)});
+   }
    if(path==='/api/vendor-applications/email-verify'&&req.method==='POST'){
     const body=await req.json(),object=await env.PRODUCT_MEDIA.get(vendorKey(clean(body.id,40)));if(!UUID.test(body.id||'')||!object)fail('Vendor not found.',404);const v=JSON.parse(await object.text());
     if(body.confirmed!==true||v.status!=='approved'||!v.email||body.email!==v.email)fail('Approve the vendor and confirm ownership of the current email address first.');
