@@ -258,3 +258,32 @@ test('Vendor email registration, ownership verification and email password login
  assert.equal((await call(s,'/api/vendor/password/login',{body:{identifier:'9876543210',password:'vendor password 1234'}})).status,200);
  const otherSession=await data(await call(s,'/api/vendor/session',{cookie:otherLogin.cookie}));assert.equal(otherSession.vendor.email,v.email);
 });
+
+test('Admin-controlled login link remains a working OTP-free sign-in and password setup path',async()=>{
+ const s=setup(),v=await create(s,'9876543210');
+ await approve(s,v);
+ const config=await data(await call(s,'/api/vendor/config'));
+ assert.equal(config.otpAvailable,false);
+ assert.equal((await call(s,'/api/vendor-applications/login-link',{body:{id:v.id}})).status,401,'public users may not generate tokens');
+ const link=await data(await call(s,'/api/vendor-applications/login-link',{admin:true,body:{id:v.id}}));
+ assert.equal(link.status,200);
+ assert.ok(link.expiresAt>Date.now());
+ assert.ok(link.expiresAt<Date.now()+86400000+2000);
+ const token=new URLSearchParams(new URL(link.url).hash.slice(1)).get('activate');
+ assert.ok(token);
+ const activation=await call(s,'/api/vendor/activate',{body:{token}});
+ assert.equal(activation.status,200);
+ const cookie=activation.headers.get('set-cookie').split(';')[0];
+ assert.equal((await data(await call(s,'/api/vendor/session',{cookie}))).canSetPassword,true);
+ assert.equal((await call(s,'/api/vendor/activate',{body:{token}})).status,401,'one-time token cannot be replayed');
+ const saved=await call(s,'/api/vendor/password',{cookie,body:{password:'a new vendor password 123'}});
+ assert.equal(saved.status,200);
+ const normalCookie=saved.headers.get('set-cookie').split(';')[0];
+ assert.equal((await data(await call(s,'/api/vendor/session',{cookie:normalCookie}))).canSetPassword,false);
+ assert.equal((await call(s,'/api/vendor/password/login',{body:{mobile:'9876543210',password:'a new vendor password 123'}})).status,200);
+ // A vendor can still sign in with a fresh admin-approved one-time link while OTP is unavailable.
+ const another=await data(await call(s,'/api/vendor-applications/login-link',{admin:true,body:{id:v.id}}));
+ const anotherToken=new URLSearchParams(new URL(another.url).hash.slice(1)).get('activate');
+ assert.notEqual(anotherToken,token);
+ assert.equal((await call(s,'/api/vendor/activate',{body:{token:anotherToken}})).status,200);
+});
