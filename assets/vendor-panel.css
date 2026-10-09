@@ -99,3 +99,10 @@ html.vendor-embedded .activation-panel p{font-size:12px;line-height:1.45;margin:
 .vendor-dashboard #email-settings .field{max-width:480px}
 .vendor-dashboard #vendor-coverage-panel{margin-top:10px}
 @media(max-width:740px){.vendor-dashboard{max-width:100%}.vendor-dashboard .dashboard-header h1{font-size:22px}.vendor-dashboard .dashboard-actions{gap:7px}.vendor-dashboard .dashboard-actions button{font-size:11px;padding:7px 10px}.vendor-dashboard .panel{padding:13px}.vendor-dashboard .toolbar{gap:8px}.vendor-dashboard .cards{grid-template-columns:1fr}}
+
+/* Admin-controlled correction of an approved vendor's email. */
+.vendor-admin-email-edit{border:1px solid var(--line);border-radius:9px;background:#f8faf7;padding:13px 14px;margin:12px 0 16px;display:grid;gap:7px;max-width:620px}
+.vendor-admin-email-edit .vendor-review-field{gap:5px}
+.vendor-admin-email-edit .vendor-review-field input{max-width:480px;margin:4px 0 0}
+.vendor-admin-email-edit .help{margin:0 0 3px;font-size:11px;line-height:1.5}
+.vendor-admin-email-edit button{justify-self:start;font-size:12px;min-height:36px}
