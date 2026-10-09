@@ -198,6 +198,8 @@ async function rangedPdf(request,url,env){
 export default{
   async fetch(request,env,ctx){
     const url=new URL(request.url);
+    // Finance is paused while its independent platform is completed.
+    if(url.pathname==='/finance'||url.pathname.startsWith('/finance/'))return new Response(null,{status:302,headers:{location:'/','cache-control':'no-store','x-robots-tag':'noindex'}});
     if(request.method==='GET'&&['/products/','/products','/products/index.html'].includes(url.pathname)&&url.searchParams.get('category')){
       const target=new URL('/products/brands/',url);target.search=url.search;
       return Response.redirect(target.href,302);

@@ -50,6 +50,7 @@ test('Every HTML route produces syntactically valid inline scripts after live wo
   }}};
   for(const page of pages){
     const result=await worker.fetch(new Request('https://example.com/'+page,{headers:{authorization:'Bearer presentation-test-only'}}),env,{waitUntil(){}});
+    if(page.startsWith("finance/")){assert.equal(result.status,302,page);assert.equal(result.headers.get("location"),"/");continue;}
     assert.equal(result.status,200,page);const html=await result.text();
     for(const [index,match]of [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)].entries()){
       if(!match[2].trim()||/application\/ld\+json|type=["']module/.test(match[1]))continue;

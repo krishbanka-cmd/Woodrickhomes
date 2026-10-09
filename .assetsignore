@@ -12,3 +12,4 @@ package-lock.json
 npm-debug.log*
 tests/
 docs/
+finance/
