@@ -29,3 +29,5 @@ jobs:
         run: node --check assets/vendor-panel.js
       - name: Run site regression tests
         run: node --experimental-default-type=module --test tests/*.test.mjs
+      - name: Measure live catalogue and PDF response times (read only)
+        run: node tests/live-catalogue-speed-probe.mjs
