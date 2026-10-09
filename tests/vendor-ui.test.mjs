@@ -243,7 +243,7 @@ test('Vendor onboarding provides separate activation, OTP-free continuation and 
  assert.ok(script.includes("if(!v.mobileVerified)throw Error("));
  assert.ok(apply.includes('After approval, Woodrick Homes will share a secure one-time access link.'));
  assert.ok(admin.includes('Generate secure login link and privately share it.'));
- assert.ok(admin.includes('vendor-panel.js?v=20261009-vendor-access'));
+ assert.ok(admin.includes('vendor-panel.js?v=20261009-email-correction'));
 });
 
 test('Vendor dashboard prioritizes products with compact account settings and preserves all controls',async()=>{
