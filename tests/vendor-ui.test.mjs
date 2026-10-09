@@ -172,7 +172,7 @@ test('Entire vendor browser script parses and initializes clickable password/OTP
 test('Vendor login separates account activation from new vendor registration',async()=>{
  const source=await readFile(new URL('../assets/vendor-panel.js',import.meta.url),'utf8');
  const vendor=await readFile(new URL('../vendor/index.html',import.meta.url),'utf8');
- assert.ok(vendor.includes('vendor-panel.js?v=20261009-activate'));
+ assert.ok(vendor.includes('vendor-panel.js?v=20261009-vendor-access'));
  assert.match(vendor,/Activate Account \/ Forgot Password/);
  assert.ok(vendor.includes('Register your business'));
  assert.ok(!vendor.includes('Mobile OTP / First login'));
