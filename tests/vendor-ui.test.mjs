@@ -64,3 +64,16 @@ test('Vendor status lists request the selected status and ignore an earlier list
  h.controls['status-filter'].value='';const all=h.load(false);assert.doesNotMatch(h.pending[2].url,/status=/);
  h.pending[2].resolve({items:[],cursor:null});await all;
 });
+
+test('Vendor login dialog stays compact, accessible, and preserves standalone vendor dashboard',async()=>{
+ const popup=await readFile(new URL('../assets/vendor-login.js',import.meta.url),'utf8');
+ const vendor=await readFile(new URL('../vendor/index.html',import.meta.url),'utf8');
+ const styles=await readFile(new URL('../assets/vendor-panel.css',import.meta.url),'utf8');
+ const home=await readFile(new URL('../index.html',import.meta.url),'utf8');
+ assert.match(popup,/width:min\(560px,calc\(100vw - 28px\)\)/);
+ assert.match(popup,/height:min\(570px,calc\(100dvh - 92px\)\)/);
+ assert.match(popup,/Close vendor login/);
+ assert.match(vendor,/window\.parent!==window/);
+ assert.match(styles,/html\.vendor-embedded \.top\{display:none!important\}/);
+ assert.match(home,/vendor-login\.js\?v=20261009-popup/);
+});
