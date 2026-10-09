@@ -78,3 +78,36 @@ test('Vendor login dialog stays compact, accessible, and preserves standalone ve
  assert.match(home,/vendor-login\.js\?v=20261009-centered/);
  assert.match(popup,/position:fixed;inset:auto;top:50%;left:50%;right:auto;bottom:auto;transform:translate\(-50%,-50%\);margin:0/);
 });
+
+test('Vendor modal stays within the visible area between site header and brand rail',async()=>{
+ const source=await readFile(new URL('../assets/vendor-login.js',import.meta.url),'utf8');
+ const elements=[],handlers={};
+ const document={
+  documentElement:{clientHeight:720},
+  createElement(tag){
+   const el={tag,open:false,style:{},setAttribute(){},append(){},close(){this.open=false},showModal(){this.open=true}};
+   elements.push(el);return el;
+  },
+  body:{append(){}},
+  addEventListener(type,fn){handlers[type]=fn},
+  querySelector(selector){
+   if(selector==='header.nav')return {getBoundingClientRect:()=>({top:28,bottom:130})};
+   if(selector==='.hero-brand-dock')return {getBoundingClientRect:()=>({top:600,bottom:705})};
+   return null;
+  }
+ };
+ const window={innerHeight:720,addEventListener(type,fn){handlers['window-'+type]=fn}};
+ const location={origin:'https://woodrickhomes.com',href:''};
+ vm.runInNewContext(source,{document,window,location});
+ const dialog=elements.find(x=>x.tag==='dialog'),frame=elements.find(x=>x.tag==='iframe');
+ let prevented=false;
+ handlers.click({target:{closest:()=>({})},preventDefault(){prevented=true}});
+ assert.equal(prevented,true);
+ assert.equal(dialog.open,true);
+ assert.equal(frame.src,'/vendor/');
+ assert.equal(dialog.style.top,'365px');
+ assert.equal(dialog.style.maxHeight,'446px');
+ assert.equal(frame.style.height,'394px');
+ assert.equal(365-446/2,142,'dialog must start below navigation');
+ assert.equal(365+446/2,588,'dialog must end above the brand rail');
+});
