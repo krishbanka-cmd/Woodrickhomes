@@ -13,7 +13,7 @@ function previewRuntime(script){
   replaceChildren(...children){this.children=children}
  });
  const document={createElement};
- const window={};
+ const window={WoodrickCatalogue:{}};
  vm.runInNewContext(script.slice(script.indexOf('// Shared catalogue-cover rendering:')),{window,document,Map,WeakSet,Promise,setTimeout(fn){timers.push(fn);return timers.length},clearTimeout(){},console});
  return {window,timers,createElement};
 }
