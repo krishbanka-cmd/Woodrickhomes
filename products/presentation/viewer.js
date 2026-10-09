@@ -105,7 +105,11 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
       if(ticket!==generation)return;
       // Streaming keeps downloading the entire catalogue while range reads also
       // run. Disable it so first-page reads use bounded byte ranges instead.
-      const task=pdfjsLib.getDocument({url:rawUrl,rangeChunkSize:262144,disableAutoFetch:true,disableStream:true});
+      // Limited performance experiment for large, unlinearized PDFs.
+      // Default remains the proven 256KB range; only allow bounded sizes.
+      const requestedChunk=Number(params.get('rangeChunk'));
+      const rangeChunkSize=[262144,524288,1048576].includes(requestedChunk)?requestedChunk:262144;
+      const task=pdfjsLib.getDocument({url:rawUrl,rangeChunkSize,disableAutoFetch:true,disableStream:true});
       loadingTask=task;
       task.onProgress=progress=>{if(ticket!==generation||pdf||!progress||!progress.total)return;const percent=Math.min(99,Math.round(progress.loaded/progress.total*100));setStatus('Preparing catalogue… '+percent+'%');};
       const loaded=await withDeadline(task.promise,30000,()=>task.destroy());
