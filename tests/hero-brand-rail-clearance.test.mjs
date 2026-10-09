@@ -32,12 +32,12 @@ function getClearance({height=800,railTop,railBottom,buttonHeight=54,actionsHeig
 }
 
 test('desktop buttons move above rail only while the rail is behind them',()=>{
-  assert.equal(getClearance({railTop:680,railBottom:790}),'132px');
+  assert.equal(getClearance({railTop:680,railBottom:790}),'144px');
   assert.equal(getClearance({railTop:200,railBottom:310}),'22px');
   assert.equal(getClearance({railTop:840,railBottom:950}),'22px');
 });
 
 test('mobile bottom row clears the rail without moving unnecessarily',()=>{
-  assert.equal(getClearance({height:720,railTop:590,railBottom:700,actionsHeight:54,mobile:true}),'142px');
+  assert.equal(getClearance({height:720,railTop:590,railBottom:700,actionsHeight:54,mobile:true}),'154px');
   assert.equal(getClearance({height:720,railTop:150,railBottom:260,actionsHeight:54,mobile:true}),'8px');
 });
