@@ -10,7 +10,9 @@ async function main(){
  const result=await fetch(base+'/api/media?catalogue=1',{signal:AbortSignal.timeout(12000)});
  if(!result.ok)throw Error('Catalogue index: '+result.status);
  const {items=[]}=await result.json();
- const selected=items.filter(x=>/\.pdf$/i.test(x.key||'')&&(x.type==='pdf'||x.type==='original-pdf'||x.key.includes('/pdf')));
+ const allPdfs=items.filter(x=>/\.pdf$/i.test(x.key||''));
+ const selected=allPdfs.filter(x=>/rainbow|ipsa|ristal solid|ristal-slim/i.test([x.key,x.title,x.catalogue].join(' '))||!(x.type==='pdf'||x.type==='original-pdf'||x.key.includes('/pdf')));
+ console.log('BROWSER FILTER '+JSON.stringify({allPdfs:allPdfs.length,selected:selected.map(x=>({brand:x.brand,name:x.title||x.catalogue,type:x.type}))}));
  const senator=selected.find(x=>/senator/i.test(x.brand||''));
  const other=selected.find(x=>/ristal/i.test(x.brand||''));
  if(!selected.length)throw Error('No catalogue PDFs found');
@@ -49,8 +51,8 @@ async function main(){
   });
  }
  await call('Page.enable');await call('Runtime.enable');await call('Network.enable');
- const expression="(()=>{const p=document.getElementById('page'),s=document.getElementById('status'),c=document.getElementById('count');return {ready:!!p&&!p.hidden&&!!s&&s.hidden,url:location.href,title:document.title,readyState:document.readyState,bodyText:document.body?.innerText?.slice(0,150)||'',count:c?.textContent||'',status:s?.textContent||'',resources:performance.getEntriesByType('resource').filter(r=>/pdf|worker/.test(r.name)).length};})()";
- const cases=selected.map(item=>({item,chunk:0,label:String(item.category||'Other')+' / '+String(item.brand||'Unknown')}));
+ const expression="(()=>{const p=document.getElementById('page'),s=document.getElementById('status'),c=document.getElementById('count');return {ready:!!p&&!p.hidden&&!!s&&s.hidden,url:location.href,title:document.title,readyState:document.readyState,bodyText:document.body?.innerText?.slice(0,150)||'',count:c?.textContent||'',status:s?.textContent||'',resources:performance.getEntriesByType('resource').filter(r=>/pdf|worker/.test(r.name)).length,marks:performance.getEntriesByType('mark').filter(r=>r.name.startsWith('woodrick-pdf-')).map(r=>({name:r.name,ms:Math.round(r.startTime)}))};})()";
+ const cases=selected.flatMap(item=>/rainbow/i.test(item.brand||'')?[{item,chunk:1048576,label:'Rainbow 1MB'},{item,chunk:262144,label:'Rainbow 256KB'}]:[{item,chunk:0,label:String(item.category||'Other')+' / '+String(item.brand||'Unknown')}]);
  const results=[];
  for(const {item,chunk,label} of cases){
   failures.length=0;r2Responses.length=0;allResponses.length=0;exceptions.length=0;
@@ -59,7 +61,7 @@ async function main(){
   const navigation=await call('Page.navigate',{url});
   console.log('BROWSER NAV '+JSON.stringify(navigation));
   let check={status:'No viewer content'},elapsed=0;
-  const deadline=Date.now()+22000;
+  const deadline=Date.now()+35000;
   while(Date.now()<deadline){
    try{
     const r=await call('Runtime.evaluate',{expression,returnByValue:true});
@@ -70,7 +72,7 @@ async function main(){
   }
   elapsed=Math.round(performance.now()-started);
   results.push({category:item.category,brand:item.brand,title:item.title||item.catalogue||'',firstPageVisible:!!check.ready,firstPageMs:check.ready?elapsed:null,elapsedMs:elapsed});
-  console.log('BROWSER RESULT '+JSON.stringify({variant:label,rangeChunk:chunk,brand:item.brand,name:item.title||item.catalogue||'',pdfSize:item.size,firstPageVisible:!!check.ready,firstPageMs:check.ready?elapsed:null,elapsedMs:elapsed,viewerStatus:check.status,pageCount:check.count,requestStatuses:r2Responses.slice(0,12).map(x=>x.status),failedRequests:failures.slice(0,6),allResponses:allResponses.slice(0,20),exceptions:exceptions.slice(0,5),url:check.url,title:check.title,bodyText:check.bodyText,readyState:check.readyState,resources:check.resources}));
+  console.log('BROWSER RESULT '+JSON.stringify({variant:label,rangeChunk:chunk,brand:item.brand,name:item.title||item.catalogue||'',pdfSize:item.size,firstPageVisible:!!check.ready,firstPageMs:check.ready?elapsed:null,elapsedMs:elapsed,viewerStatus:check.status,pageCount:check.count,requestStatuses:r2Responses.slice(0,12).map(x=>x.status),failedRequests:failures.slice(0,6),allResponses:allResponses.slice(0,20),exceptions:exceptions.slice(0,5),url:check.url,title:check.title,bodyText:check.bodyText,readyState:check.readyState,resources:check.resources,marks:check.marks}));
  }
  console.log('BROWSER SCAN SUMMARY '+JSON.stringify({total:results.length,successful:results.filter(x=>x.firstPageVisible).length,failed:results.filter(x=>!x.firstPageVisible),slowest:results.filter(x=>x.firstPageVisible).sort((a,b)=>b.firstPageMs-a.firstPageMs).slice(0,10),medianFirstPageMs:(()=>{const times=results.filter(x=>x.firstPageVisible).map(x=>x.firstPageMs).sort((a,b)=>a-b);return times.length?times[Math.floor(times.length/2)]:null})()}));
 }
