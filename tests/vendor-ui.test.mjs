@@ -75,7 +75,7 @@ test('Vendor login dialog stays compact, accessible, and preserves standalone ve
  assert.match(popup,/Close vendor login/);
  assert.match(vendor,/window\.parent!==window/);
  assert.match(styles,/html\.vendor-embedded \.top\{display:none!important\}/);
- assert.match(vendor,/vendor-panel\.css\?v=20261009-contentfit/);
+ assert.match(vendor,/vendor-panel\.css\?v=20261009-compact-dashboard/);
  assert.match(styles,/html\.vendor-embedded #password-status:empty\{display:none\}/);
  assert.match(home,/vendor-login\.js\?v=20261009-contentfit/);
  assert.match(popup,/position:fixed;inset:auto;top:50%;left:50%;right:auto;bottom:auto;transform:translate\(-50%,-50%\);margin:0/);
@@ -172,7 +172,7 @@ test('Entire vendor browser script parses and initializes clickable password/OTP
 test('Vendor login separates account activation from new vendor registration',async()=>{
  const source=await readFile(new URL('../assets/vendor-panel.js',import.meta.url),'utf8');
  const vendor=await readFile(new URL('../vendor/index.html',import.meta.url),'utf8');
- assert.ok(vendor.includes('vendor-panel.js?v=20261009-vendor-access'));
+ assert.ok(vendor.includes('vendor-panel.js?v=20261009-compact-dashboard'));
  assert.match(vendor,/Activate Account \/ Forgot Password/);
  assert.ok(vendor.includes('Register your business'));
  assert.ok(!vendor.includes('Mobile OTP / First login'));
@@ -244,4 +244,45 @@ test('Vendor onboarding provides separate activation, OTP-free continuation and 
  assert.ok(apply.includes('After approval, Woodrick Homes will share a secure one-time access link.'));
  assert.ok(admin.includes('Generate secure login link and privately share it.'));
  assert.ok(admin.includes('vendor-panel.js?v=20261009-vendor-access'));
+});
+
+test('Vendor dashboard prioritizes products with compact account settings and preserves all controls',async()=>{
+ const html=await readFile(new URL('../vendor/index.html',import.meta.url),'utf8');
+ const css=await readFile(new URL('../assets/vendor-panel.css',import.meta.url),'utf8');
+ const source=await readFile(new URL('../assets/vendor-panel.js',import.meta.url),'utf8');
+ const start=html.indexOf('<section id="dashboard"'),shortcuts=html.indexOf('id="dashboard-add-product"',start),product=html.indexOf('id="product-editor"',start),products=html.indexOf('id="products"',start),email=html.indexOf('id="email-settings"',start);
+ assert.ok(start>=0&&shortcuts>start&&product>shortcuts&&products>product&&email>products,'product actions and list precede optional account details');
+ assert.match(html,/<details class="panel" id="email-settings" hidden><summary>Account settings/);
+ assert.ok(!html.includes('<section class="panel" id="email-settings"'));
+ for(const id of ['password-login','email-form','account-email','product-form','product-status','refresh-products','more-products','vendor-coverage-panel','profile-form','logout']){
+  assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id+' remains present once');
+ }
+ assert.ok(html.includes('vendor-panel.css?v=20261009-compact-dashboard'));
+ assert.ok(html.includes('vendor-panel.js?v=20261009-compact-dashboard'));
+ assert.ok(css.includes('.vendor-dashboard .dashboard-header h1{font-size:24px'));
+ assert.ok(css.includes('.vendor-dashboard .status:empty{display:none'));
+ assert.ok(source.includes("'dashboard-add-product').hidden=!approved"));
+});
+test('Vendor dashboard shortcuts open appropriate sections without exposing hidden content',async()=>{
+ const source=await readFile(new URL('../assets/vendor-panel.js',import.meta.url),'utf8');
+ const start=source.indexOf('function openVendorSection(id)'),end=source.indexOf(" $('email-form').onsubmit",start);
+ assert.ok(start>0&&end>start);
+ const targets={};
+ for(const id of ['dashboard-add-product','dashboard-my-products','dashboard-account','product-editor','vendor-products-section','email-settings']){
+  targets[id]={id,tagName:id==='product-editor'||id==='email-settings'?'DETAILS':'DIV',hidden:false,open:false,scrollIntoView(){this.scrolled=true}};
+ }
+ const ctx={$:id=>targets[id]};
+ vm.createContext(ctx);
+ vm.runInContext(source.slice(start,end),ctx);
+ targets['dashboard-add-product'].onclick();
+ assert.equal(targets['product-editor'].open,true);
+ assert.equal(targets['product-editor'].scrolled,true);
+ targets['dashboard-my-products'].onclick();
+ assert.equal(targets['vendor-products-section'].scrolled,true);
+ targets['dashboard-account'].onclick();
+ assert.equal(targets['email-settings'].open,true);
+ targets['email-settings'].hidden=true;
+ targets['email-settings'].scrolled=false;
+ targets['dashboard-account'].onclick();
+ assert.equal(targets['email-settings'].scrolled,false);
 });
