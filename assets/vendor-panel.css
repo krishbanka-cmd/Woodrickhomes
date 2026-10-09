@@ -45,3 +45,20 @@ html.vendor-embedded .login-modes{margin:12px 0}
 html.vendor-embedded .login-modes button{font-size:12px;padding:8px}
 html.vendor-embedded .login .field{margin-bottom:12px}
 @media(max-width:560px){html.vendor-embedded main{margin:8px auto;padding:0 8px 12px}html.vendor-embedded .login.panel{padding:15px 13px}html.vendor-embedded .login-modes button{min-width:125px;font-size:11px}}
+
+/* Vendor login within the homepage modal: remove unnecessary scroll on desktop.
+   Standalone dashboard and vendor onboarding retain their existing spacing. */
+html.vendor-embedded main{margin:5px auto;padding:0 10px 5px}
+html.vendor-embedded .login.panel{padding:12px 16px}
+html.vendor-embedded .login h1{font-size:22px;margin:3px 0 6px}
+html.vendor-embedded .login p{font-size:11px;line-height:1.4;margin:4px 0 7px}
+html.vendor-embedded .login .eyebrow{margin-bottom:3px}
+html.vendor-embedded .login-modes{margin:8px 0;gap:7px}
+html.vendor-embedded .login-modes button{min-height:34px;padding:6px 8px}
+html.vendor-embedded .login .field{margin-bottom:8px;gap:4px}
+html.vendor-embedded .login .field input{min-height:36px;height:36px;padding:7px 10px}
+html.vendor-embedded .password-visibility{margin:0 8px 0 0;min-height:32px}
+html.vendor-embedded #password-login .primary{min-height:34px}
+html.vendor-embedded #password-status:empty{display:none}
+html.vendor-embedded .login .footer-note{margin:8px 0 0}
+@media(max-width:560px){html.vendor-embedded .login.panel{padding:12px}html.vendor-embedded main{padding:0 8px 6px}}
