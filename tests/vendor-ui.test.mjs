@@ -172,9 +172,9 @@ test('Entire vendor browser script parses and initializes clickable password/OTP
 test('Unavailable OTP has a clear first-login support fallback and working link',async()=>{
  const source=await readFile(new URL('../assets/vendor-panel.js',import.meta.url),'utf8');
  const vendor=await readFile(new URL('../vendor/index.html',import.meta.url),'utf8');
- assert.match(vendor,/vendor-panel\\.js\\?v=20261009-otpfix/);
+ assert.ok(vendor.includes('vendor-panel.js?v=20261009-otpfix'));
  const block=source.slice(source.indexOf('async function configureOTP()'),source.indexOf('async function applyPage()'));
- assert.match(block,/Mobile OTP is not active yet/);
- assert.match(block,/First login \\/ Forgot password/);
- assert.match(block,/https:\\/\\/wa\\.me\\/919415324839/);
+ assert.ok(block.includes('Mobile OTP is not active yet'));
+ assert.ok(block.includes('First login / Forgot password'));
+ assert.ok(block.includes('https://wa.me/919415324839'));
 });
