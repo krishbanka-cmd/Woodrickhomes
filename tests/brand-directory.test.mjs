@@ -170,3 +170,28 @@ test('Legacy brand logos resolve to hosted files while admin settings and custom
  for(const tag of html.matchAll(/<div class="hero-brand-mark"[^>]*><img[^>]*src="([^"]+)"/g)){assert.ok(tag[1].startsWith('/assets/brand-logos/'));await readFile(new URL('..'+tag[1],import.meta.url));}
  for(const item of data.items.filter(x=>x.src.startsWith('/assets/')))await readFile(new URL('..'+item.src,import.meta.url));
 });
+
+test('Charcoal Moulding stays in product/media directory but never appears as a manufacturer in hero rail',async()=>{
+ const {default:worker}=await import('../worker-fast.js');
+ const key='product-sync/charcoal/catalogue.pdf';
+ const object={key,customMetadata:{brand:'Charcoal',category:'Charcoal Moulding',title:'Charcoal Moulding Catalogue',catalogue:'Charcoal Moulding Catalogue',type:'pdf'}};
+ const env={PRODUCT_MEDIA:{
+  get:async key=>null,
+  list:async options=>{
+   if(options.delimiter)return {objects:[],delimitedPrefixes:['product-sync/'],truncated:false};
+   return {objects:options.prefix==='product-sync/'?[object]:[],truncated:false};
+  }
+ }};
+ const context={waitUntil(){}};
+ const fetchJSON=async route=>{
+  const response=await worker.fetch(new Request('https://test'+route),env,context);
+  assert.equal(response.status,200,route);
+  return response.json();
+ };
+ const hero=await fetchJSON('/api/brands');
+ assert.ok(!hero.items.some(x=>x.brand==='Charcoal'),'Charcoal is a product, not a brand');
+ const managed=await fetchJSON('/api/brands?scope=all');
+ assert.ok(managed.items.some(x=>x.brand==='Charcoal'),'admin directory and product media remain intact');
+ const media=await fetchJSON('/api/media');
+ assert.ok(media.items.some(x=>x.brand==='Charcoal'),'product catalogue remains publicly discoverable');
+});
