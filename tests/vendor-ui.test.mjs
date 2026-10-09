@@ -204,3 +204,44 @@ test('Offline recovery tab displays one activation message and an actual WhatsAp
  assert.match(link.textContent,/Request activation/);
 });
 
+
+test('Approved vendor recovery session receives clear dedicated password setup, not immediate dashboard redirect',async()=>{
+ const source=await readFile(new URL('../assets/vendor-panel.js',import.meta.url),'utf8');
+ const text=source.slice(source.indexOf('async function showDashboard('),source.indexOf('function productCard('));
+ const fields={login:{hidden:false},dashboard:{hidden:false},'password-activation':{hidden:true},'activation-business':{textContent:''}};
+ const vendor={id:'approved-1',business:'Example Verified Supplier',status:'approved'};
+ const ctx={
+  api:async()=>({authenticated:true,canSetPassword:true,vendor}),
+  $:id=>{if(!(id in fields))fields[id]={hidden:false};return fields[id]},
+  document:{title:''},
+  window:{parent:{postMessage(){throw Error('must not redirect before password setup')}},},
+  location:{origin:'https://woodrickhomes.com',href:''},
+  currentVendor:null
+ };
+ vm.createContext(ctx);vm.runInContext(text+';this.showDashboard=showDashboard',ctx);
+ await ctx.showDashboard();
+ assert.equal(fields.login.hidden,true);
+ assert.equal(fields.dashboard.hidden,true);
+ assert.equal(fields['password-activation'].hidden,false);
+ assert.equal(fields['activation-business'].textContent,'Example Verified Supplier');
+ assert.match(ctx.document.title,/Activate Vendor Account/);
+});
+
+test('Vendor onboarding provides separate activation, OTP-free continuation and admin link sharing',async()=>{
+ const html=await readFile(new URL('../vendor/index.html',import.meta.url),'utf8');
+ const apply=await readFile(new URL('../become-a-vendor/index.html',import.meta.url),'utf8');
+ const admin=await readFile(new URL('../admin-products/vendors/index.html',import.meta.url),'utf8');
+ const script=await readFile(new URL('../assets/vendor-panel.js',import.meta.url),'utf8');
+ assert.ok(html.includes('id="password-activation"'));
+ assert.ok(html.includes('id="activation-password-form"'));
+ assert.ok(html.includes('id="activation-continue"'));
+ assert.ok(html.includes('Save password &amp; open dashboard'));
+ assert.ok(script.includes("showDashboard({skipActivation:true})"));
+ assert.ok(script.includes("post('/api/vendor/password',{password})"));
+ assert.ok(script.includes("action('Generate secure login link'"));
+ assert.ok(script.includes("action('Share via WhatsApp'"));
+ assert.ok(script.includes("if(!v.mobileVerified)throw Error("));
+ assert.ok(apply.includes('After approval, Woodrick Homes will share a secure one-time access link.'));
+ assert.ok(admin.includes('Generate secure login link and privately share it.'));
+ assert.ok(admin.includes('vendor-panel.js?v=20261009-vendor-access'));
+});
