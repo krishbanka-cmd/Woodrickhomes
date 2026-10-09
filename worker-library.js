@@ -90,11 +90,14 @@ async function imageViewer(key,obj,env){
   return new Response(body,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}});
 }
 
+const isHiddenMediaKey = key => /^(?:private|_system|_config)\//i.test(String(key||''));
+
 async function handleMedia(request,env){
   if(!env.PRODUCT_MEDIA)return json({error:'PRODUCT_MEDIA R2 binding is missing'},500);
   try{
     const url=new URL(request.url),key=url.searchParams.get('key');
     if(key){
+      if(isHiddenMediaKey(key))return json({error:'Not found'},404);
       const obj=await env.PRODUCT_MEDIA.get(key);if(!obj)return new Response('Not found',{status:404});
       const fetchDest=(request.headers.get('sec-fetch-dest')||'').toLowerCase();
       const fetchMode=(request.headers.get('sec-fetch-mode')||'').toLowerCase();
@@ -110,13 +113,14 @@ async function handleMedia(request,env){
       return new Response(obj.body,{headers});
     }
     const prefix=url.searchParams.get('prefix')||'',cursor=url.searchParams.get('cursor')||undefined;
+    if(isHiddenMediaKey(prefix))return json({error:'Not found'},404);
     if(prefix==='library/'){
       const [modern,all]=await Promise.all([env.PRODUCT_MEDIA.list({limit:500,prefix:'library/',include:['customMetadata','httpMetadata']}),env.PRODUCT_MEDIA.list({limit:500,include:['customMetadata','httpMetadata']})]);
       const byKey=new Map();for(const o of modern.objects)byKey.set(o.key,mediaItem(o));for(const o of all.objects){let item=mediaItem(o);if(isLegacyLibraryItem(item)){item=normalizeLegacyLibraryItem(item);byKey.set(item.key,item);}}
-      const items=dedupeLegacyRistal([...byKey.values()]),response=json({items,truncated:false,cursor:null,legacyCompatible:true,legacyDuplicatesHidden:true});response.headers.set('cache-control','public, max-age=30, s-maxage=120, stale-while-revalidate=300');return response;
+      const items=dedupeLegacyRistal([...byKey.values()].filter(x=>!isHiddenMediaKey(x.key))),response=json({items,truncated:false,cursor:null,legacyCompatible:true,legacyDuplicatesHidden:true});response.headers.set('cache-control','public, max-age=30, s-maxage=120, stale-while-revalidate=300');return response;
     }
     const listed=await env.PRODUCT_MEDIA.list({limit:500,prefix,cursor,include:['customMetadata','httpMetadata']});
-    const items=listed.objects.map(mediaItem).sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));return json({items,truncated:listed.truncated,cursor:listed.cursor||null});
+    const items=listed.objects.filter(o=>!isHiddenMediaKey(o.key)).map(mediaItem).sort((a,b)=>String(b.uploadedAt||b.uploaded).localeCompare(String(a.uploadedAt||a.uploaded)));return json({items,truncated:listed.truncated,cursor:listed.cursor||null});
   }catch(err){return json({error:`Media API error: ${err&&err.message?err.message:'Unknown error'}`},500);}
 }
 
