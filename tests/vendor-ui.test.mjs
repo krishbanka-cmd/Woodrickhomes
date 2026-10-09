@@ -75,5 +75,6 @@ test('Vendor login dialog stays compact, accessible, and preserves standalone ve
  assert.match(popup,/Close vendor login/);
  assert.match(vendor,/window\.parent!==window/);
  assert.match(styles,/html\.vendor-embedded \.top\{display:none!important\}/);
- assert.match(home,/vendor-login\.js\?v=20261009-popup/);
+ assert.match(home,/vendor-login\.js\?v=20261009-centered/);
+ assert.match(popup,/position:fixed;inset:auto;top:50%;left:50%;right:auto;bottom:auto;transform:translate\(-50%,-50%\);margin:0/);
 });
