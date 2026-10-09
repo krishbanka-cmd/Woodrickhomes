@@ -50,9 +50,17 @@ async function main(){
  }
  await call('Page.enable');await call('Runtime.enable');await call('Network.enable');
  const expression="(()=>{const p=document.getElementById('page'),s=document.getElementById('status'),c=document.getElementById('count');return {ready:!!p&&!p.hidden&&!!s&&s.hidden,url:location.href,title:document.title,readyState:document.readyState,bodyText:document.body?.innerText?.slice(0,150)||'',count:c?.textContent||'',status:s?.textContent||'',resources:performance.getEntriesByType('resource').filter(r=>/pdf|worker/.test(r.name)).length};})()";
- for(const item of selected){
+ const cases=[
+  {item:senator,chunk:262144,label:'Senator baseline'},
+  {item:senator,chunk:524288,label:'Senator 512KB'},
+  {item:senator,chunk:1048576,label:'Senator 1MB'},
+  {item:other,chunk:262144,label:'Ristal baseline'},
+  {item:other,chunk:524288,label:'Ristal 512KB'},
+  {item:other,chunk:1048576,label:'Ristal 1MB'}
+ ].filter(x=>x.item);
+ for(const {item,chunk,label} of cases){
   failures.length=0;r2Responses.length=0;allResponses.length=0;exceptions.length=0;
-  const url=base+'/products/presentation/?key='+encodeURIComponent(item.key)+'&title='+encodeURIComponent(item.title||item.catalogue||item.brand);
+  const url=base+'/products/presentation/?key='+encodeURIComponent(item.key)+'&title='+encodeURIComponent(item.title||item.catalogue||item.brand)+'&rangeChunk='+chunk;
   const started=performance.now();
   const navigation=await call('Page.navigate',{url});
   console.log('BROWSER NAV '+JSON.stringify(navigation));
@@ -67,7 +75,7 @@ async function main(){
    await delay(350);
   }
   elapsed=Math.round(performance.now()-started);
-  console.log('BROWSER RESULT '+JSON.stringify({brand:item.brand,name:item.title||item.catalogue||'',pdfSize:item.size,firstPageVisible:!!check.ready,firstPageMs:check.ready?elapsed:null,elapsedMs:elapsed,viewerStatus:check.status,pageCount:check.count,requestStatuses:r2Responses.slice(0,12).map(x=>x.status),failedRequests:failures.slice(0,6),allResponses:allResponses.slice(0,20),exceptions:exceptions.slice(0,5),url:check.url,title:check.title,bodyText:check.bodyText,readyState:check.readyState,resources:check.resources}));
+  console.log('BROWSER RESULT '+JSON.stringify({variant:label,rangeChunk:chunk,brand:item.brand,name:item.title||item.catalogue||'',pdfSize:item.size,firstPageVisible:!!check.ready,firstPageMs:check.ready?elapsed:null,elapsedMs:elapsed,viewerStatus:check.status,pageCount:check.count,requestStatuses:r2Responses.slice(0,12).map(x=>x.status),failedRequests:failures.slice(0,6),allResponses:allResponses.slice(0,20),exceptions:exceptions.slice(0,5),url:check.url,title:check.title,bodyText:check.bodyText,readyState:check.readyState,resources:check.resources}));
  }
 }
 try{await main()}catch(e){console.log('BROWSER FAILED '+String(e.stack||e).slice(0,1800));process.exitCode=1}
