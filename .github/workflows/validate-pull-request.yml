@@ -25,5 +25,7 @@ jobs:
           node-version: '22'
       - name: Validate JavaScript syntax
         run: node --check worker-ai.js
+      - name: Validate vendor login JavaScript syntax
+        run: node --check assets/vendor-panel.js
       - name: Run site regression tests
         run: node --experimental-default-type=module --test tests/*.test.mjs
