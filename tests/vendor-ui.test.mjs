@@ -169,12 +169,38 @@ test('Entire vendor browser script parses and initializes clickable password/OTP
  assert.equal(control('otp-login-panel').hidden,true);
 });
 
-test('Unavailable OTP has a clear first-login support fallback and working link',async()=>{
+test('Vendor login separates account activation from new vendor registration',async()=>{
  const source=await readFile(new URL('../assets/vendor-panel.js',import.meta.url),'utf8');
  const vendor=await readFile(new URL('../vendor/index.html',import.meta.url),'utf8');
- assert.ok(vendor.includes('vendor-panel.js?v=20261009-otpfix'));
+ assert.ok(vendor.includes('vendor-panel.js?v=20261009-activate'));
+ assert.match(vendor,/Activate Account \/ Forgot Password/);
+ assert.ok(vendor.includes('Register your business'));
+ assert.ok(!vendor.includes('Mobile OTP / First login'));
+ assert.ok(!vendor.includes('<summary>First login'));
  const block=source.slice(source.indexOf('async function configureOTP()'),source.indexOf('async function applyPage()'));
- assert.ok(block.includes('Mobile OTP is not active yet'));
- assert.ok(block.includes('First login / Forgot password'));
- assert.ok(block.includes('https://wa.me/919415324839'));
+ assert.ok(block.includes('Mobile OTP login is not available yet'));
+ assert.ok(block.includes('Request activation / password reset on WhatsApp'));
+ assert.ok(block.includes('Mobile OTP Login'));
 });
+
+test('Offline recovery tab displays one activation message and an actual WhatsApp link',async()=>{
+ const source=await readFile(new URL('../assets/vendor-panel.js',import.meta.url),'utf8');
+ const body=source.slice(source.indexOf('async function configureOTP()'),source.indexOf('async function applyPage()'));
+ const elements={verification:{hidden:false},'otp-notice':{hidden:true,textContent:'',append(...els){this.children=(this.children||[]).concat(els)}},'otp-guidance':{hidden:true}};
+ const tab={textContent:''};
+ const links=[];
+ const document={querySelector(selector){assert.equal(selector,'[data-vendor-auth-tab="otp"]');return tab},createElement(tag){const obj={tag};links.push(obj);return obj}};
+ const ctx={api:async()=>({otpAvailable:false}),page:'vendor',$:name=>elements[name],document,console};
+ vm.createContext(ctx);
+ vm.runInContext(body+';this.configureOTP=configureOTP',ctx);
+ const config=await ctx.configureOTP();
+ assert.equal(config.otpAvailable,false);
+ assert.equal(elements.verification.hidden,true);
+ assert.equal(elements['otp-notice'].hidden,false);
+ assert.equal(tab.textContent,'Activate Account / Forgot Password');
+ assert.equal(links.filter(x=>x.tag==='a').length,1);
+ const link=links.find(x=>x.tag==='a');
+ assert.match(link.href,/^https:\/\/wa\.me\/919415324839/);
+ assert.match(link.textContent,/Request activation/);
+});
+
