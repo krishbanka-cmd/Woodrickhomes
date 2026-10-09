@@ -35,13 +35,21 @@ export function buildCatalogMaster(media=[],managed=[],state={}){
  const entries=buildBrandDirectory(media,managed);
  const items=entries.map(item=>({...item,assignedCategories:item.categories,categories:item.categories.filter(c=>!hidden.has(brandKey(canonicalBrowseCategory(c))))}));
  const categoryMap=new Map();
- for(const raw of [...(state.categories||[]),...items.flatMap(item=>item.categories)]){
+ // Preserve public product categories even when their name is not a valid brand.
+ const productOnlyCategories=media.filter(item=>
+  !String(item.key||'').startsWith('private/')&&
+  !String(item.sourceKey||'').startsWith('private/')&&
+  PRODUCT_ONLY_NAMES.has(brandKey(canonicalBrand(item.brand)))
+ ).map(canonicalMediaCategory).filter(Boolean);
+ for(const raw of [...(state.categories||[]),...items.flatMap(item=>item.categories),...productOnlyCategories]){
   const category=canonicalBrowseCategory(raw),key=brandKey(category);
   if(category&&key!=='more products'&&!hidden.has(key))categoryMap.set(key,category);
  }
  const missingBrands=[],missingAssociations=[],hiddenAssociations=[];
  for(const saved of managed){
-  const brand=canonicalBrand(saved.brand),entry=items.find(item=>brandKey(item.brand)===brandKey(brand));
+  const brand=canonicalBrand(saved.brand);
+  if(PRODUCT_ONLY_NAMES.has(brandKey(brand)))continue;
+  const entry=items.find(item=>brandKey(item.brand)===brandKey(brand));
   if(!entry){missingBrands.push(brand);continue}
   for(const raw of saved.categories||[]){
    const category=canonicalBrowseCategory(raw),key=brandKey(category);
