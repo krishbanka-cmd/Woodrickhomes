@@ -4,6 +4,15 @@ import {buildBrandDirectory} from '../worker-brand-directory.js';
 import {publicMediaList} from '../worker-product-media-sync.js';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
+test('Charcoal moulding remains a product, never a brand rail entry',()=>{
+ const data=buildBrandDirectory(
+  [{key:'public/charcoal.png',brand:'Charcoal',category:'Charcoal Moulding'},
+   {key:'public/charcoal-moulding.png',brand:'Charcoal Moulding',category:'Charcoal Moulding'},
+   {key:'public/ristal.pdf',brand:'Ristal',category:'Laminates'}],
+  [{brand:'Charcoal',label:'Charcoal Moulding'},{brand:'Charcoal Moulding'}, {brand:'Ristal'}]);
+ assert.ok(!data.some(x=>['charcoal','charcoal moulding'].includes(x.brand.toLowerCase())));
+ assert.ok(data.some(x=>x.brand==='Ristal'));
+});
 test('Published brands join the rail/category directory once and retain curated logos',()=>{
  const items=buildBrandDirectory([{key:'vendor-public/a/p/1/pdf.pdf',brand:'Royal Crown',category:'Laminates'},{key:'vendor-public/a/p/1/image.jpg',brand:'ROYAL CROWN',category:'Plywood'},{key:'old.pdf',brand:'Woodline Louvers',category:'Louvers'},{key:'private/kyc.pdf',brand:'Secret',category:'Plywood'}],[{brand:'Woodline',src:'/logo.svg'},{brand:'CenturyPly',src:'/century.svg'}]);
  assert.equal(items.filter(x=>x.brand.toLowerCase()==='royal crown').length,1);assert.equal(items.find(x=>x.brand==='Royal Crown').mediaCount,2);assert.deepEqual(items.find(x=>x.brand==='Royal Crown').categories,['Laminates','Plywood']);assert.equal(items.find(x=>x.brand==='Woodline').src,'/logo.svg');assert.equal(items.find(x=>x.brand==='Woodline').categoryCounts.Louvers,1);assert.deepEqual(items.find(x=>x.brand==='CenturyPly').categories,['Plywood']);assert.ok(!items.some(x=>x.brand==='Secret'));
