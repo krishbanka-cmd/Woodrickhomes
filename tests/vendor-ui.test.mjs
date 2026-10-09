@@ -146,3 +146,35 @@ test('Embedded vendor login adjusts its height to content while clearing header 
  assert.equal(365-395/2>130,true);
  assert.equal(365+395/2<600,true);
 });
+
+test('Entire vendor browser script parses and initializes clickable password/OTP tabs',async()=>{
+ const source=await readFile(new URL('../assets/vendor-panel.js',import.meta.url),'utf8');
+ assert.doesNotThrow(()=>new vm.Script(source),'vendor login JavaScript must parse without stray semicolons before else');
+ const tabSource=source.slice(source.indexOf('function setupVendorAuthTabs()'),source.indexOf('(async()=>{try'));
+ assert.ok(tabSource.includes('function setupVendorAuthTabs()'));
+ const controls=new Map();
+ function control(id){if(!controls.has(id))controls.set(id,{hidden:false,type:'password',textContent:'',attrs:{},setAttribute(k,v){this.attrs[k]=v},addEventListener(event,fn){this[event]=fn}});return controls.get(id)}
+ const buttons=['password','otp'].map(mode=>({dataset:{vendorAuthTab:mode},attrs:{},classList:{toggle(){}},setAttribute(k,v){this.attrs[k]=v},addEventListener(type,fn){this[type]=fn}}));
+ const context={document:{querySelectorAll(selector){assert.equal(selector,'[data-vendor-auth-tab]');return buttons}},$:control};
+ vm.createContext(context);vm.runInContext(tabSource+';this.setupVendorAuthTabs=setupVendorAuthTabs',context);
+ context.setupVendorAuthTabs();
+ assert.equal(control('password-login').hidden,false);
+ assert.equal(control('otp-login-panel').hidden,true);
+ buttons[1].click();
+ assert.equal(control('password-login').hidden,true);
+ assert.equal(control('otp-login-panel').hidden,false);
+ assert.equal(buttons[1].attrs['aria-selected'],'true');
+ buttons[0].click();
+ assert.equal(control('password-login').hidden,false);
+ assert.equal(control('otp-login-panel').hidden,true);
+});
+
+test('Unavailable OTP has a clear first-login support fallback and working link',async()=>{
+ const source=await readFile(new URL('../assets/vendor-panel.js',import.meta.url),'utf8');
+ const vendor=await readFile(new URL('../vendor/index.html',import.meta.url),'utf8');
+ assert.ok(vendor.includes('vendor-panel.js?v=20261009-otpfix'));
+ const block=source.slice(source.indexOf('async function configureOTP()'),source.indexOf('async function applyPage()'));
+ assert.ok(block.includes('Mobile OTP is not active yet'));
+ assert.ok(block.includes('First login / Forgot password'));
+ assert.ok(block.includes('https://wa.me/919415324839'));
+});
