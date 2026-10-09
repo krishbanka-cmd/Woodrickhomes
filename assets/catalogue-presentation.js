@@ -128,7 +128,7 @@
       if(!image){watch(el);return}
       let settled=false;
       const done=()=>{settled=true;clearTimeout(watchdog)};
-      const fail=()=>{if(!el.isConnected)return;done();el.replaceChildren();watch(el)};
+      const fail=()=>{if(settled||!el.isConnected)return;done();el.replaceChildren();watch(el)};
       const watchdog=setTimeout(()=>{if(!settled&&!image.complete)fail()},7000);
       image.addEventListener('load',done,{once:true});
       image.addEventListener('error',fail,{once:true});
