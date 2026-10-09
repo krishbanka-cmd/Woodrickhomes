@@ -258,7 +258,7 @@ test('Vendor dashboard prioritizes products with compact account settings and pr
   assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id+' remains present once');
  }
  assert.ok(html.includes('vendor-panel.css?v=20261009-compact-dashboard'));
- assert.ok(html.includes('vendor-panel.css?v=20261009-compact-dashboard'));
+ assert.ok(html.includes('vendor-panel.js?v=20261009-compact-dashboard'));
  assert.ok(css.includes('.vendor-dashboard .dashboard-header h1{font-size:24px'));
  assert.ok(css.includes('.vendor-dashboard .status:empty{display:none'));
  assert.ok(source.includes("'dashboard-add-product').hidden=!approved"));
