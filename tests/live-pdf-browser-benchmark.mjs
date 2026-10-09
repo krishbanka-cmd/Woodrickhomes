@@ -20,11 +20,13 @@ async function main(){
  chrome.on('error',error=>console.log('BROWSER Chrome binary error:',String(error)));
  let pages;
  for(let tries=0;tries<65;tries++){
-  try {const response=await fetch('http://127.0.0.1:9229/json/list',{signal:AbortSignal.timeout(1000)});if(response.ok){pages=await response.json();if(pages[0]?.webSocketDebuggerUrl)break}}catch{}
+  try {const response=await fetch('http://127.0.0.1:9229/json/list',{signal:AbortSignal.timeout(1000)});if(response.ok){pages=await response.json();if(pages.find(p=>p.type==='page'&&p.webSocketDebuggerUrl))break}}catch{}
   await delay(250);
  }
- if(!pages?.[0]?.webSocketDebuggerUrl)throw Error('Headless Chrome did not start.');
- ws=new WebSocket(pages[0].webSocketDebuggerUrl);
+ const tab=pages?.find(p=>p.type==='page'&&p.url==='about:blank')||pages?.find(p=>p.type==='page');
+ if(!tab?.webSocketDebuggerUrl)throw Error('Headless Chrome did not open a site tab.');
+ console.log('BROWSER TARGET '+JSON.stringify({type:tab.type,url:tab.url}));
+ ws=new WebSocket(tab.webSocketDebuggerUrl);
  await new Promise((resolve,reject)=>{ws.onopen=resolve;ws.onerror=reject});
  let serial=0;
  const pending=new Map(),failures=[],r2Responses=[],allResponses=[],exceptions=[];
@@ -55,7 +57,7 @@ async function main(){
   const navigation=await call('Page.navigate',{url});
   console.log('BROWSER NAV '+JSON.stringify(navigation));
   let check={status:'No viewer content'},elapsed=0;
-  const deadline=Date.now()+17000;
+  const deadline=Date.now()+45000;
   while(Date.now()<deadline){
    try{
     const r=await call('Runtime.evaluate',{expression,returnByValue:true});
