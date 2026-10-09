@@ -1,0 +1,29 @@
+name: Validate Woodrick Pull Requests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'worker*.js'
+      - 'index.html'
+      - 'assets/**'
+      - 'tests/**'
+      - '.github/workflows/validate-pull-request.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate JavaScript syntax
+        run: node --check worker-ai.js
+      - name: Run site regression tests
+        run: node --experimental-default-type=module --test tests/*.test.mjs
