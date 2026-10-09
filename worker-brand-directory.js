@@ -1,4 +1,6 @@
 // Both the public rail and category browser derive vendor brands from published media.
+// These are product/category names, never brands; keep their media accessible via Products.
+const PRODUCT_ONLY_NAMES=new Set(['charcoal','charcoal moulding']);
 const aliases={'ambuja':'Ambuja Cement','woodline louvers':'Woodline','woodline louver':'Woodline','ristal1mm':'Ristal','ristal 1 mm':'Ristal','ristal laminates':'Ristal','ebco hardware':'EBCO'};
 const categories={'ambuja cement':['Cement'],centuryply:['Plywood'],greenply:['Plywood'],greenpanel:['HDHMR & MDF'],ultratech:['Cement'],'birla opus':['Paints'],'asian paints':['Paints'],supreme:['uPVC Doors & Windows'],hettich:['Furniture & Kitchen Hardware'],ebco:['Furniture & Kitchen Hardware'],godrej:['Hardware'],merino:['Laminates'],'royale touche':['Laminates'],ristal:['Laminates'],woodline:['Laminates','Louvers','Acrylic Laminates','Door Skin'],mwud:['Laminates'],nilkamal:['Furniture & Storage']};
 export const brandKey=value=>String(value||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
@@ -13,10 +15,10 @@ export function canonicalMediaCategory(item={}){
 }
 export function buildBrandDirectory(media=[],rail=[]){
  const brands=new Map();
- for(const item of rail){const brand=canonicalBrand(item.brand);if(!brand)continue;const key=brandKey(brand);brands.set(key,{...item,brand,categories:[...new Set([...(Array.isArray(item.categories)?item.categories:(categories[key]||[])).map(canonicalBrowseCategory)])],mediaCount:0,categoryCounts:{}})}
+ for(const item of rail){const brand=canonicalBrand(item.brand);if(!brand||PRODUCT_ONLY_NAMES.has(brandKey(brand)))continue;const key=brandKey(brand);brands.set(key,{...item,brand,categories:[...new Set([...(Array.isArray(item.categories)?item.categories:(categories[key]||[])).map(canonicalBrowseCategory)])],mediaCount:0,categoryCounts:{}})}
  for(const item of media){
   if(String(item.key||'').startsWith('private/')||String(item.sourceKey||'').startsWith('private/'))continue;
-  const brand=canonicalBrand(item.brand);if(!brand||brandKey(brand)==='other')continue;
+  const brand=canonicalBrand(item.brand);if(!brand||brandKey(brand)==='other'||PRODUCT_ONLY_NAMES.has(brandKey(brand)))continue;
   const key=brandKey(brand),category=canonicalMediaCategory(item);
   if(!brands.has(key))brands.set(key,{brand,label:brand,src:'',alt:brand,categories:[],mediaCount:0,categoryCounts:{},source:'published-media'});
   const entry=brands.get(key);entry.mediaCount++;
@@ -33,13 +35,21 @@ export function buildCatalogMaster(media=[],managed=[],state={}){
  const entries=buildBrandDirectory(media,managed);
  const items=entries.map(item=>({...item,assignedCategories:item.categories,categories:item.categories.filter(c=>!hidden.has(brandKey(canonicalBrowseCategory(c))))}));
  const categoryMap=new Map();
- for(const raw of [...(state.categories||[]),...items.flatMap(item=>item.categories)]){
+ // Preserve public product categories even when their name is not a valid brand.
+ const productOnlyCategories=media.filter(item=>
+  !String(item.key||'').startsWith('private/')&&
+  !String(item.sourceKey||'').startsWith('private/')&&
+  PRODUCT_ONLY_NAMES.has(brandKey(canonicalBrand(item.brand)))
+ ).map(canonicalMediaCategory).filter(Boolean);
+ for(const raw of [...(state.categories||[]),...items.flatMap(item=>item.categories),...productOnlyCategories]){
   const category=canonicalBrowseCategory(raw),key=brandKey(category);
   if(category&&key!=='more products'&&!hidden.has(key))categoryMap.set(key,category);
  }
  const missingBrands=[],missingAssociations=[],hiddenAssociations=[];
  for(const saved of managed){
-  const brand=canonicalBrand(saved.brand),entry=items.find(item=>brandKey(item.brand)===brandKey(brand));
+  const brand=canonicalBrand(saved.brand);
+  if(PRODUCT_ONLY_NAMES.has(brandKey(brand)))continue;
+  const entry=items.find(item=>brandKey(item.brand)===brandKey(brand));
   if(!entry){missingBrands.push(brand);continue}
   for(const raw of saved.categories||[]){
    const category=canonicalBrowseCategory(raw),key=brandKey(category);

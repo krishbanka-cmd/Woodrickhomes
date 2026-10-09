@@ -1028,17 +1028,29 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
 @media(max-width:850px){.hero .hero-content{width:92%!important;max-width:92%!important;margin-left:auto!important;margin-right:auto!important}}
 </style>
 <style>.nav .menu{gap:clamp(8px,1.1vw,20px)}@media(min-width:901px) and (max-width:1200px){.nav .menu{font-size:9px;letter-spacing:.03em}.nav-inner{gap:10px}}</style>
+<style id="woodrick-customer-ux-audit-20261009">
+/* Accessible mobile navigation and readable, touch-friendly calls to action. */
+@media(max-width:850px){
+ .nav .menu.is-open{display:flex!important;position:absolute;top:100%;left:0;right:0;
+   z-index:30;padding:12px 4vw 16px!important;flex-direction:column;gap:3px!important;
+   background:#fffaf2!important;box-shadow:0 15px 35px rgba(0,0,0,.26)}
+ .nav .menu.is-open a{display:flex;align-items:center;min-height:44px;padding:8px 12px!important;
+   color:#30231c!important;font-size:13px!important;letter-spacing:.02em!important}
+ .hero .hero-actions .btn{min-height:44px!important;font-size:11px!important;line-height:1.2!important}
+}
+.mobile-menu:focus-visible,.hero-actions .btn:focus-visible{outline:3px solid #f0c96b;outline-offset:3px}
+</style>
 </head>
 <body>
 <div class="topbar"><div class="container"><span>Welcome to Woodrick Homes</span><span>Mon–Sat · 10:00 AM–8:00 PM   |   Premium Building Materials &amp; Interior Solutions</span></div></div>
 <header class="nav">
 <div class="container nav-inner">
 <a class="logo" href="#home"><div class="logo-mark">W</div><div><span>WOODRICK</span><small>HOMES</small></div></a>
-<nav class="menu"><a href="#products-services">PRODUCTS</a><a data-open-services="1" href="#products-services">SERVICES</a>
+<nav class="menu" id="primary-menu" aria-label="Main navigation"><a href="#products-services">PRODUCTS</a><a data-open-services="1" href="#products-services">SERVICES</a>
 <a href="/vendor/" data-vendor-login>VENDOR LOGIN</a><a href="#home">HOME</a><a href="#about">ABOUT US</a><a href="#modular-kitchen-showcase">MODULAR KITCHEN</a><a href="#brands">BRANDS</a><a href="#projects">PROJECTS</a><a href="#contact">CONTACT US</a>
 </nav>
 <a class="btn btn-gold" href="/catalogues/">VIEW CATALOGUE</a>
-<button class="mobile-menu" onclick="toggleMenu()">☰</button>
+<button class="mobile-menu" type="button" aria-label="Toggle navigation" aria-controls="primary-menu" aria-expanded="false" onclick="toggleMenu(this)">☰</button>
 </div>
 </header>
 <main>
@@ -1606,18 +1618,27 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
 
 
 <section class="contact" id="contact"><div class="container contact-grid"><div class="contact-copy"><div class="kicker">Get Free Consultation</div><h2>Planning Your Next Project?</h2><p>Tell us what you are building or renovating. Our team will help you find the right materials and solutions.</p><div class="contact-list"><div>📞 <b>Call:</b> 9415324839 / 7618840000</div><div>💬 <b>WhatsApp:</b> <a href="https://wa.me/919415324839?text=Hello%20Woodrick%20Homes%2C%20I%20am%20interested%20in%20your%20products%20and%20would%20like%20more%20details." rel="noopener" target="_blank">Chat with us</a></div><div>✉ <b>Email:</b> <a href="mailto:woodrickhomes@gmail.com">woodrickhomes@gmail.com</a></div><div>📍 <b>Location:</b> A30, Transport Nagar, Gorakhpur, Uttar Pradesh – 273016 <a href="https://www.google.com/maps/search/?api=1&amp;query=A30%2C%20Transport%20Nagar%2C%20Gorakhpur%2C%20Uttar%20Pradesh%20273016" target="_blank" rel="noopener noreferrer">Get Directions ↗</a></div></div></div>
-<form class="form" onsubmit="submitForm(event)"><div class="form-grid"><input name="name" placeholder="Your Name" required=""/><input name="mobile" placeholder="Mobile Number" required="" type="tel"/><input name="email" placeholder="Email Address" type="email"/><input name="city" placeholder="City"/><select name="requirement"><option selected="selected" value="">Requirement</option><option>Cement</option><option>Building Solutions</option><option>550D Grade Steel</option><option>uPVC Doors &amp; Windows</option><option>Paints</option><option>Wall Putty</option><option>Tiles</option><option>Sanitary &amp; Bath Fittings</option><option>Lighting</option><option>Plywood</option><option>HDHMR / MDF / WPC Boards</option><option>Laminates &amp; Decorative Surfaces</option><option>Furniture &amp; Kitchen Hardware</option><option>Furniture &amp; Storage</option><option>Modular Kitchen</option><option>Interior / Renovation Services</option><option>Other Requirement</option></select><textarea class="full" name="message" placeholder="Tell us about your requirement"></textarea></div><div class="contact-enquiry-actions"><label class="contact-attach-btn" for="contact-attachment">📎 LIST / PHOTO ATTACH KAREIN</label><input id="contact-attachment" name="attachment" type="file" accept="image/jpeg,image/png,image/webp,application/pdf,.jpg,.jpeg,.png,.webp,.pdf" aria-label="List ya photo attach karein"><button class="btn btn-gold" type="submit">SEND ENQUIRY</button></div><div class="contact-attachment-name" id="contact-attachment-name" aria-live="polite">Attachment optional hai · JPG, PNG, WebP ya PDF · maximum 8 MB</div><div style="font-size:11px;color:#777;margin-top:10px">Your enquiry is saved securely and WhatsApp will open for quick follow-up.</div></form></div></section>
+<form class="form" onsubmit="submitForm(event)"><div class="form-grid"><input name="name" placeholder="Your Name" aria-label="Your name" autocomplete="name" required=""/><input name="mobile" placeholder="Mobile Number" aria-label="10-digit mobile number" autocomplete="tel" inputmode="numeric" maxlength="15" required="" type="tel"/><input name="email" placeholder="Email Address" aria-label="Email address (optional)" autocomplete="email" type="email"/><input name="city" placeholder="City" aria-label="City" autocomplete="address-level2"/><select name="requirement" aria-label="Requirement" required><option selected="selected" value="">Requirement</option><option>Cement</option><option>Building Solutions</option><option>550D Grade Steel</option><option>uPVC Doors &amp; Windows</option><option>Paints</option><option>Wall Putty</option><option>Tiles</option><option>Sanitary &amp; Bath Fittings</option><option>Lighting</option><option>Plywood</option><option>HDHMR / MDF / WPC Boards</option><option>Laminates &amp; Decorative Surfaces</option><option>Furniture &amp; Kitchen Hardware</option><option>Furniture &amp; Storage</option><option>Modular Kitchen</option><option>Interior / Renovation Services</option><option>Other Requirement</option></select><textarea class="full" name="message" aria-label="Tell us about your requirement" placeholder="Tell us about your requirement"></textarea></div><div class="contact-enquiry-actions"><label class="contact-attach-btn" for="contact-attachment">📎 LIST / PHOTO ATTACH KAREIN</label><input id="contact-attachment" name="attachment" type="file" accept="image/jpeg,image/png,image/webp,application/pdf,.jpg,.jpeg,.png,.webp,.pdf" aria-label="List ya photo attach karein"><button class="btn btn-gold" type="submit">SEND ENQUIRY</button></div><div class="contact-attachment-name" id="contact-attachment-name" role="status" aria-live="polite">Attachment optional hai · JPG, PNG, WebP ya PDF · maximum 8 MB</div><div style="font-size:11px;color:#777;margin-top:10px">Your enquiry is saved securely and WhatsApp will open for quick follow-up.</div></form></div></section>
 </main>
 <footer class="footer"><div class="container footer-grid"><div><a class="logo" href="#home"><div class="logo-mark">W</div><div><span>WOODRICK</span><small>HOMES</small></div></a><p style="margin-top:15px">Premium Building Materials &amp; Interior Solutions.</p></div><div><h3>QUICK LINKS</h3><a href="#home">Home</a><a href="#about">About Us</a><a href="#products-services">Products</a><a href="#brands">Brands</a></div><div><h3>COMPANY</h3><a href="#projects">Projects</a><a href="#contact">Contact</a></div><div><h3>CONTACT</h3><p>Phone: 9415324839 / 7618840000</p><p>Email: <a href="mailto:woodrickhomes@gmail.com">woodrickhomes@gmail.com</a></p><p>Address: A30, Transport Nagar, Gorakhpur, Uttar Pradesh – 273016</p><div class="footer-social"><h3>FOLLOW US</h3><a href="https://www.instagram.com/woodrick.homes/" target="_blank" rel="noopener noreferrer" aria-label="Woodrick Homes on Instagram"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="2.5" width="19" height="19" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.7" cy="6.5" r="1" fill="currentColor" stroke="none"></circle></svg><span>Instagram</span></a></div></div></div><div class="container footer-locations"><h3>VISIT WOODRICK HOMES</h3><div class="footer-location-grid"><div class="footer-location-card"><h4>Gorakhpur</h4><p>A30, Transport Nagar, Gorakhpur, Uttar Pradesh – 273016</p><div class="footer-location-actions"><a href="https://www.google.com/maps/search/?api=1&amp;query=A30%2C%20Transport%20Nagar%2C%20Gorakhpur%2C%20Uttar%20Pradesh%20273016" target="_blank" rel="noopener noreferrer">📍 Location</a><a href="https://wa.me/919415324839" target="_blank" rel="noopener noreferrer">💬 WhatsApp</a><a href="tel:+919415324839">📞 Call</a></div></div></div></div><div class="container copyright">© 2026 Woodrick Homes. All Rights Reserved.</div></footer>
 <div class="float-actions"><a class="whatsapp" href="https://wa.me/919415324839?text=Hello%20Woodrick%20Homes%2C%20I%20am%20interested%20in%20your%20products%20and%20would%20like%20more%20details." rel="noopener" target="_blank">💬 WhatsApp Enquiry</a><a class="call" href="tel:+917618840000">📞 Call Now</a></div>
 <div class="toast" id="toast">Thank you! Your enquiry has been submitted.</div>
 <script>
-function toggleMenu(){
- const menu=document.querySelector('.menu');
- menu.style.display=menu.style.display==='flex'?'none':'flex';
- menu.style.position='absolute';menu.style.top='75px';menu.style.left='0';menu.style.right='0';
- menu.style.background='#111';menu.style.padding='20px';menu.style.flexDirection='column';menu.style.gap='16px';menu.style.boxShadow='0 12px 30px rgba(0,0,0,.25)';
+function toggleMenu(button){
+ const menu=document.getElementById('primary-menu');
+ if(!menu)return;
+ const isOpen=menu.classList.toggle('is-open');
+ if(button)button.setAttribute('aria-expanded',String(isOpen));
 }
+function closeMobileMenu(){
+ document.getElementById('primary-menu')?.classList.remove('is-open');
+ document.querySelector('.mobile-menu')?.setAttribute('aria-expanded','false');
+}
+document.getElementById('primary-menu')?.addEventListener('click',function(e){
+ if(e.target.closest('a'))closeMobileMenu();
+});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeMobileMenu()});
+window.addEventListener('resize',function(){if(window.innerWidth>850)closeMobileMenu()});
 function submitForm(e){
  e.preventDefault();
  const form=e.target,button=form.querySelector('button[type="submit"]');
@@ -1633,8 +1654,12 @@ function submitForm(e){
  if(file && (!['image/jpeg','image/png','image/webp','application/pdf'].includes(file.type)||file.size>8*1024*1024)){
   status.textContent='JPG, PNG, WebP ya PDF file 8 MB se chhoti select karein.';return;
  }
- if(file && (!/^[0-9]{10}$/.test(mobile.replace(/\D/g,'')) || !city)){
-  status.textContent='Attachment ke liye 10-digit mobile number aur city bhi bharein.';return;
+ if(!/^[0-9]{10}$/.test(mobile.replace(/\D/g,''))){
+  status.textContent='Kripya sahi 10-digit mobile number bharein.';
+  form.querySelector('[name="mobile"]').focus();return;
+ }
+ if(file && !city){
+  status.textContent='Attachment ke liye city bhi bharein.';return;
  }
  button.disabled=true;
  (async function(){
