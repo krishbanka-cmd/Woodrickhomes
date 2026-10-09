@@ -30,11 +30,34 @@
   const space=Math.max(0,bottomLimit-topLimit);
   if(space<190){topLimit=margin;bottomLimit=viewport-margin;}
   const available=Math.max(180,bottomLimit-topLimit);
-  const height=Math.min(570,available);
+  let preferredFrameHeight=null;
+  try{
+   const inner=frame.contentDocument;
+   const main=inner&&inner.querySelector('main');
+   if(main){
+    const rect=main.getBoundingClientRect();
+    const measured=Math.ceil(Math.max(main.scrollHeight+rect.top,rect.bottom)+4);
+    if(Number.isFinite(measured)&&measured>0)preferredFrameHeight=measured;
+   }
+  }catch{}
+  const headerHeight=header.offsetHeight||52;
+  const height=Math.min(570,available,preferredFrameHeight===null?570:Math.max(220,preferredFrameHeight+headerHeight));
   dialog.style.top=(topLimit+(bottomLimit-topLimit)/2)+'px';
   dialog.style.maxHeight=height+'px';
-  frame.style.height=Math.max(140,height-52)+'px';
+  frame.style.height=Math.max(140,height-headerHeight)+'px';
  }
+ let contentObserver=null;
+ frame.onload=()=>{
+  if(contentObserver){contentObserver.disconnect();contentObserver=null;}
+  try{
+   const inner=frame.contentDocument,main=inner&&inner.querySelector('main');
+   if(main&&typeof ResizeObserver!=='undefined'){
+    contentObserver=new ResizeObserver(()=>{if(dialog.open)window.requestAnimationFrame(positionDialog)});
+    contentObserver.observe(main);
+   }
+  }catch{}
+  if(dialog.open)positionDialog();
+ };
  document.addEventListener('click',event=>{const link=event.target.closest('[data-vendor-login],a[href="/vendor/"]');if(!link||event.ctrlKey||event.metaKey||event.shiftKey)return;event.preventDefault();frame.src='/vendor/';dialog.showModal();positionDialog()});
  window.addEventListener('resize',()=>{if(dialog.open)positionDialog()});
  window.addEventListener('message',event=>{if(event.origin!==location.origin||event.source!==frame.contentWindow||event.data?.type!=='woodrick-vendor-signed-in')return;location.href='/vendor/'});
