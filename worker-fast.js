@@ -8,6 +8,8 @@ import app from './worker-design-extraction.js';
 import {backfillDesignIndex} from './worker-design-picker-click-fix.js';
 import {PUBLIC_MEDIA_INDEX_KEY,refreshPublicMediaIndex,syncAndClean,STATIC_PUBLIC_MEDIA,publicMediaList} from './worker-product-media-sync.js';
 
+const isHiddenMediaKey = key => /^(?:private|_system|_config)\//i.test(String(key||''));
+
 const BRAND_RAIL_KEY='_system/brand-rail-v1.json';
 const BRAND_RAIL_DEFAULTS=[
   {brand:'UltraTech',label:'UltraTech Cement',alt:'UltraTech Cement logo',src:'/assets/brand-logos/ultratech-hosted.jpg'},
@@ -136,7 +138,7 @@ async function indexedMedia(env){
     let changed=false;
     for(const item of STATIC_PUBLIC_MEDIA){if(!data.items.some(x=>x.key===item.key)){data.items.push({...item,url:'/api/media?key='+encodeURIComponent(item.key)});changed=true}}
     data.items=data.items.filter(item=>{
-      const visible=!String(item&&item.key||'').startsWith('private/')&&!String(item&&item.sourceKey||'').startsWith('private/');
+      const visible=!isHiddenMediaKey(item&&item.key)&&!isHiddenMediaKey(item&&item.sourceKey);
       if(!visible)changed=true;
       return visible;
     }).map(item=>{
@@ -229,7 +231,7 @@ export default{
       return new Response(asset.body,{status:asset.status,headers});
     }
     if(url.pathname==='/api/enquiries')return handleEnquiries(request,env);
-    if(url.pathname==='/api/media'&&((url.searchParams.get('key')||'').startsWith('private/')||(url.searchParams.get('prefix')||'').startsWith('private/')))return brandJson({error:'Not found'},404);
+    if(url.pathname==='/api/media'&&(isHiddenMediaKey(url.searchParams.get('key'))||isHiddenMediaKey(url.searchParams.get('prefix'))))return brandJson({error:'Not found'},404);
     // Previously rendered/bookmarked cards may refer to a retired sync copy.
     // Preserve their original/download links after scheduled cleanup too.
     if((request.method==='GET'||request.method==='HEAD')&&url.pathname==='/api/media'&&url.searchParams.get('download')==='1'){
