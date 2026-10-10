@@ -21,7 +21,8 @@ function doPost(request) {
     else sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
     const rows = sheet.getDataRange().getValues();
     const index = rows.findIndex((row, i) => i > 0 && String(row[0]) === item.id);
-    if (index > 0 && String(rows[index][9]) > String(item.updatedAt || '')) return json({ok:true});
+    const dateColumn = headers.indexOf('updatedAt');
+    if (index > 0 && String(rows[index][dateColumn]) > String(item.updatedAt || '')) return json({ok:true});
     // Store user-entered text literally to avoid spreadsheet formula evaluation.
     // Follow-up status and remarks are maintained by staff inside the Leads tab.
     // Webhook retries must not clear or overwrite those human-entered fields.
