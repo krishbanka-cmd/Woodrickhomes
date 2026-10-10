@@ -294,6 +294,7 @@ export default{
       const target=new URL('/products/presentation/',url);
       target.searchParams.set('key',url.searchParams.get('key'));
       if(url.searchParams.get('title'))target.searchParams.set('title',url.searchParams.get('title'));
+      if(url.searchParams.get('cover'))target.searchParams.set('cover',url.searchParams.get('cover'));
       const back=url.searchParams.get('return');
       target.searchParams.set('return',back&&back.startsWith('/')&&!back.startsWith('//')?back:'/catalogues/');
       return Response.redirect(target.href,302);
