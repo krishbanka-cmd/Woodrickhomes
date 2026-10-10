@@ -1,4 +1,11 @@
 // Private Google Sheet mirror; R2 is the primary vendor store.
+// A safe capability check prevents older deployments from putting leads in Vendors.
+function doGet() {
+  return ContentService.createTextOutput(JSON.stringify({
+    version:2,
+    supportsVendorLeads:true
+  })).setMimeType(ContentService.MimeType.JSON);
+}
 function doPost(request) {
   const json = value => ContentService.createTextOutput(JSON.stringify(value)).setMimeType(ContentService.MimeType.JSON);
   const lock = LockService.getScriptLock();
