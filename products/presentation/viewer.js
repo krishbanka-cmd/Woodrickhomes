@@ -40,6 +40,10 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
     status.replaceChildren(document.createTextNode(message));
     if (retry) {
       const button = document.createElement('button'); button.textContent = 'Retry'; button.onclick = start; status.appendChild(button);
+    }
+    // Never trap visitors behind a spinner: the original file is accessible
+    // immediately, including on very slow mobile connections.
+    if(retry||!pdf){
       const original=document.createElement('a');original.className='link';original.textContent='Open original PDF';original.href=rawUrl;original.target='_blank';original.rel='noopener';status.appendChild(original);
     }
     status.hidden = false;
