@@ -243,7 +243,7 @@ test('Vendor onboarding provides separate activation, OTP-free continuation and 
  assert.ok(script.includes("if(!v.mobileVerified)throw Error("));
  assert.ok(apply.includes('After approval, Woodrick Homes will share a secure one-time access link.'));
  assert.ok(admin.includes('Generate secure login link and privately share it.'));
- assert.ok(admin.includes('vendor-panel.js?v=20261009-email-correction'));
+ assert.ok(admin.includes('vendor-panel.js?v=20261010-vendor-notifications'));
 });
 
 test('Vendor dashboard prioritizes products with compact account settings and preserves all controls',async()=>{
@@ -298,7 +298,7 @@ test('Approved vendor email can be corrected directly in admin panel with re-ver
  assert.ok(script.includes("post('/api/vendor-applications/email-correct',{id:v.id,email})"));
  assert.ok(script.includes("post('/api/vendor-applications/email-verify'"));
  assert.ok(script.includes("await loadAdmin(false)"));
- assert.ok(admin.includes('vendor-panel.js?v=20261009-email-correction'));
+ assert.ok(admin.includes('vendor-panel.js?v=20261010-vendor-notifications'));
  assert.ok(admin.includes('vendor-panel.css?v=20261009-email-correction'));
  assert.ok(css.includes('.vendor-admin-email-edit{'));
  assert.ok(backend.includes("if(path==='/api/vendor-applications/email-correct'&&req.method==='POST')"));
