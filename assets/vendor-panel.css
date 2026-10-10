@@ -125,3 +125,17 @@ body[data-page="apply"] .dialog-close{flex:none;width:40px;min-height:40px;paddi
 body[data-page="apply"] .whatsapp-same{font-weight:400;margin-top:6px}
 body[data-page="apply"] .registration-dialog-content #application-form .field{min-width:0}
 @media(max-width:740px){body[data-page="apply"] .layout{grid-template-columns:1fr;gap:12px}body[data-page="apply"] .quick-intro h1{font-size:24px}body[data-page="apply"] .quick-lead-panel{max-width:none}body[data-page="apply"] .vendor-registration-dialog{width:calc(100vw - 12px);max-height:96dvh;border-radius:10px}body[data-page="apply"] .registration-dialog-head,body[data-page="apply"] .registration-dialog-content{padding:14px}body[data-page="apply"] .registration-dialog-head h2{font-size:19px}}
+
+
+/* Small, mobile-friendly vendor alert preference editor and delivery log. */
+.notification-settings .grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.notification-settings textarea{width:100%;min-height:82px;resize:vertical}
+.notification-toggles{display:flex;flex-wrap:wrap;gap:9px 18px;margin:13px 0}
+.notification-toggles .check{display:inline-flex;align-items:center;gap:7px;font-size:13px;line-height:1.4;font-weight:500}
+.notification-toggles .check input{flex:0 0 auto}
+.notification-history{display:grid;gap:8px;margin-top:10px}
+.notification-entry{border:1px solid var(--line);border-radius:9px;padding:11px 13px;background:#fafaf8}
+.notification-entry-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 14px}
+.notification-entry p{margin:5px 0}
+.notification-entry button{font-size:12px;padding:7px 11px;min-height:32px}
+@media(max-width:640px){.notification-settings .grid{grid-template-columns:1fr}.notification-toggles{display:grid;grid-template-columns:1fr 1fr}.notification-entry-head{display:grid}}
