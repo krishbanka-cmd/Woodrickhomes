@@ -76,7 +76,7 @@
 const mediaGrid=document.getElementById('liveMedia'),liveStatus=document.getElementById('liveStatus');let uploadedMedia=[],activeCategory='all',activeType='all';
 function esc(v=''){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function mediaType(x){const key=String(x.key||'').toLowerCase(),name=String(x.originalName||'').toLowerCase();if(/\.(pdf)(\?|$)/.test(key)||name.endsWith('.pdf'))return'pdf';if(/\.(mp4|webm)(\?|$)/.test(key)||/\.(mp4|webm)$/.test(name))return'video';if(/\.(jpg|jpeg|png|webp)(\?|$)/.test(key)||/\.(jpg|jpeg|png|webp)$/.test(name))return'image';return x.type||'image';}
-function mediaUrl(x){return'/api/media?key='+encodeURIComponent(x.key)}
+function mediaUrl(x){const base='/api/media?key='+encodeURIComponent(x.key);if(mediaType(x)!=='pdf')return base;const preview=coverUrl(x);return base+'&pdfviewer=1&return='+encodeURIComponent('/products/#media')+(preview?'&cover='+encodeURIComponent(preview):'')}
 const catalogueTitles={
 'product-sync/laminates/ristal/ristal.pdf':'Ristal 0.82mm Premium Laminates',
 'kitchen/pdf/woodrick-kitchen-catalogue.pdf':'Woodrick Kitchen Catalogue',
