@@ -193,7 +193,55 @@ async function loadAdmin(more){
   message('admin-status',data.items.length+' '+(tab==='vendors'?'vendors':'products')+' loaded'+(adminCursor?' · more pages available':'.'));$('admin-more').hidden=!adminCursor;
  }catch(e){if(version!==adminLoadVersion)return;if(e.status===401){location.href='/admin-products/';return}message('admin-status',e.message,true)}finally{if(version===adminLoadVersion)adminLoading=false}
 }
-async function adminPage(){const backupForm=$('backup-settings-form');if(backupForm)backupForm.onsubmit=async event=>{event.preventDefault();await busy(backupForm.querySelector('[type=submit]'),async()=>{try{await post('/api/vendor-applications/backup-settings',{url:backupForm.elements.url.value,token:backupForm.elements.token.value});backupForm.reset();message('backup-settings-status','Connection saved. Open a vendor and use Retry Sheet backup to verify delivery.');$('connections').textContent='Google Sheet backup: configured · Private vendor storage: active. Verify delivery using Retry Sheet backup.'}catch(e){message('backup-settings-status',e.message,true)}})};for(const button of document.querySelectorAll('[data-vendor-status]'))button.onclick=()=>{$('status-filter').value=button.dataset.vendorStatus;loadAdmin(false)};$('status-filter').onchange=()=>loadAdmin(false);const config=await api('/api/vendor-applications/config');$('connections').textContent='Mobile OTP: '+(config.otpAvailable?'connected':'activation pending')+' · Google Sheet backup: '+(config.sheetBackupAvailable?'connected':'connection pending')+' · Private vendor storage: active';$('admin-refresh').onclick=()=>loadAdmin(false);$('admin-more').onclick=()=>loadAdmin(true);$('filters').onsubmit=event=>{event.preventDefault();loadAdmin(false)};for(const button of document.querySelectorAll('[data-tab]'))button.onclick=()=>{adminTab=button.dataset.tab;document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b===button));$('search').hidden=adminTab==='products';$('status-filter').value='';for(const option of $('status-filter').options){if(option.value==='suspended')option.hidden=adminTab==='products';if(option.value==='archived')option.hidden=adminTab==='vendors'}loadAdmin(false)};$('admin-vendor-form').onsubmit=async event=>{event.preventDefault();const form=event.target;await busy(form.querySelector('[type=submit]'),async()=>{try{await api('/api/vendor-applications',{method:'POST',body:new FormData(form)});form.reset();message('admin-create-status','Vendor registered. Review KYC and approve the account below.');await loadAdmin(false)}catch(e){message('admin-create-status',e.message,true)}})};await loadAdmin(false)}
+function notificationAddresses(value){return value.split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean)}
+async function vendorNotificationsPanel(){
+ const form=$('vendor-notification-settings'),history=$('notification-history');
+ if(!form)return;
+ const cfg=await api('/api/vendor-applications/notification-settings'),settings=cfg.settings;
+ form.elements.emails.value=settings.emails.join('\n');
+ form.elements.whatsapps.value=settings.whatsapps.join('\n');
+ form.elements.emailChannel.checked=settings.channels.email;
+ form.elements.whatsAppChannel.checked=settings.channels.whatsapp;
+ form.elements.registration.checked=settings.enabled.registration;
+ form.elements.product.checked=settings.enabled.product;
+ function providers(p){$('notification-providers').textContent='Email: '+(p.emailConfigured?'Google Apps Script configured (email v3 authorization still required)':'Google Apps Script not connected')+' · WhatsApp: '+(p.whatsAppConfigured?'Delivery webhook configured':'Outbound WhatsApp webhook connection pending')+'. Pending messages will be retained until services are connected.'}
+ providers(cfg.providers);
+ form.onsubmit=event=>{event.preventDefault();busy(form.querySelector('[type=submit]'),async()=>{
+  try{
+   const data=await post('/api/vendor-applications/notification-settings',{
+    emails:notificationAddresses(form.elements.emails.value),
+    whatsapps:notificationAddresses(form.elements.whatsapps.value),
+    enabled:{registration:form.elements.registration.checked,product:form.elements.product.checked},
+    channels:{email:form.elements.emailChannel.checked,whatsapp:form.elements.whatsAppChannel.checked}
+   });
+   form.elements.emails.value=data.settings.emails.join('\n');
+   form.elements.whatsapps.value=data.settings.whatsapps.join('\n');
+   providers(data.providers);message('notification-settings-status','Settings saved. New alerts will use these recipients.');await refreshNotifications();
+  }catch(e){message('notification-settings-status',e.message,true)}
+ }).catch(e=>message('notification-settings-status',e.message,true))};
+ async function refreshNotifications(){
+  const data=await api('/api/vendor-applications/notifications');history.replaceChildren();
+  if(!data.items.length){history.append(node('p','No vendor notifications recorded yet.','help'));return}
+  for(const item of data.items){
+   const wrap=node('div',undefined,'notification-entry'),head=node('div',undefined,'notification-entry-head');
+   head.append(node('strong',(item.kind==='registration'?'Registration':'Product')+': '+item.name),
+    node('span',new Date(item.createdAt).toLocaleString('en-IN'),'help'));
+   const status=node('p','Delivered: '+item.sent+' · Pending: '+item.pending+' · Failed: '+item.failed,'help');
+   wrap.append(head,node('p','Vendor: '+item.vendor,'help'),status);
+   for(const err of item.errors)wrap.append(node('p',err,'help'));
+   if(item.pending||item.failed){
+    wrap.append(action('Retry unsent alerts',async()=>{
+     await post('/api/vendor-applications/notifications/retry',{id:item.id});
+     await refreshNotifications();
+    }));
+   }
+   history.append(wrap);
+  }
+ }
+ $('notification-refresh').onclick=()=>refreshNotifications().catch(e=>message('notification-settings-status',e.message,true));
+ await refreshNotifications();
+}
+async function adminPage(){const backupForm=$('backup-settings-form');if(backupForm)backupForm.onsubmit=async event=>{event.preventDefault();await busy(backupForm.querySelector('[type=submit]'),async()=>{try{await post('/api/vendor-applications/backup-settings',{url:backupForm.elements.url.value,token:backupForm.elements.token.value});backupForm.reset();message('backup-settings-status','Connection saved. Open a vendor and use Retry Sheet backup to verify delivery.');$('connections').textContent='Google Sheet backup: configured · Private vendor storage: active. Verify delivery using Retry Sheet backup.'}catch(e){message('backup-settings-status',e.message,true)}})};for(const button of document.querySelectorAll('[data-vendor-status]'))button.onclick=()=>{$('status-filter').value=button.dataset.vendorStatus;loadAdmin(false)};$('status-filter').onchange=()=>loadAdmin(false);const config=await api('/api/vendor-applications/config');$('connections').textContent='Mobile OTP: '+(config.otpAvailable?'connected':'activation pending')+' · Google Sheet backup: '+(config.sheetBackupAvailable?'connected':'connection pending')+' · Private vendor storage: active';$('admin-refresh').onclick=()=>loadAdmin(false);$('admin-more').onclick=()=>loadAdmin(true);$('filters').onsubmit=event=>{event.preventDefault();loadAdmin(false)};for(const button of document.querySelectorAll('[data-tab]'))button.onclick=()=>{adminTab=button.dataset.tab;document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b===button));$('search').hidden=adminTab==='products';$('status-filter').value='';for(const option of $('status-filter').options){if(option.value==='suspended')option.hidden=adminTab==='products';if(option.value==='archived')option.hidden=adminTab==='vendors'}loadAdmin(false)};$('admin-vendor-form').onsubmit=async event=>{event.preventDefault();const form=event.target;await busy(form.querySelector('[type=submit]'),async()=>{try{await api('/api/vendor-applications',{method:'POST',body:new FormData(form)});form.reset();message('admin-create-status','Vendor registered. Review KYC and approve the account below.');await loadAdmin(false)}catch(e){message('admin-create-status',e.message,true)}})};await loadAdmin(false);vendorNotificationsPanel().catch(e=>message('notification-settings-status',e.message,true))}
 function setupVendorAuthTabs(){
  const buttons=[...document.querySelectorAll('[data-vendor-auth-tab]')];
  if(!buttons.length)return;
