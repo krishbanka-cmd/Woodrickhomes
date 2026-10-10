@@ -43,7 +43,7 @@ test('One accelerated viewer is shared by library and brands, without altering f
   readFile(new URL('../brands/index.html',import.meta.url),'utf8')
  ]);
  assert.ok(html.includes('<link rel="modulepreload" href="/assets/pdf-engine.mjs?v=20261010-shared-cache">'));
- assert.ok(html.includes('viewer.js?v=20261010-shared-cache'));
+ assert.ok(html.includes('viewer.js?v=20261010-quick-preview-v1'));
  assert.ok(viewer.includes("import('/assets/pdf-engine.mjs?v=20261010-shared-cache')"));
  assert.ok(viewer.includes('disableAutoFetch:true,disableStream:true'),'do not re-download whole PDF');
  assert.ok(viewer.includes("withDeadline(task.promise,30000"),'stalled catalogue has retry');
