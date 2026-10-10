@@ -25,7 +25,7 @@ test('Category folder paints cached brands synchronously without waiting for an 
   }};
   const ctx=vm.createContext({
     location:{search:'?category=Louvers',pathname:'/products/brands/',origin:'https://woodrickhomes.com'},
-    document:{getElementById:node,createElement:element,visibilityState:'visible'},
+    document:{getElementById:node,createElement:element,addEventListener(){},visibilityState:'visible'},
     window:{addEventListener:(ev,fn)=>listeners[ev]=fn},
     navigator:{connection:{saveData:true}},
     localStorage:store({'woodrick-public-brand-directory-v1':JSON.stringify(cached)}),
@@ -47,13 +47,13 @@ test('A stale category folder stays visible while its directory is revalidated',
   const node=id=>{if(!nodes.has(id))nodes.set(id,element());return nodes.get(id)};
   let fetches=0;
   const ctx=vm.createContext({
-    document:{getElementById:node,createElement:element,visibilityState:'visible'},
+    document:{getElementById:node,createElement:element,addEventListener(){},visibilityState:'visible'},
     window:{addEventListener(){}},navigator:{connection:{saveData:true}},
     location:{search:'?category=Louvers',pathname:'/products/brands/',origin:'https://woodrickhomes.com'},
     localStorage:store({'woodrick-public-brand-directory-v1':JSON.stringify({at:Date.now()-180000,data:{
       categories:['Louvers'],items:[{brand:'Woodline',label:'Woodline',categories:['Louvers'],categoryCounts:{Louvers:1},mediaCount:1}]
     }})}),
-    fetch:async()=>{fetches++;return new Promise(()=>{})},URL,URLSearchParams,Map,Set,
+    fetch:async()=>{fetches++;return new Promise(()=>{})},AbortController,URL,URLSearchParams,Map,Set,
     Date,JSON,console,setTimeout:(cb)=>{callbacks.push(cb);return callbacks.length},clearTimeout(){},encodeURIComponent
   });
   vm.runInContext(code,ctx);
@@ -69,7 +69,7 @@ test('Brand catalogue folder immediately displays media already fetched by Produ
   const cached={savedAt:Date.now(),items:[{key:'product-sync/laminates/ristal/ristal.pdf',brand:'Ristal',category:'Laminates',type:'pdf',title:'Ristal Premium'}]};
   const ctx=vm.createContext({
     location:{search:'?brand=Ristal&category=Laminates',pathname:'/brands/',origin:'https://woodrickhomes.com'},
-    document:{getElementById:node,querySelector:()=>({href:'',textContent:''}),querySelectorAll:()=>[]},
+    document:{getElementById:node,querySelector:q=>q==='a.back'?{href:'',textContent:''}:null,querySelectorAll:()=>[]},
     localStorage:store({'woodrick-public-media-v1':JSON.stringify(cached)}),
     WoodrickCatalogue:{pdfKey:x=>x.key,title:()=> 'Ristal Premium',cover:()=>'',observe(){}},
     fetch:async()=>{requests++;throw Error('Should not need fetch while cache is fresh')},
