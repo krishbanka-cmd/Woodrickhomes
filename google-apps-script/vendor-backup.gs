@@ -16,7 +16,7 @@ function doPost(request) {
     const sheet = book.getSheetByName(tab) || book.insertSheet(tab);
     const headers = isLead
       ? ['id','contact','mobile','status','createdAt','updatedAt','fullApplicationId','followUpStatus','remark']
-      : ['id','business','contact','mobile','city','category','gst','status','createdAt','updatedAt','brands','supplyLocations','email','emailVerified'];
+      : ['id','business','contact','mobile','city','category','gst','status','createdAt','updatedAt','brands','supplyLocations','email','emailVerified','whatsapp'];
     if (sheet.getLastRow() === 0) sheet.appendRow(headers);
     else sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
     const rows = sheet.getDataRange().getValues();
