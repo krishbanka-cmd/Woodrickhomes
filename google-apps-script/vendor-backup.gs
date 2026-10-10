@@ -20,7 +20,7 @@ function doPost(request) {
       // avoid re-sending after a normal webhook retry.
       const n = payload.notification;
       if (!n || !/^(registration|product)-[a-f0-9-]{36}-[0-9]+:email:/.test(String(n.id || '')) ||
-          !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(String(n.to || '')) ||
+          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(n.to || '')) ||
           String(n.subject || '').length > 200 || String(n.body || '').length > 3000) return json({ok:false});
       lock.waitLock(10000);
       const book = SpreadsheetApp.openById(config.getProperty('SPREADSHEET_ID'));
