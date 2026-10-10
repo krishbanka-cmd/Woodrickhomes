@@ -94,3 +94,45 @@ test('Quick form is displayed first; full form popup requires successful save, a
  assert.match(sheet,/fullApplicationId/);
  assert.match(sheet,/dateColumn = headers.indexOf\('updatedAt'\)/);
 });
+
+test('Quick registration opens full-form popup only after lead API succeeds',async()=>{
+ const source=await readFile(new URL('../assets/vendor-panel.js',import.meta.url),'utf8');
+ const script=source.slice(source.indexOf('function setupQuickVendorLead(){'),source.indexOf('async function applyPage()'));
+ assert.ok(script.startsWith('function setupQuickVendorLead(){'));
+ let saved=null,shown=0,closed=0;
+ const fields={contact:{value:''},mobile:{value:'',readOnly:false}};
+ const dialog={showModal(){shown++},close(){closed++}};
+ const submit={disabled:false,textContent:'Submit & continue'};
+ const quick={elements:{website:{value:''}},querySelector:()=>submit,addEventListener(type,fn){this[type]=fn}};
+ const full={elements:{namedItem:key=>fields[key]}};
+ const same={checked:true,addEventListener(type,fn){this[type]=fn}};
+ const wa={value:'',readOnly:false};
+ const values={
+  'vendor-quick-form':quick,
+  'complete-registration-dialog':dialog,
+  'application-form':full,
+  'same-whatsapp':same,
+  'whatsapp':wa,
+  'mobile':fields.mobile,
+  'close-registration-dialog':{addEventListener(type,fn){this[type]=fn}},
+  'quick-name':{value:'Sample Vendor'},
+  'quick-mobile':{value:'9876543210'},
+  'quick-consent':{checked:true},
+  'verify-mobile':{value:''}
+ };
+ const ctx={ $:name=>values[name],setField:(form,key,value)=>{form.elements.namedItem(key).value=value},
+  message(){},busy:async(button,work)=>work(),
+  post:async(path,body)=>{saved={path,body};assert.equal(shown,0,'popup must not open before lead is saved');return {ok:true}} };
+ const {runInNewContext}=await import('node:vm');
+ runInNewContext(script+';this.install=setupQuickVendorLead',ctx);
+ ctx.install();
+ await quick.submit({preventDefault(){}});
+ assert.equal(saved.path,'/api/vendor/lead');
+ assert.deepEqual(JSON.parse(JSON.stringify(saved.body)),{name:'Sample Vendor',mobile:'9876543210',consent:true,website:''});
+ assert.equal(shown,1);assert.equal(fields.contact.value,'Sample Vendor');assert.equal(fields.mobile.value,'9876543210');
+ assert.equal(wa.value,'9876543210');assert.equal(wa.readOnly,true);
+});
+test('Homepage vendor login links out to full-size quick registration page',async()=>{
+ const html=await readFile(new URL('../vendor/index.html',import.meta.url),'utf8');
+ assert.match(html,/href="\/become-a-vendor\/" target="_top"/);
+});
