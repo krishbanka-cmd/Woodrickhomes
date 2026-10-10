@@ -1,5 +1,5 @@
 // Server-side vendor alerts. Private settings and durable pending deliveries live in R2.
-const P='private/vendors/', SETTINGS=P+'settings/notifications.json', EVENTS=P+'notification-events/';
+const P='private/vendors/', SETTINGS=P+'settings/notifications.json', EVENTS=P+'notification-events/', RECENT=P+'notification-recent/';
 const DEFAULTS={emails:['woodrickhomes@gmail.com','deepakplygkp@gmail.com'],whatsapps:['8090781345','8090781347','9415324839'],enabled:{registration:true,product:true},channels:{email:true,whatsapp:true}};
 const short=(value,max=160)=>String(value??'').trim().slice(0,max);
 const phone=value=>{const n=String(value||'').replace(/\D/g,'');return n.startsWith('91')&&n.length===12?n.slice(2):n};
@@ -44,7 +44,11 @@ async function deliver(env,job,sheet){
  const d=await r.json().catch(()=>({}));if(!r.ok||d.ok!==true)throw new Error('WhatsApp provider did not confirm sending.');return '';
 }
 async function processEvent(env,key,getSheet){
- const lockKey=P+'notification-locks/'+key.slice(EVENTS.length),lock=await env.PRODUCT_MEDIA.put(lockKey,'1',{onlyIf:{etagDoesNotMatch:'*'}});if(!lock)return;
+ const lockKey=P+'notification-locks/'+key.slice(EVENTS.length);
+ const current=await env.PRODUCT_MEDIA.get(lockKey);
+ if(current&&Number(await current.text())>Date.now())return;
+ const lock=await env.PRODUCT_MEDIA.put(lockKey,String(Date.now()+240000),{onlyIf:current?{etagMatches:current.etag}:{etagDoesNotMatch:'*'}});
+ if(!lock)return;
  try{const row=await env.PRODUCT_MEDIA.get(key);if(!row)return;const event=JSON.parse(await row.text()),sheet=await getSheet();
   for(const job of event.deliveries){if(job.status==='sent')continue;
    try{const pending=await deliver(env,job,sheet);job.status=pending?'pending':'sent';job.lastError=pending||''}
@@ -61,12 +65,20 @@ export async function enqueueVendorNotification(env,ctx,kind,record,getSheet){
   if(!deliveries.length)return;
   const event={id,kind,name:kind==='registration'?short(record.business):short(record.product.title),vendor:kind==='registration'?short(record.business):short(record.vendor.business),createdAt:new Date().toISOString(),deliveries};
   const saved=await env.PRODUCT_MEDIA.put(key,JSON.stringify(event),{onlyIf:{etagDoesNotMatch:'*'},httpMetadata:{contentType:'application/json'}});if(!saved)return;
+  // Reverse timestamp makes newest notifications available without scanning every vendor event.
+  const newest=String(9999999999999-Date.now()).padStart(13,'0');
+  try{await env.PRODUCT_MEDIA.put(RECENT+newest+'-'+event.id+'.json',JSON.stringify({key}),{httpMetadata:{contentType:'application/json'}})}
+  catch(e){console.error('Vendor notification index:',e)}
   const task=processEvent(env,key,getSheet).catch(e=>console.error('Vendor notification task:',e));if(ctx?.waitUntil)ctx.waitUntil(task);else await task;
  }catch(e){console.error('Vendor notification queue:',e)}
 }
 export async function listVendorNotifications(env){
- const page=await env.PRODUCT_MEDIA.list({prefix:EVENTS,limit:100});
- const items=(await Promise.all(page.objects.map(async o=>{const r=await env.PRODUCT_MEDIA.get(o.key);return r?JSON.parse(await r.text()):null}))).filter(Boolean).sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,30);
+ const page=await env.PRODUCT_MEDIA.list({prefix:RECENT,limit:30});
+ const items=(await Promise.all(page.objects.map(async o=>{
+  const index=await env.PRODUCT_MEDIA.get(o.key);if(!index)return null;
+  const row=await env.PRODUCT_MEDIA.get((await index.json()).key);
+  return row?JSON.parse(await row.text()):null;
+ }))).filter(Boolean).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
  return items.map(e=>({id:e.id,kind:e.kind,name:e.name,vendor:e.vendor,createdAt:e.createdAt,
   sent:e.deliveries.filter(x=>x.status==='sent').length,pending:e.deliveries.filter(x=>x.status==='pending').length,failed:e.deliveries.filter(x=>x.status==='failed').length,
   errors:[...new Set(e.deliveries.filter(x=>x.status!=='sent').map(x=>x.lastError).filter(Boolean))].slice(0,2)}));
