@@ -166,6 +166,27 @@ document.querySelectorAll('.filter-btn').forEach(btn=>btn.addEventListener('clic
 applyCategoryVisuals();
 enableCategoryCards();
 loadUploadedMedia();
+// Prewarm the public directory while visitors browse products, so tapping a
+// category does not have to wait for a brand API call on the next document.
+(function warmPublicBrandFolders(){
+  const cacheKey='woodrick-public-brand-directory-v1',freshMs=90*1000;
+  if(navigator.connection?.saveData)return;
+  try{
+    const previous=JSON.parse(localStorage.getItem(cacheKey)||'null');
+    if(previous&&Array.isArray(previous.data?.items)&&Date.now()-previous.at<freshMs)return;
+  }catch{}
+  const warm=async()=>{
+    try{
+      const response=await fetch('/api/brand-directory',{cache:'default'});
+      if(!response.ok)return;
+      const data=await response.json();
+      if(!Array.isArray(data.items)||!Array.isArray(data.categories))return;
+      localStorage.setItem(cacheKey,JSON.stringify({at:Date.now(),data}));
+    }catch{}
+  };
+  if(typeof window.requestIdleCallback==='function')window.requestIdleCallback(warm,{timeout:1500});
+  else setTimeout(warm,400);
+})();
 </script>
 <script>
 (function(){
