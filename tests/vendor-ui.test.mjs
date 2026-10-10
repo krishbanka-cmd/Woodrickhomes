@@ -299,7 +299,7 @@ test('Approved vendor email can be corrected directly in admin panel with re-ver
  assert.ok(script.includes("post('/api/vendor-applications/email-verify'"));
  assert.ok(script.includes("await loadAdmin(false)"));
  assert.ok(admin.includes('vendor-panel.js?v=20261010-vendor-notifications'));
- assert.ok(admin.includes('vendor-panel.css?v=20261009-email-correction'));
+ assert.ok(admin.includes('vendor-panel.css?v=20261010-vendor-notifications'));
  assert.ok(css.includes('.vendor-admin-email-edit{'));
  assert.ok(backend.includes("if(path==='/api/vendor-applications/email-correct'&&req.method==='POST')"));
  assert.ok(backend.includes("emailVerified:false"));
