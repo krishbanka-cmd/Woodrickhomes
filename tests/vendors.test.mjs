@@ -336,3 +336,34 @@ test('Approved vendor email correction cannot claim another vendor email',async(
  const row=await data(await call(s,'/api/vendor-applications',{admin:true}));
  assert.notEqual(row.items.find(x=>x.id===v2.id).email,'first@example.com');
 });
+
+
+test('Vendor admin notification preferences are private and registration/product alerts are queued',async()=>{
+ const s=setup(),settingsUrl='/api/vendor-applications/notification-settings';
+ assert.equal((await call(s,settingsUrl)).status,401);
+ const defaults=await data(await call(s,settingsUrl,{admin:true}));
+ assert.deepEqual(defaults.settings.emails,['woodrickhomes@gmail.com','deepakplygkp@gmail.com']);
+ assert.deepEqual(defaults.settings.whatsapps,['8090781345','8090781347','9415324839']);
+ assert.equal((await call(s,settingsUrl,{body:defaults.settings})).status,401);
+ assert.equal((await call(s,'/api/vendor-applications/notifications')).status,401);
+ const created=await data(await call(s,'/api/vendor-applications',{body:application('9876543210')}));
+ assert.equal(created.status,201);
+ const reg=await (await s.storage.get('private/vendors/notification-events/registration-'+created.id+'-1.json')).json();
+ assert.equal(reg.deliveries.length,5);
+ assert.match(reg.deliveries[0].body,/Test Supplies/);
+ const updated={...defaults.settings,whatsapps:['919876543210'],emails:['alerts@example.com']};
+ const saved=await data(await call(s,settingsUrl,{admin:true,body:updated}));
+ assert.equal(saved.status,200);assert.deepEqual(saved.settings.whatsapps,['9876543210']);
+ assert.deepEqual(saved.settings.emails,['alerts@example.com']);
+ assert.equal((await call(s,settingsUrl,{admin:true,body:{...updated,whatsapps:['1111111111']}})).status,400);
+ await approve(s,created.vendor);
+ const signed=await login(s,created.vendor);
+ const p=await newProduct(s,signed.cookie);
+ const evt=await (await s.storage.get('private/vendors/notification-events/product-'+p.id+'-'+p.revision+'.json')).json();
+ assert.equal(evt.deliveries.length,2);
+ assert.match(evt.deliveries[0].body,/Test Brand/);
+ assert.match(evt.deliveries[0].body,/Test Laminate/);
+ const list=await data(await call(s,'/api/vendor-applications/notifications',{admin:true}));
+ assert.equal(list.items.some(x=>x.kind==='product'&&x.id===evt.id),true);
+ assert.equal((await call(s,'/api/vendor-applications/notifications/retry',{body:{id:evt.id}})).status,401);
+});

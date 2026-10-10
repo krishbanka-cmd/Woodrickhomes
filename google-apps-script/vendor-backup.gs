@@ -2,8 +2,9 @@
 // A safe capability check prevents older deployments from putting leads in Vendors.
 function doGet() {
   return ContentService.createTextOutput(JSON.stringify({
-    version:2,
-    supportsVendorLeads:true
+    version:3,
+    supportsVendorLeads:true,
+    supportsVendorNotificationEmail:true
   })).setMimeType(ContentService.MimeType.JSON);
 }
 function doPost(request) {
@@ -14,6 +15,27 @@ function doPost(request) {
     const payload = JSON.parse(request.postData.contents);
     const token = config.getProperty('VENDOR_SHEET_TOKEN');
     if (!token || payload.token !== token) return json({ok:false});
+    if (payload.kind === 'notification-email') {
+      // Only the Cloudflare Worker knows the private token. Log sent IDs to
+      // avoid re-sending after a normal webhook retry.
+      const n = payload.notification;
+      if (!n || !/^(registration|product)-[a-f0-9-]{36}-[0-9]+:email:/.test(String(n.id || '')) ||
+          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(n.to || '')) ||
+          String(n.subject || '').length > 200 || String(n.body || '').length > 3000) return json({ok:false});
+      lock.waitLock(10000);
+      const book = SpreadsheetApp.openById(config.getProperty('SPREADSHEET_ID'));
+      const sheet = book.getSheetByName('Vendor Notification Log') || book.insertSheet('Vendor Notification Log');
+      if (!sheet.getLastRow()) sheet.appendRow(['id', 'recipient', 'subject', 'sentAt']);
+      const ids = sheet.getLastRow() > 1 ? sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues() : [];
+      if (ids.some(row => String(row[0]) === n.id)) return json({ok:true,alreadySent:true});
+      MailApp.sendEmail({to:String(n.to),subject:String(n.subject),body:String(n.body),
+        name:'Woodrick Homes Vendor Alerts'});
+      // Prefix user-controlled text to prevent Sheets formula evaluation.
+      const plain = value => /^[=+@-]/.test(value) ? "'" + value : value;
+      sheet.appendRow([plain(String(n.id)),plain(String(n.to)),
+        plain(String(n.subject)),new Date().toISOString()]);
+      return json({ok:true});
+    }
     const item = payload.event;
     if (!item || !/^[a-f0-9-]{36}$/.test(item.id || '')) return json({ok:false});
     lock.waitLock(10000);
