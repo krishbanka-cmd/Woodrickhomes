@@ -14,7 +14,7 @@ test('Category folder paints cached brands synchronously without waiting for an 
     hidden:false,className:'',style:{},append(...a){this.children.push(...a)},
     replaceChildren(...a){this.children=[...a]},
     addEventListener(name,handler){this['on'+name]=handler;},
-    setAttribute(name,value){this[name]=value}
+    setAttribute(name,value){this[name]=value},removeAttribute(name){delete this[name]}
   };}
   const node=id=>{if(!nodes.has(id))nodes.set(id,element());return nodes.get(id)};
   const cached={at:Date.now(),data:{
@@ -23,8 +23,9 @@ test('Category folder paints cached brands synchronously without waiting for an 
       mediaCount:3,categoryCounts:{Louvers:2,Laminates:1}
     }]
   }};
+  const location={search:'?category=Louvers',pathname:'/products/brands/',origin:'https://woodrickhomes.com',hash:''};
   const ctx=vm.createContext({
-    location:{search:'?category=Louvers',pathname:'/products/brands/',origin:'https://woodrickhomes.com'},
+    location,history:{pushState(_state,_title,url){location.search=new URL(url,location.origin).search}},
     document:{getElementById:node,createElement:element,addEventListener(){},visibilityState:'visible'},
     window:{addEventListener:(ev,fn)=>listeners[ev]=fn},
     navigator:{connection:{saveData:true}},
@@ -39,6 +40,13 @@ test('Category folder paints cached brands synchronously without waiting for an 
   assert.equal(requests,0,'fresh cached directory must not block on a new request');
   listeners.pageshow({persisted:true});
   assert.equal(requests,0,'return navigation should not perform duplicate fetches');
+  const newTab={href:'/products/brands/?category=Laminates'};
+  node('categoryLinks').onclick({target:{closest:()=>newTab},preventDefault(){}});
+  assert.equal(node('categoryTitle').textContent,'Laminates');
+  assert.equal(requests,0,'switching category tabs must not issue another network request');
+  assert.equal(new URLSearchParams(location.search).get('category'),'Laminates');
+  listeners.popstate();
+  assert.equal(node('categoryTitle').textContent,'Laminates','browser navigation restores the displayed folder');
 });
 
 test('A stale category folder stays visible while its directory is revalidated',async()=>{
