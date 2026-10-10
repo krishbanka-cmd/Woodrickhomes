@@ -106,3 +106,22 @@ html.vendor-embedded .activation-panel p{font-size:12px;line-height:1.45;margin:
 .vendor-admin-email-edit .vendor-review-field input{max-width:480px;margin:4px 0 0}
 .vendor-admin-email-edit .help{margin:0 0 3px;font-size:11px;line-height:1.5}
 .vendor-admin-email-edit button{justify-self:start;font-size:12px;min-height:36px}
+
+/* Quick-first vendor onboarding; full form only appears after a saved lead. */
+body[data-page="apply"] .layout{grid-template-columns:minmax(0,.9fr) minmax(320px,.8fr);gap:26px;align-items:center}
+body[data-page="apply"] .quick-intro{max-width:580px}
+body[data-page="apply"] .quick-lead-panel{max-width:460px;width:100%}
+body[data-page="apply"] .quick-lead-panel h2{font-size:23px;margin:9px 0}
+body[data-page="apply"] .quick-submit{width:100%;margin-top:18px;min-height:45px}
+body[data-page="apply"] .quick-consent{align-items:flex-start;line-height:1.5;font-weight:400;margin-top:6px}
+body[data-page="apply"] .quick-consent input{flex:0 0 16px;margin:2px 0 0}
+body[data-page="apply"] .vendor-registration-dialog{border:1px solid var(--line);padding:0;width:min(850px,calc(100vw - 24px));max-width:850px;max-height:min(92dvh,950px);margin:auto;border-radius:14px;box-shadow:0 28px 90px #10211955;color:var(--ink);background:#fff;overflow:auto}
+body[data-page="apply"] .vendor-registration-dialog::backdrop{background:rgba(10,20,15,.62)}
+body[data-page="apply"] .registration-dialog-head{position:sticky;top:0;z-index:2;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;background:#fff;border-bottom:1px solid var(--line);padding:18px 22px}
+body[data-page="apply"] .registration-dialog-head h2{margin:5px 0 3px;font-size:22px}
+body[data-page="apply"] .registration-dialog-head p{margin:0}
+body[data-page="apply"] .registration-dialog-content{padding:18px 22px 24px}
+body[data-page="apply"] .dialog-close{flex:none;width:40px;min-height:40px;padding:0;font-size:26px;background:#f4f4f1}
+body[data-page="apply"] .whatsapp-same{font-weight:400;margin-top:6px}
+body[data-page="apply"] .registration-dialog-content #application-form .field{min-width:0}
+@media(max-width:740px){body[data-page="apply"] .layout{grid-template-columns:1fr;gap:12px}body[data-page="apply"] .quick-intro h1{font-size:24px}body[data-page="apply"] .quick-lead-panel{max-width:none}body[data-page="apply"] .vendor-registration-dialog{width:calc(100vw - 12px);max-height:96dvh;border-radius:10px}body[data-page="apply"] .registration-dialog-head,body[data-page="apply"] .registration-dialog-content{padding:14px}body[data-page="apply"] .registration-dialog-head h2{font-size:19px}}
