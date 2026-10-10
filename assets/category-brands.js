@@ -1,4 +1,4 @@
-const params=new URLSearchParams(location.search),category=(params.get('category')||'').trim(),grid=document.getElementById('brandGrid'),status=document.getElementById('directoryStatus'),search=document.getElementById('brandSearch'),retry=document.getElementById('retry');let entries=[];
+const params=new URLSearchParams(location.search);let category=(params.get('category')||'').trim();const grid=document.getElementById('brandGrid'),status=document.getElementById('directoryStatus'),search=document.getElementById('brandSearch'),retry=document.getElementById('retry');let entries=[];
 const key=v=>String(v||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 const cat=v=>({laminate:'laminates','door skin':'door skin','door skins':'door skin',doorskin:'door skin',doorskins:'door skin',louver:'louvers'})[key(v)]||key(v);
 document.getElementById('categoryTitle').textContent=category||'All brands';document.getElementById('breadcrumb').textContent=category||'Brands';document.title=(category||'Product')+' Brands | Woodrick Homes';
@@ -78,6 +78,37 @@ async function load(force=false){
   })();
   return loading;
 }
+// Switching between category folders should not reload the entire page.
+// Real hrefs are retained for opening in another tab and for no-JS users.
+function selectCategory(next,updateHistory=true){
+  const nextCategory=String(next||'').trim();
+  if(nextCategory===category)return;
+  category=nextCategory;
+  document.getElementById('categoryTitle').textContent=category||'All brands';
+  document.getElementById('breadcrumb').textContent=category||'Brands';
+  document.title=(category||'Product')+' Brands | Woodrick Homes';
+  const links=document.getElementById('categoryLinks');
+  for(const link of links.children){
+    const value=new URL(link.href,location.origin).searchParams.get('category')||'';
+    if(cat(value)===cat(category))link.setAttribute('aria-current','page');
+    else link.removeAttribute('aria-current');
+  }
+  if(updateHistory){
+    const query=new URLSearchParams(location.search);
+    if(category)query.set('category',category);else query.delete('category');
+    history.pushState(null,'',location.pathname+(query.size?'?'+query:'')+location.hash);
+  }
+  render();
+}
+document.getElementById('categoryLinks').addEventListener('click',event=>{
+  const link=event.target.closest('a[href]');
+  if(!link)return;
+  const destination=new URL(link.href,location.origin);
+  if(destination.origin!==location.origin||destination.pathname!==location.pathname)return;
+  event.preventDefault();
+  selectCategory(destination.searchParams.get('category')||'');
+});
+window.addEventListener('popstate',()=>selectCategory(new URLSearchParams(location.search).get('category')||'',false));
 search.addEventListener('input',render);
 retry.addEventListener('click',()=>load(true));
 // Back/foreground must preserve visible cards rather than reload the page.
