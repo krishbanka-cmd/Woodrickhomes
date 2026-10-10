@@ -71,7 +71,10 @@ async function saveBrandRail(env,items){
 }
 async function loadCatalogMaster(request,env,ctx){
  const url=new URL(request.url);
- const [media,managed,state]=await Promise.all([publicMediaList(env).then(r=>r.json()),loadBrandRail(env),app.fetch(new Request(new URL('/api/categories',url)),env,ctx).then(r=>r.json())]);
+ // Category brand folders must not re-list thousands of R2 media objects.
+ // Share the already validated public catalogue index with Products and Brands.
+ const mediaPromise=indexedMedia(env,ctx).then(r=>r?r.json():publicMediaList(env).then(v=>v.json()));
+ const [media,managed,state]=await Promise.all([mediaPromise,loadBrandRail(env),app.fetch(new Request(new URL('/api/categories',url)),env,ctx).then(r=>r.json())]);
  return buildCatalogMaster(media.items,managed,state);
 }
 async function handleBrandRail(request,env,ctx){
