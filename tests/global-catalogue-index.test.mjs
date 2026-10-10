@@ -44,3 +44,25 @@ test('Products fetch no longer adds unique URL and no-store flags on every refre
   assert.match(viewer,/if\(retry\|\|!pdf\)\{/,'original PDF must be usable during initial loading');
   assert.match(viewer,/original\.href=rawUrl/);
 });
+
+test('Category-to-brand directory uses the fast index instead of listing every PDF again',async()=>{
+  const env={PRODUCT_MEDIA:{
+    async get(key){
+      if(key===PUBLIC_MEDIA_INDEX_KEY)return {
+        uploaded:new Date(),text:async()=>JSON.stringify({items:[catalogue],total:1,truncated:false})
+      };
+      return null;
+    },
+    async list(options={}){
+      assert.notEqual(options.prefix,'product-sync/','category selection must not enumerate every product');
+      return {objects:[],delimitedPrefixes:[],truncated:false};
+    }
+  }};
+  const response=await worker.fetch(new Request('https://woodrickhomes.com/api/brand-directory'),env,{waitUntil(){}});
+  assert.equal(response.status,200);
+  const directory=await response.json();
+  const brand=directory.items.find(x=>x.brand==='Ristal');
+  assert.ok(brand);
+  assert.ok(brand.categories.includes('Laminates'));
+  assert.ok(brand.mediaCount>=1);
+});
