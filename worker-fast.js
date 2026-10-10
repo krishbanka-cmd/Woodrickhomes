@@ -71,7 +71,10 @@ async function saveBrandRail(env,items){
 }
 async function loadCatalogMaster(request,env,ctx){
  const url=new URL(request.url);
- const [media,managed,state]=await Promise.all([publicMediaList(env).then(r=>r.json()),loadBrandRail(env),app.fetch(new Request(new URL('/api/categories',url)),env,ctx).then(r=>r.json())]);
+ // Category brand folders must not re-list thousands of R2 media objects.
+ // Share the already validated public catalogue index with Products and Brands.
+ const mediaPromise=indexedMedia(env,ctx).then(r=>r?r.json():publicMediaList(env).then(v=>v.json()));
+ const [media,managed,state]=await Promise.all([mediaPromise,loadBrandRail(env),app.fetch(new Request(new URL('/api/categories',url)),env,ctx).then(r=>r.json())]);
  return buildCatalogMaster(media.items,managed,state);
 }
 async function handleBrandRail(request,env,ctx){
@@ -117,20 +120,34 @@ async function handleBrandRail(request,env,ctx){
 }
 
 function isPublicMediaList(request,url){
+  // Customer catalogue requests are identical regardless of legacy cache-buster
+  // query params (_attempt / _).  Never send those requests into the slow R2
+  // object listing while a safe public index exists.
   return request.method==='GET'&&
     url.pathname==='/api/media'&&
     !url.searchParams.get('key')&&
     !url.searchParams.get('prefix')&&
-    !url.searchParams.has('_')&&
+    !url.searchParams.has('cursor')&&
     !url.searchParams.has('scope')&&
     !(request.headers.get('referer')||'').includes('/admin-products');
 }
 
-async function indexedMedia(env){
+let lastCatalogueIndexRefreshAttempt = 0;
+async function indexedMedia(env,ctx){
   if(!env.PRODUCT_MEDIA)return null;
   const index=await env.PRODUCT_MEDIA.get(PUBLIC_MEDIA_INDEX_KEY);
   if(!index)return null;
-  if(!index.uploaded||Date.now()-new Date(index.uploaded).getTime()>120000)return null;
+  const age=index.uploaded?Date.now()-new Date(index.uploaded).getTime():Infinity;
+  // Scheduled refresh and upload/approval actions update this index. Keep the
+  // most recent valid public copy usable for a bounded outage of R2 listing,
+  // rather than re-enumerating every catalogue folder after only 2 minutes.
+  if(!Number.isFinite(age)||age<0||age>60*60*1000)return null;
+  // A failed/missed cron can self-heal without delaying the customer response.
+  if(age>10*60*1000&&ctx&&typeof ctx.waitUntil==='function'&&
+     Date.now()-lastCatalogueIndexRefreshAttempt>5*60*1000){
+    lastCatalogueIndexRefreshAttempt=Date.now();
+    ctx.waitUntil(refreshPublicMediaIndex(env).catch(()=>{}));
+  }
   // Never serve an accidentally empty/corrupt fast index to customers.  Falling
   // through makes the canonical R2 listing rebuild the response instead.
   let body;
@@ -308,7 +325,7 @@ export default{
       if(response)return response;
     }
     if(isPublicMediaList(request,url)){
-      try{const response=await indexedMedia(env);if(response)return response}catch{}
+      try{const response=await indexedMedia(env,ctx);if(response)return response}catch{}
     }
     let response=await app.fetch(request,env,ctx);
     if(request.method==='POST'&&url.pathname==='/api/upload'&&response.ok){
