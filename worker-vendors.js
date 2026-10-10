@@ -48,16 +48,39 @@ async function sheetConfig(env){if(env.VENDOR_SHEET_URL&&env.VENDOR_SHEET_TOKEN)
 async function backup(env,item,ctx){const queueKey=ROOT+'backup/'+item.id+'.json',event={id:item.id,business:item.business,contact:item.contact,mobile:item.mobile,whatsapp:item.whatsapp||'',email:item.email||'',emailVerified:!!item.emailVerified,city:item.city,category:item.category,brands:item.brands||'',supplyLocations:item.supplyLocations||'',gst:item.gst,status:item.status,createdAt:item.createdAt,updatedAt:item.updatedAt||item.reviewedAt||item.createdAt};await write(env,queueKey,{event,state:'pending',updatedAt:new Date().toISOString()});const run=async()=>{const config=await sheetConfig(env);if(!config?.url||!config?.token)return;try{const response=await fetch(config.url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({token:config.token,event}),signal:AbortSignal.timeout(10000)});const data=await response.json().catch(()=>({}));if(response.ok&&data.ok===true)await write(env,queueKey,{event,state:'synced',updatedAt:new Date().toISOString()})}catch{}};if(ctx?.waitUntil)ctx.waitUntil(run());else await run()}
 
 const leadKey=async(env,number)=>ROOT+'leads/'+b64(await hmac(env,'vendor-lead-v1:'+number))+'.json';
+// Prevent an older Apps Script deployment from silently mixing incomplete
+// quick leads into the approved Vendors tab. A newer deployment advertises v2.
+let leadSheetCapability={url:'',at:0,available:false};
+async function leadSheetReady(url){
+ const now=Date.now();
+ if(leadSheetCapability.url===url&&now-leadSheetCapability.at<5*60*1000)return leadSheetCapability.available;
+ try{
+  const response=await fetch(url,{method:'GET',signal:AbortSignal.timeout(6500)});
+  const data=await response.json().catch(()=>({}));
+  const ok=response.ok&&data.version>=2&&data.supportsVendorLeads===true;
+  leadSheetCapability={url,at:now,available:ok};return ok;
+ }catch{
+  leadSheetCapability={url,at:now,available:false};return false;
+ }
+}
 async function backupLead(env,lead,ctx){
  const event={id:lead.id,contact:lead.name,mobile:lead.mobile,status:lead.status,createdAt:lead.createdAt,updatedAt:lead.updatedAt,fullApplicationId:lead.fullApplicationId||''};
  const key=ROOT+'backup/leads/'+lead.id+'.json';
  await write(env,key,{event,kind:'lead',state:'pending',updatedAt:new Date().toISOString()});
  const deliver=async()=>{
-  const config=await sheetConfig(env);if(!config?.url||!config?.token)return;
+  const config=await sheetConfig(env);
+  if(!config?.url||!config?.token||!await leadSheetReady(config.url))return;
   try{
    const result=await fetch(config.url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({token:config.token,kind:'lead',event}),signal:AbortSignal.timeout(10000)});
    const data=await result.json().catch(()=>({}));
-   if(result.ok&&data.ok===true)await write(env,key,{event,kind:'lead',state:'synced',updatedAt:new Date().toISOString()});
+   if(result.ok&&data.ok===true){
+    const object=await env.PRODUCT_MEDIA.get(key);
+    if(!object)return;
+    const queued=await object.json();
+    if(queued.event?.updatedAt===event.updatedAt){
+     await write(env,key,{event,kind:'lead',state:'synced',updatedAt:new Date().toISOString()},{etagMatches:object.etag});
+    }
+   }
   }catch{}
  };
  if(ctx?.waitUntil)ctx.waitUntil(deliver());else await deliver();
