@@ -8,6 +8,7 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
   const catalogueTitle = params.get('title') || inferred;
   const rawUrl = '/api/media?raw=1&key=' + encodeURIComponent(key);
   const stage = document.getElementById('stage'), frame = document.getElementById('pageFrame'), canvas = document.getElementById('page');
+  const quickPreview = document.getElementById('quickPreview');
   const status = document.getElementById('status'), previous = document.getElementById('previous');
   const next = document.getElementById('next'), zoom = document.getElementById('zoom');
   const fullscreen = document.getElementById('fullscreen'), context = canvas.getContext('2d', {alpha: false});
@@ -21,6 +22,40 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
     return;
   }
   let pdf = null, current = 1, generation = 0, zoomed = false, referenceAspect = 0, activeRender = null, loadingTask=null;
+
+  // Customer-supplied query parameters must never load an external preview.
+  // Existing static covers and our R2-generated first page thumbnails are safe.
+  function safePreviewUrl(value){
+    if(!value||!value.startsWith('/')||value.startsWith('//'))return '';
+    try {
+      const url=new URL(value,location.origin);
+      if(url.origin!==location.origin)return '';
+      const isStatic=/^\/catalogue-covers\/[a-z0-9._/-]+\.(?:webp|png|jpe?g)$/i.test(url.pathname);
+      if(!isStatic&&url.pathname!=='/api/catalogue-cover')return '';
+      return url.pathname+url.search;
+    } catch { return ''; }
+  }
+  const previewUrl=safePreviewUrl(params.get('cover')||'');
+  if(quickPreview&&previewUrl){
+    quickPreview.alt=catalogueTitle+' cover preview (full pages loading)';
+    quickPreview.onload=()=>{
+      quickPreview.dataset.ready='1';
+      if(!pdf){
+        referenceAspect=quickPreview.naturalWidth&&quickPreview.naturalHeight
+          ?quickPreview.naturalWidth/quickPreview.naturalHeight:.75;
+        sizeFrame();quickPreview.hidden=false;frame.hidden=false;
+        stage.classList.add('has-preview');
+        stageTiming('cover-preview-visible');
+      }
+    };
+    quickPreview.onerror=()=>{
+      quickPreview.dataset.ready='0';
+      quickPreview.hidden=true;
+      stage.classList.remove('has-preview');
+      if(!pdf)frame.hidden=true;
+    };
+    quickPreview.src=previewUrl;
+  }
 
   document.title = catalogueTitle + ' | Woodrick Homes';
   document.getElementById('title').textContent = catalogueTitle;
@@ -81,7 +116,7 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
       const pdfPage = await withDeadline(pdf.getPage(current),20000);
       if (ticket !== generation) return;
       const natural = pdfPage.getViewport({scale: 1});
-      if (!referenceAspect) referenceAspect = natural.width / natural.height;
+      referenceAspect = natural.width / natural.height;
       const frameSize = sizeFrame();
       const fitScale = Math.min(frameSize.width / natural.width, frameSize.height / natural.height);
       const cssScale = fitScale * (zoomed ? 2 : 1), outputScale = Math.min(devicePixelRatio || 1, 2);
@@ -93,7 +128,7 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
       activeRender = task;
       try { await withDeadline(task.promise,20000,()=>task.cancel()); } finally { if (activeRender === task) activeRender = null; }
       if (ticket !== generation) return;
-      frame.hidden = false; canvas.hidden = false; status.hidden = true; canvas.setAttribute('aria-label', catalogueTitle + ', page ' + current);
+      frame.hidden = false; canvas.hidden = false; if(quickPreview)quickPreview.hidden=true;stage.classList.remove('has-preview'); status.hidden = true; canvas.setAttribute('aria-label', catalogueTitle + ', page ' + current);
       if(current===1)stageTiming('first-page-visible');
       if (!zoomed) { stage.scrollTop = 0; stage.scrollLeft = 0; }
       const neighbor = current < pdf.numPages ? current + 1 : current - 1;
@@ -104,7 +139,11 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
     generation++;
     if(activeRender){activeRender.cancel();try{await activeRender.promise}catch{}activeRender=null;}
     if(loadingTask){const old=loadingTask;loadingTask=null;old.destroy().catch(()=>{});}
-    pdf = null; current = 1; referenceAspect = 0; frame.hidden = true; controls(); setStatus('Preparing catalogue…');
+    pdf = null; current = 1; referenceAspect = 0;
+    const hasCover=!!quickPreview&&quickPreview.dataset.ready==='1';
+    if(quickPreview)quickPreview.hidden=!hasCover;
+    frame.hidden=!hasCover;stage.classList.toggle('has-preview',hasCover);
+    controls(); setStatus(hasCover?'Cover preview ready · loading full catalogue…':'Preparing catalogue…');
     const ticket=generation;
     const slowTimer=setTimeout(()=>{if(ticket===generation&&!pdf)setStatus('Opening the first page… Large catalogues may take a few moments.');},5000);
     try {
