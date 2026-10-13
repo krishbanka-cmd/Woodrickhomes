@@ -62,15 +62,15 @@ test('Scheduled sync retains the stable customer URL after an original is rename
 });
 
 test('PDF range reads return only requested bytes; invalid/private reads are refused',async()=>{
-  const bytes=new Uint8Array(600000),ranges=[];
+  const bytes=new Uint8Array(600000),ranges=[];let heads=0;
   const env={PRODUCT_MEDIA:{
-    head:async()=>({size:bytes.length,httpEtag:'"pdf-v1"',writeHttpMetadata:h=>h.set('content-type','application/pdf')}),
-    get:async(key,options)=>{ranges.push(options.range);return {body:bytes.slice(options.range.offset,options.range.offset+options.range.length)}}
+    head:async()=>{heads++;return ({size:bytes.length,httpEtag:'"pdf-v1"',writeHttpMetadata:h=>h.set('content-type','application/pdf')})},
+    get:async(key,options)=>{ranges.push(options.range);return {size:bytes.length,httpEtag:'"pdf-v1"',writeHttpMetadata:h=>h.set('content-type','application/pdf'),body:bytes.slice(options.range.offset,options.range.offset+options.range.length)}}
   }};
   const url='https://example.com/api/media?raw=1&key=catalogue.pdf';
   const response=await worker.fetch(new Request(url,{headers:{Range:'bytes=262144-524287'}}),env,{});
   assert.equal(response.status,206);assert.equal(response.headers.get('content-range'),'bytes 262144-524287/600000');
-  assert.equal((await response.arrayBuffer()).byteLength,262144);assert.deepEqual(ranges,[{offset:262144,length:262144}]);
+  assert.equal((await response.arrayBuffer()).byteLength,262144);assert.deepEqual(ranges,[{offset:262144,length:262144}]);assert.equal(heads,0,'a valid range uses a single storage read');
   const invalid=await worker.fetch(new Request(url,{headers:{Range:'bytes=600001-700000'}}),env,{});
   assert.equal(invalid.status,416);
   const privateFile=await worker.fetch(new Request('https://example.com/api/media?raw=1&key=private/kyc.pdf'),env,{});
@@ -80,7 +80,7 @@ test('PDF range reads return only requested bytes; invalid/private reads are ref
 test('A card opened before cleanup still reads and downloads its surviving original',async()=>{
   const [stable,retired]=originals[2],seen=[];
   const env={PRODUCT_MEDIA:{head:async key=>key===stable?{size:4,httpEtag:'"v1"',writeHttpMetadata:h=>h.set('content-type','application/pdf')}:null,
-    get:async key=>{seen.push(key);return {body:new Uint8Array(4)}}}};
+    get:async key=>{if(key!==stable)return null;seen.push(key);return {size:4,httpEtag:'"v1"',writeHttpMetadata:h=>h.set('content-type','application/pdf'),body:new Uint8Array(4)}}}};
   const base='https://example.com/api/media?key='+encodeURIComponent(retired);
   const raw=await worker.fetch(new Request(base+'&raw=1'),env,{});
   assert.equal(raw.status,200);assert.deepEqual(seen,[stable]);

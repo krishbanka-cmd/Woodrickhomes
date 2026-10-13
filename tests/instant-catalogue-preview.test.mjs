@@ -23,7 +23,7 @@ test('Quick preview loads before PDF.js and is never a remote image',async()=>{
     source('../products/presentation/index.html'),source('../products/presentation/viewer.js')
   ]);
   assert.match(html,/<img id="quickPreview" class="quick-preview"/);
-  assert.match(html,/viewer.js\?v=20261010-quick-preview-v1/);
+  assert.match(html,/viewer.js\?v=20261013-catalogue-speed/);
   assert.match(viewer,/stageTiming\('cover-preview-visible'\)/);
   assert.match(viewer,/quickPreview\.src=previewUrl/);
   assert.ok(viewer.indexOf('quickPreview.src=previewUrl')<viewer.indexOf('  async function start()'),

@@ -367,3 +367,22 @@ test('Vendor admin notification preferences are private and registration/product
  assert.equal(list.items.some(x=>x.kind==='product'&&x.id===evt.id),true);
  assert.equal((await call(s,'/api/vendor-applications/notifications/retry',{body:{id:evt.id}})).status,401);
 });
+
+test('Vendor PDF and cover appear under canonical category and brand only after approval',async()=>{
+ const s=setup(),v=await create(s,'9876543210');await approve(s,v);const signed=await login(s,v);
+ const form=product();form.set('brand','Woodline Louvers');form.set('category','louver');form.set('catalogue',new File(['%PDF-1.7\nsynthetic-catalogue'],'range.pdf',{type:'application/pdf'}));
+ form.set('catalogueCover',new File([new Uint8Array([255,216,255,224,1,2,3,4])],'cover.jpg',{type:'image/jpeg'}));
+ const p=(await data(await call(s,'/api/vendor/products',{cookie:signed.cookie,body:form}))).product;
+ assert.equal(p.category,'Louvers');assert.equal(p.brand,'Woodline');
+ assert.equal((await publicItems(s)).some(i=>i.vendorId===v.id),false);
+ assert.equal((await review(s,p)).status,200);
+ const items=(await publicItems(s)).filter(i=>i.vendorId===v.id),pdf=items.find(i=>i.type==='pdf');
+ assert.equal(items.length,2,'cover is a preview, not a third catalogue/product');assert.ok(pdf.coverUrl);assert.equal(pdf.category,'Louvers');assert.equal(pdf.brand,'Woodline');
+ const coverURL=new URL(pdf.coverUrl,'https://example.test');assert.equal((await app.fetch(new Request(coverURL),s.env,s.ctx)).status,200);
+ const master=await data(await call(s,'/api/catalog-master'));assert.ok(master.items.find(i=>i.brand==='Woodline').categories.includes('Louvers'));
+ const edit=product(p.id,p.revision);edit.set('catalogue',new File(['%PDF-1.7\nreplacement'],'new.pdf',{type:'application/pdf'}));
+ const changed=(await data(await call(s,'/api/vendor/products',{cookie:signed.cookie,body:edit}))).product;assert.equal(changed.files.some(f=>f.kind==='cover'),false,'new PDF cannot inherit an unrelated old cover');
+ assert.equal((await review(s,changed)).status,200);assert.equal((await app.fetch(new Request(coverURL),s.env,s.ctx)).status,404,'retired preview is inaccessible');
+ await call(s,'/api/vendor-applications/status',{admin:true,body:{id:v.id,status:'suspended',note:'Synthetic test'}});
+ assert.equal((await publicItems(s)).some(i=>i.vendorId===v.id),false);
+});

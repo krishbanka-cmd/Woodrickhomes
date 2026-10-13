@@ -67,7 +67,7 @@
       let task,timer;
       try{
         const work=(async()=>{
-          engineModule=engineModule||import('/assets/pdf-engine.mjs?v=20261002-audit1');
+          engineModule=engineModule||import('/assets/pdf-engine.mjs?v=20261013-parallel-loader');
           const {pdfEngine}=await engineModule,engine=await pdfEngine();
           task=engine.getDocument({url,disableAutoFetch:true,rangeChunkSize:65536});
           const pdf=await task.promise,page=await pdf.getPage(1),base=page.getViewport({scale:1});

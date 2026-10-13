@@ -14,7 +14,7 @@ const assetEnv={
 
 test('All shared PDF viewer JS and PDF.js worker pieces are cacheable by browser, but not HTML',async()=>{
  for(const file of [
- '/products/presentation/viewer.js?v=20261010-shared-cache',
+ '/products/presentation/viewer.js?v=20261013-parallel-loader',
  '/products/presentation/vendor/pdf.min.mjs',
  '/products/presentation/vendor/pdf.worker.part-1.js',
  '/products/presentation/vendor/pdf.worker.part-4.js'
@@ -42,9 +42,9 @@ test('One accelerated viewer is shared by library and brands, without altering f
   readFile(new URL('../catalogues/index.html',import.meta.url),'utf8'),
   readFile(new URL('../brands/index.html',import.meta.url),'utf8')
  ]);
- assert.ok(html.includes('<link rel="modulepreload" href="/assets/pdf-engine.mjs?v=20261010-shared-cache">'));
- assert.ok(html.includes('viewer.js?v=20261010-quick-preview-v1'));
- assert.ok(viewer.includes("import('/assets/pdf-engine.mjs?v=20261010-shared-cache')"));
+ assert.ok(html.includes('<link rel="modulepreload" href="/assets/pdf-engine.mjs?v=20261013-parallel-loader">'));
+ assert.ok(html.includes('viewer.js?v=20261013-catalogue-speed'));
+ assert.ok(viewer.includes("import('/assets/pdf-engine.mjs?v=20261013-parallel-loader')"));
  assert.ok(viewer.includes('disableAutoFetch:true,disableStream:true'),'do not re-download whole PDF');
  assert.ok(viewer.includes("withDeadline(task.promise,30000"),'stalled catalogue has retry');
  assert.ok(viewer.includes("stageTiming('first-page-visible')"),'first visible page timing marker');
@@ -57,11 +57,24 @@ test('One accelerated viewer is shared by library and brands, without altering f
 test('All publicly accessible catalogue PDFs still have HTTP range-support and safe original links',async()=>{
  const env={PRODUCT_MEDIA:{
    head:async()=>({size:660000,httpEtag:'"v1"',writeHttpMetadata:headers=>headers.set('content-type','application/pdf')}),
-   get:async(key,opts)=>({body:new Uint8Array(opts?.range?.length??660000)})
+   get:async(key,opts)=>({size:660000,httpEtag:'"v1"',writeHttpMetadata:h=>h.set('content-type','application/pdf'),body:new Uint8Array(opts?.range?.length??660000)})
  }};
  const request=new Request('https://woodrickhomes.com/api/media?key=public-catalogue.pdf&raw=1',{headers:{Range:'bytes=0-65535'}});
  const response=await worker.fetch(request,env,{});
  assert.equal(response.status,206);
  assert.equal(response.headers.get('content-range'),'bytes 0-65535/660000');
  assert.equal((await response.arrayBuffer()).byteLength,65536);
+});
+
+test('PDF engine fetches worker chunks while the main module is still loading',async()=>{
+ const {default:vm}=await import('node:vm');
+ const source=await readFile(new URL('../assets/pdf-engine.mjs',import.meta.url),'utf8');
+ const requests=[];let releaseEngine;const engine={GlobalWorkerOptions:{}};
+ const context=vm.createContext({AbortController,Blob,URL:{createObjectURL:()=> 'blob:test-worker'},withDeadline:promise=>promise,
+  loadEngine:()=>new Promise(resolve=>releaseEngine=()=>resolve(engine)),
+  fetch:async url=>{requests.push(url);return {ok:true,text:async()=>url}}});
+ vm.runInContext(source.replace(/^import .*;\n/,'').replace('export async function','async function').replace("import('../products/presentation/vendor/pdf.min.mjs')",'loadEngine()')+';this.pdfEngine=pdfEngine;',context);
+ const first=context.pdfEngine(),second=context.pdfEngine();
+ assert.equal(requests.length,4,'worker downloads start without waiting for main module');
+ releaseEngine();assert.equal(await first,engine);assert.equal(await second,engine);assert.equal(requests.length,4,'concurrent callers share downloads');
 });

@@ -31,7 +31,8 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
       const url=new URL(value,location.origin);
       if(url.origin!==location.origin)return '';
       const isStatic=/^\/catalogue-covers\/[a-z0-9._/-]+\.(?:webp|png|jpe?g)$/i.test(url.pathname);
-      if(!isStatic&&url.pathname!=='/api/catalogue-cover')return '';
+      const isVendorCover=url.pathname==='/api/media'&&url.searchParams.get('raw')==='1'&&/^vendor-public\/[a-f0-9-]{36}\/[a-f0-9-]{36}\/\d+\/cover\.(?:jpg|png|webp)$/.test(url.searchParams.get('key')||'');
+      if(!isStatic&&!isVendorCover&&url.pathname!=='/api/catalogue-cover')return '';
       return url.pathname+url.search;
     } catch { return ''; }
   }
@@ -147,7 +148,7 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
     const ticket=generation;
     const slowTimer=setTimeout(()=>{if(ticket===generation&&!pdf)setStatus('Opening the first page… Large catalogues may take a few moments.');},5000);
     try {
-      const {pdfEngine}=await withDeadline(import('/assets/pdf-engine.mjs?v=20261010-shared-cache'),15000);
+      const {pdfEngine}=await withDeadline(import('/assets/pdf-engine.mjs?v=20261013-parallel-loader'),15000);
       const pdfjsLib=await withDeadline(pdfEngine(),15000);
       if(ticket!==generation)return;
       // Streaming keeps downloading the entire catalogue while range reads also

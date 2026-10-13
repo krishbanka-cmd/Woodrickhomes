@@ -172,7 +172,7 @@ test('Entire vendor browser script parses and initializes clickable password/OTP
 test('Vendor login separates account activation from new vendor registration',async()=>{
  const source=await readFile(new URL('../assets/vendor-panel.js',import.meta.url),'utf8');
  const vendor=await readFile(new URL('../vendor/index.html',import.meta.url),'utf8');
- assert.ok(vendor.includes('vendor-panel.js?v=20261009-compact-dashboard'));
+ assert.ok(vendor.includes('vendor-panel.js?v=20261013-catalogue-placement'));
  assert.match(vendor,/Activate Account \/ Forgot Password/);
  assert.ok(vendor.includes('Register your business'));
  assert.ok(!vendor.includes('Mobile OTP / First login'));
@@ -258,7 +258,7 @@ test('Vendor dashboard prioritizes products with compact account settings and pr
   assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id+' remains present once');
  }
  assert.ok(html.includes('vendor-panel.css?v=20261009-compact-dashboard'));
- assert.ok(html.includes('vendor-panel.js?v=20261009-compact-dashboard'));
+ assert.ok(html.includes('vendor-panel.js?v=20261013-catalogue-placement'));
  assert.ok(css.includes('.vendor-dashboard .dashboard-header h1{font-size:24px'));
  assert.ok(css.includes('.vendor-dashboard .status:empty{display:none'));
  assert.ok(source.includes("'dashboard-add-product').hidden=!approved"));
