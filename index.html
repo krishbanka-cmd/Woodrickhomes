@@ -1056,6 +1056,8 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
 .wh-footer *, .wh-footer *::before, .wh-footer *::after{box-sizing:border-box}
 .wh-footer-inner{width:min(1180px,92%);margin:auto;padding:58px 0 0}
 .wh-footer-grid{display:grid;grid-template-columns:minmax(245px,1.4fr) minmax(145px,.8fr) minmax(160px,.9fr) minmax(235px,1.12fr);gap:clamp(26px,3.5vw,58px);align-items:start}
+/* Homepage global section padding must not shift the About/Contact footer columns. */
+#wh-footer-refresh .wh-footer-grid > .wh-footer-col{padding:0;margin:0;min-width:0}
 .wh-footer-col h2{color:#fff;font-family:Inter,Arial,sans-serif;font-size:15px;font-weight:800;line-height:1.3;margin:3px 0 21px}
 .wh-footer-col h3{font-family:Inter,Arial,sans-serif}
 .wh-footer-col>a:not(.wh-footer-brand):not(.wh-contact-line){display:block;font-size:13px;line-height:1.5;color:#b7bbc0;margin:0 0 13px;transition:color .2s}
