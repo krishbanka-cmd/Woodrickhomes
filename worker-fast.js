@@ -238,6 +238,12 @@ async function rangedPdf(request,url,env){
 export default{
   async fetch(request,env,ctx){
     const url=new URL(request.url);
+    // Send search engines and visitors to the existing non-www canonical host.
+    // This takes effect only if the www hostname is routed to this Worker.
+    if((request.method==='GET'||request.method==='HEAD')&&url.hostname==='www.woodrickhomes.com'){
+      url.hostname='woodrickhomes.com';
+      return Response.redirect(url.href,301);
+    }
     // Finance is paused while its independent platform is completed.
     if(url.pathname==='/finance'||url.pathname.startsWith('/finance/'))return new Response(null,{status:302,headers:{location:'/','cache-control':'no-store','x-robots-tag':'noindex'}});
     if(request.method==='GET'&&['/products/','/products','/products/index.html'].includes(url.pathname)&&url.searchParams.get('category')){
@@ -265,7 +271,7 @@ export default{
       if(url.pathname.startsWith('/admin-products/')&&!await brandAuthorized(request,env))return Response.redirect(new URL('/admin-products/',url).href,302);
       const path=url.pathname.endsWith('index.html')?url.pathname:url.pathname.endsWith('/')?url.pathname:url.pathname+'/';
       const asset=await env.ASSETS.fetch(new Request(new URL(path,url),request));
-      const headers=new Headers(asset.headers);headers.set('cache-control','private, no-store');headers.set('x-robots-tag','noindex');
+      const headers=new Headers(asset.headers);headers.set('cache-control','private, no-store');headers.set('x-robots-tag','noindex');headers.set('x-content-type-options','nosniff');headers.set('referrer-policy','no-referrer');headers.set('x-frame-options','SAMEORIGIN');
       return new Response(asset.body,{status:asset.status,headers});
     }
     if(url.pathname==='/api/enquiries')return handleEnquiries(request,env);
