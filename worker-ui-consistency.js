@@ -1,4 +1,4 @@
-const revision='20261016-audit-fixes';
+const revision='20261016-audit-fixes-2';
 const browse=/^\/(?:products(?:\/|$)|brands(?:\/|$)|catalogues(?:\/|$)|woodrick-library(?:\.html)?$)/;
 const workflow=/^\/(?:design-your-space|voice-design-assistant|design-requirements-confirmed|ai-auto-select|material-placement|auto-layout|auto-layout-result|3d-design-preview)(?:\.html)?$/;
 

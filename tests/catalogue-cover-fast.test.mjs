@@ -34,7 +34,7 @@ test('Senator and other large catalogues do not download full PDFs to render cov
  assert.equal(env.timers.length,0,'large PDF must not start a cover download or timer');
  assert.ok(!s.includes("el.textContent='Loading cover…'"),'indefinite waiting label removed');
  assert.ok(html.includes("Number(g.pdf.size)<=4*1024*1024?'small':'none'"));
- assert.ok(html.includes('/assets/catalogue-presentation.js?v=20261016-audit-fixes'));
+ assert.ok(html.includes('/assets/catalogue-presentation.js?v=20261016-audit-fixes-2'));
 });
 test('Slow or failed cover image has a bounded fallback rather than hanging',async()=>{
  const script=await readFile(asset,'utf8'),env=previewRuntime(script);

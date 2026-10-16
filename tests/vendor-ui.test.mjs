@@ -172,7 +172,7 @@ test('Entire vendor browser script parses and initializes clickable password/OTP
 test('Vendor login separates account activation from new vendor registration',async()=>{
  const source=await readFile(new URL('../assets/vendor-panel.js',import.meta.url),'utf8');
  const vendor=await readFile(new URL('../vendor/index.html',import.meta.url),'utf8');
- assert.ok(vendor.includes('vendor-panel.js?v=20261016-audit-fixes'));
+ assert.ok(vendor.includes('vendor-panel.js?v=20261016-audit-fixes-2'));
  assert.match(vendor,/Activate Account \/ Forgot Password/);
  assert.ok(vendor.includes('Register your business'));
  assert.ok(!vendor.includes('Mobile OTP / First login'));
@@ -243,7 +243,7 @@ test('Vendor onboarding provides separate activation, OTP-free continuation and 
  assert.ok(script.includes("if(!v.mobileVerified)throw Error("));
  assert.ok(apply.includes('After approval, Woodrick Homes will share a secure one-time access link.'));
  assert.ok(admin.includes('Generate secure login link and privately share it.'));
- assert.ok(admin.includes('vendor-panel.js?v=20261016-audit-fixes'));
+ assert.ok(admin.includes('vendor-panel.js?v=20261016-audit-fixes-2'));
 });
 
 test('Vendor dashboard prioritizes products with compact account settings and preserves all controls',async()=>{
@@ -258,7 +258,7 @@ test('Vendor dashboard prioritizes products with compact account settings and pr
   assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id+' remains present once');
  }
  assert.ok(html.includes('vendor-panel.css?v=20261009-compact-dashboard'));
- assert.ok(html.includes('vendor-panel.js?v=20261016-audit-fixes'));
+ assert.ok(html.includes('vendor-panel.js?v=20261016-audit-fixes-2'));
  assert.ok(css.includes('.vendor-dashboard .dashboard-header h1{font-size:24px'));
  assert.ok(css.includes('.vendor-dashboard .status:empty{display:none'));
  assert.ok(source.includes("'dashboard-add-product').hidden=!approved"));
@@ -298,7 +298,7 @@ test('Approved vendor email can be corrected directly in admin panel with re-ver
  assert.ok(script.includes("post('/api/vendor-applications/email-correct',{id:v.id,email})"));
  assert.ok(script.includes("post('/api/vendor-applications/email-verify'"));
  assert.ok(script.includes("await loadAdmin(false)"));
- assert.ok(admin.includes('vendor-panel.js?v=20261016-audit-fixes'));
+ assert.ok(admin.includes('vendor-panel.js?v=20261016-audit-fixes-2'));
  assert.ok(admin.includes('vendor-panel.css?v=20261010-vendor-notifications'));
  assert.ok(css.includes('.vendor-admin-email-edit{'));
  assert.ok(backend.includes("if(path==='/api/vendor-applications/email-correct'&&req.method==='POST')"));
