@@ -1,0 +1,38 @@
+name: Build Woodrick Promo Preview
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/generate-woodrick-promo.py'
+      - '.github/workflows/build-woodrick-promo.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install renderer
+        run: |
+          python -m pip install --disable-pip-version-check pillow
+          ffmpeg -version | head -n 1
+      - name: Render sample video
+        run: python scripts/generate-woodrick-promo.py
+      - name: Save video asset
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/media/woodrick-promo-30s.mp4
+          if git diff --cached --quiet; then
+            echo 'Video unchanged'
+          else
+            git commit -m 'Add generated Woodrick Homes 30s promotional video'
+            git push origin HEAD:main
+          fi
