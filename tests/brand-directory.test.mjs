@@ -93,6 +93,8 @@ test('Category menu shows only active admin categories, searches them and routes
  vm.runInNewContext(script.replace('})();',';this.menuLoad=load;this.menuRender=render;})();'),ctx);
  await ctx.menuLoad();const html=nodes.woodrickCategoryGroups.innerHTML;
  assert.match(html,/Door%20Skin/);assert.match(html,/category=Doors/);assert.doesNotMatch(html,/Plywood/);
+ assert.doesNotMatch(html,/Boards & Panels|Decorative Surfaces|Doors & Hardware|Bath & Building Materials|More Categories/);
+ assert.doesNotMatch(source,/var groups=|groupedCategories/);
  assert.equal((html.match(/category=Tiles/g)||[]).length,1);
  nodes.woodrickCategorySearch.value='door';ctx.menuRender();assert.doesNotMatch(nodes.woodrickCategoryGroups.innerHTML,/Tiles/);assert.match(nodes.woodrickCategoryStatus.textContent,/2 categories/);
  assert.match(script,/aria-haspopup/);assert.match(script,/dialog.showModal/);
@@ -103,7 +105,7 @@ test('Production homepage worker actually includes the category menu',async()=>{
  const env={ASSETS:{fetch:async()=>new Response('<html><body><nav class="nav-inner"><div class="menu"><a href="/products/">PRODUCTS</a></div></nav></body></html>',{headers:{'content-type':'text/html'}})}};
  const response=await app.fetch(new Request('https://test/'),env,{waitUntil(){}});
  const html=await response.text();
- assert.match(html,/woodrick-category-menu-v4/);
+ assert.match(html,/woodrick-category-menu-v5/);
  assert.match(html,/Browse by Category/);
 });
 
