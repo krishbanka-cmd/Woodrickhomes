@@ -1,5 +1,11 @@
 // One cover registry for the same PDF across Products, Catalogues and Brands.
 (function(){
+  const revisionCovers={"vendor-public/c1954a5d-75b1-4a0b-8dd7-1b8c0acfee9a/bb6ad925-625f-4c0b-851d-3903129a243d/1/pdf.pdf": "/catalogue-covers/royal-crown-1mm-r1.webp", "vendor-public/c1954a5d-75b1-4a0b-8dd7-1b8c0acfee9a/e28bab7d-addc-41bc-98d9-565a4f135a3e/1/pdf.pdf": "/catalogue-covers/senator-sanitary-r1.webp"};
+  const brandKey=value=>String(value||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+  function category(value){const clean=String(value||'').trim(),key=brandKey(clean);return ({laminate:'Laminates',laminates:'Laminates',louver:'Louvers',louvers:'Louvers',plywood:'Plywood',plywoods:'Plywood','door skin':'Door Skin','door skins':'Door Skin',doorskin:'Door Skin',doorskins:'Door Skin',doors:'Doors',door:'Doors',acrylic:'Acrylic Laminates','acrylic laminate':'Acrylic Laminates','acrylic laminates':'Acrylic Laminates',hdhmr:'HDHMR',mdf:'MDF','wpc board':'WPC Board & Chaukhat','wpc boards':'WPC Board & Chaukhat','shuttering plywood':'Shuttering Plywood',tile:'Tiles',tiles:'Tiles','bath fittings':'Bath Fittings',sanitary:'Sanitaryware',sanitaryware:'Sanitaryware'})[key]||clean}
+  function mediaCategory(item={}){const saved=category(item.category),text=[item.catalogue,item.title,item.originalName,item.key,item.sourceKey].filter(Boolean).join(' ');return saved==='Doors'&&/\bdoor[\s_-]*skins?\b/i.test(text)?'Door Skin':saved}
+  function categoryLabel(value){return category(value)==='Door Skin'?'Doorskin':String(value||'')}
+  function brand(value){const name=String(value||'').trim();return {'ambuja':'Ambuja Cement','woodline louvers':'Woodline','woodline louver':'Woodline','ristal1mm':'Ristal','ristal 1 mm':'Ristal','ristal laminates':'Ristal','ebco hardware':'EBCO'}[brandKey(name)]||({'mwud':'MWUD','ipsa':'IPSA'})[brandKey(name)]||name}
   const covers={
     'ristal.pdf':'ristal-08','ristal-solid-colour.pdf':'ristal-solid','ristal1mm.pdf':'ristal1mm',
     'ristal-slim-75mm.pdf':'ristal-slim','mwud.pdf':'mwud','woodline.pdf':'woodline-08',
@@ -33,13 +39,13 @@
     'woodline-louvers-8x5':"Woodline Louvers 8x5''",'woodline-led-louvers':'Woodline LED Louvers','woodline-louvers-9-5x6':'Woodline Louvers 9.5x6',
     'rainbow':'Rainbow Door Skin','woodrick-25-kg-mr':'Woodrick Shuttering Plywood 25 KG MR','kitchen':'Woodrick Kitchen Catalogue','godrej':'Godrej Lock Catalogue & Price List','ipsa':'IPSA Hardware Catalogue & Price List'
   };
-  window.WoodrickCatalogue={
+  window.WoodrickCatalogue={category,mediaCategory,categoryLabel,brand,
     title(item){const original=String(item&&item.key||'').toLowerCase(),sibling=original.replace(/\/([^/]+)\/jpg\/[^/]+$/, '/$1/original/$1.pdf'),key=String(aliases[sibling]||sibling).toLowerCase();for(const [suffix,name] of Object.entries(covers))if(key.endsWith(suffix))return titles[name];return String(item&&(item.catalogue||item.title||item.originalName)||'Catalogue').replace(/\.(?:pdf|jpe?g|png|webp|mp4|webm)$/i,'')},
     pdfKey(item){const key=String(item&&item.key||'');return key.startsWith('product-sync/')?key:(aliases[key.toLowerCase()]||key)},
     cover(item){
       const original=String(item&&item.key||'').toLowerCase(),key=String(aliases[original]||original).toLowerCase();
       for(const [suffix,name] of Object.entries(covers))if(key.endsWith(suffix))return '/catalogue-covers/'+name+'.webp';
-      return String(item&&item.coverUrl||'');
+      return String(item&&item.coverUrl||revisionCovers[original]||'');
     }
   };
 })();
@@ -47,7 +53,7 @@
 // Shared catalogue-cover rendering: show a useful cover instantly.
 // Never fetch large vendor PDFs simply to paint the listing card.
 (function(){
-  const previews=new Map(),queued=new WeakSet();
+  const previews=new Map(),queued=new WeakSet(),observed=new WeakMap();
   const MAX_PREVIEW_MS=7000;
   let observer,queue=[],active=0,engineModule;
   function fallback(el){
@@ -93,14 +99,15 @@
       const el=queue.shift();
       if(!el.isConnected)continue;
       active++;
-      const url=el.dataset.cataloguePdf;
+      const url=el.dataset.cataloguePdf,original=observed.get(el);
+      const current=()=>el.isConnected&&observed.get(el)===original&&!(original&&original.complete&&original.naturalWidth);
       firstPage(url).then(src=>{
-        if(!el.isConnected)return;
+        if(!current())return;
         const img=document.createElement('img');
         img.alt=el.dataset.catalogueTitle||'Catalogue cover';
         img.src=src;
         el.replaceChildren(img);
-      }).catch(()=>{if(el.isConnected)fallback(el)}).finally(()=>{active--;drain()});
+      }).catch(()=>{if(current())fallback(el)}).finally(()=>{active--;drain()});
     }
   }
   function schedule(el){
@@ -125,12 +132,17 @@
   window.WoodrickCatalogue.observe=function(root=document){
     root.querySelectorAll('[data-catalogue-pdf]').forEach(el=>{
       const image=el.querySelector('img');
-      if(!image){watch(el);return}
+      if(!image){observed.delete(el);watch(el);return}
+      if(observed.get(el)===image)return;
+      observed.set(el,image);
       let settled=false;
       const done=()=>{settled=true;clearTimeout(watchdog)};
-      const fail=()=>{if(settled||!el.isConnected)return;done();el.replaceChildren();watch(el)};
+      const fail=()=>{if(settled||!el.isConnected||observed.get(el)!==image)return;done();el.replaceChildren();watch(el)};
       const watchdog=setTimeout(()=>{if(!settled&&!image.complete)fail()},7000);
-      image.addEventListener('load',done,{once:true});
+      image.addEventListener('load',()=>{
+        done();
+        if(image.naturalWidth&&el.isConnected&&observed.get(el)===image)el.replaceChildren(image);
+      },{once:true});
       image.addEventListener('error',fail,{once:true});
       if(image.complete){if(image.naturalWidth)done();else fail()}
     });

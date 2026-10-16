@@ -83,8 +83,9 @@ test('Brand catalogue folder immediately displays media already fetched by Produ
     fetch:async()=>{requests++;throw Error('Should not need fetch while cache is fresh')},
     URL,URLSearchParams,Map,Set,Date,JSON,console,history:{replaceState(){}},encodeURIComponent,setTimeout,clearTimeout
   });
+  ctx.window=ctx.window||{};vm.runInContext(await src('../assets/catalogue-presentation.js'),ctx);ctx.WoodrickCatalogue={...ctx.window.WoodrickCatalogue,observe(){}};
   vm.runInContext(code,ctx);
-  assert.match(node('grid').innerHTML,/Ristal Premium/);
+  assert.match(node('grid').innerHTML,/Ristal 0.82mm Premium Laminates/);
   assert.match(node('status').textContent,/1 media item/);
   assert.equal(requests,0);
 });

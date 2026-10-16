@@ -34,7 +34,7 @@ test('Senator and other large catalogues do not download full PDFs to render cov
  assert.equal(env.timers.length,0,'large PDF must not start a cover download or timer');
  assert.ok(!s.includes("el.textContent='Loading cover…'"),'indefinite waiting label removed');
  assert.ok(html.includes("Number(g.pdf.size)<=4*1024*1024?'small':'none'"));
- assert.ok(html.includes('/assets/catalogue-presentation.js?v=20261010-coverfix'));
+ assert.ok(html.includes('/assets/catalogue-presentation.js?v=20261016-audit-fixes'));
 });
 test('Slow or failed cover image has a bounded fallback rather than hanging',async()=>{
  const script=await readFile(asset,'utf8'),env=previewRuntime(script);
@@ -52,9 +52,11 @@ test('Slow or failed cover image has a bounded fallback rather than hanging',asy
  env.timers[0]();
  assert.equal(tile.nodes[0].className,'cover-fallback');
  assert.equal(tile.nodes[0].children[0].textContent,'Senator Catalogue');
- onLoad();
+ image.naturalWidth=700;onLoad();
+ assert.equal(tile.nodes[0],image,'a slow successful cover replaces the temporary fallback');
  onError();
- assert.equal(tile.nodes[0].className,'cover-fallback');
+ assert.equal(tile.nodes[0],image);
+ tile.isConnected=false;tile.nodes=[];onLoad();assert.equal(tile.nodes.length,0,'detached cards stay untouched');
 });
 test('Only small opted-in PDFs may be previewed and any attempt has a seven-second timeout',async()=>{
  const script=await readFile(asset,'utf8');
@@ -63,4 +65,14 @@ test('Only small opted-in PDFs may be previewed and any attempt has a seven-seco
  assert.match(script,/disableAutoFetch:true,rangeChunkSize:65536/);
  assert.match(script,/Promise\.race\(\[work,new Promise/);
  assert.match(script,/task\.destroy\(\)/);
+});
+
+test('A late original image cannot replace a newer observed cover',async()=>{
+ const env=previewRuntime(await readFile(asset,'utf8'));const loads=[];
+ const makeImage=()=>({complete:false,naturalWidth:700,addEventListener(event,fn){if(event==='load')loads.push(fn)}});
+ let current=makeImage();const old=current;
+ const tile={isConnected:true,dataset:{cataloguePreview:'none'},querySelector(){return current},replaceChildren(...nodes){this.nodes=nodes}};
+ const root={querySelectorAll(){return[tile]}};env.window.WoodrickCatalogue.observe(root);
+ current=makeImage();env.window.WoodrickCatalogue.observe(root);loads[0]();assert.equal(tile.nodes,undefined);
+ loads[1]();assert.equal(tile.nodes[0],current);assert.notEqual(tile.nodes[0],old);
 });

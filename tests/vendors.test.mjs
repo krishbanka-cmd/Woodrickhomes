@@ -380,7 +380,13 @@ test('Vendor PDF and cover appear under canonical category and brand only after 
  assert.equal(items.length,2,'cover is a preview, not a third catalogue/product');assert.ok(pdf.coverUrl);assert.equal(pdf.category,'Louvers');assert.equal(pdf.brand,'Woodline');
  const coverURL=new URL(pdf.coverUrl,'https://example.test');assert.equal((await app.fetch(new Request(coverURL),s.env,s.ctx)).status,200);
  const master=await data(await call(s,'/api/catalog-master'));assert.ok(master.items.find(i=>i.brand==='Woodline').categories.includes('Louvers'));
- const edit=product(p.id,p.revision);edit.set('catalogue',new File(['%PDF-1.7\nreplacement'],'new.pdf',{type:'application/pdf'}));
+ const details=product(p.id,p.revision);details.delete('photo');details.set('brand','Woodline Louvers');details.set('category','louver');details.set('title','Updated range details');
+ const preserved=(await data(await call(s,'/api/vendor/products',{cookie:signed.cookie,body:details}))).product;
+ assert.ok(preserved.files.some(f=>f.kind==='cover'),'details-only edit preserves the uploaded cover');
+ assert.ok(preserved.files.some(f=>f.kind==='pdf'),'details-only edit preserves the PDF');
+ assert.equal(preserved.category,'Louvers');assert.equal(preserved.brand,'Woodline');
+ assert.equal((await review(s,preserved)).status,200);
+ const edit=product(preserved.id,preserved.revision);edit.set('catalogue',new File(['%PDF-1.7\nreplacement'],'new.pdf',{type:'application/pdf'}));
  const changed=(await data(await call(s,'/api/vendor/products',{cookie:signed.cookie,body:edit}))).product;assert.equal(changed.files.some(f=>f.kind==='cover'),false,'new PDF cannot inherit an unrelated old cover');
  assert.equal((await review(s,changed)).status,200);assert.equal((await app.fetch(new Request(coverURL),s.env,s.ctx)).status,404,'retired preview is inaccessible');
  await call(s,'/api/vendor-applications/status',{admin:true,body:{id:v.id,status:'suspended',note:'Synthetic test'}});

@@ -6,6 +6,9 @@ export const STATIC_PUBLIC_MEDIA=[{key:'assets/media/senator-showcase.mp4',brand
 
 export const PUBLIC_MEDIA_INDEX_KEY='_config/public-media-index-v1.json';
 const FAST_COVER_BY_KEY={
+  'vendor-public/c1954a5d-75b1-4a0b-8dd7-1b8c0acfee9a/bb6ad925-625f-4c0b-851d-3903129a243d/1/pdf.pdf':'/catalogue-covers/royal-crown-1mm-r1.webp',
+  'vendor-public/c1954a5d-75b1-4a0b-8dd7-1b8c0acfee9a/e28bab7d-addc-41bc-98d9-565a4f135a3e/1/pdf.pdf':'/catalogue-covers/senator-sanitary-r1.webp',
+
   'kitchen/pdf/woodrick-kitchen-catalogue.pdf':'/catalogue-covers/kitchen.webp?v=20260913-2',
   'hardware/pdf/godrej-lock-price-list.pdf':'/catalogue-covers/godrej.webp',
   'hardware/pdf/ipsa-catalogue-and-price-list.pdf':'/catalogue-covers/ipsa.webp',

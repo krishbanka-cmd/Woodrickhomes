@@ -14,7 +14,7 @@ test('Only published approved vendor copies can contribute a brand; suspension r
  for(const state of ['pending','approved','suspended']){status=state;const data=await publicMediaList(env).then(r=>r.json());const brands=buildBrandDirectory(data.items);assert.equal(brands.some(x=>x.brand==='Royal Crown'),state==='approved')}
 });
 test('Brand media stays within the selected category while including brand aliases',async()=>{
- const html=await readFile(new URL('../brands/index.html',import.meta.url),'utf8'),source=html.slice(html.indexOf('const norm='),html.indexOf('function pdfCover(')),ctx={requested:'Woodline',params:new URLSearchParams({category:'Louvers'}),title:{},document:{}};vm.runInNewContext(source+';this.matches=belongs',ctx);
+ const html=await readFile(new URL('../brands/index.html',import.meta.url),'utf8'),source=html.slice(html.indexOf('const norm='),html.indexOf('function pdfCover(')),ctx={requested:'Woodline',params:new URLSearchParams({category:'Louvers'}),title:{},document:{}};ctx.window={};vm.runInNewContext(await readFile(new URL('../assets/catalogue-presentation.js',import.meta.url),'utf8'),ctx);ctx.WoodrickCatalogue=ctx.window.WoodrickCatalogue;vm.runInNewContext(source+';this.matches=belongs',ctx);
  assert.equal(ctx.matches({brand:'Woodline Louvers',category:'Louvers',type:'pdf'}),true);assert.equal(ctx.matches({brand:'Woodline',category:'Laminates',type:'pdf'}),false);assert.equal(ctx.matches({brand:'Royal Crown',category:'Louvers',type:'pdf'}),false);
 });
 
@@ -64,7 +64,7 @@ test('Rainbow Door Skin remains separate from Doors in the public list and brand
  assert.deepEqual(directory[0].categories,['Door Skin','Doors']);
  assert.equal(directory[0].categoryCounts['Door Skin'],1);
  const html=await readFile(new URL('../brands/index.html',import.meta.url),'utf8'),source=html.slice(html.indexOf('const norm='),html.indexOf('function pdfCover('));
- const ctx={requested:'Rainbow',params:new URLSearchParams({category:'Door Skin'}),title:{},document:{}};vm.runInNewContext(source+';this.matches=belongs',ctx);
+ const ctx={requested:'Rainbow',params:new URLSearchParams({category:'Door Skin'}),title:{},document:{}};ctx.window={};vm.runInNewContext(await readFile(new URL('../assets/catalogue-presentation.js',import.meta.url),'utf8'),ctx);ctx.WoodrickCatalogue=ctx.window.WoodrickCatalogue;vm.runInNewContext(source+';this.matches=belongs',ctx);
  assert.equal(ctx.matches(media[0]),true);assert.equal(ctx.matches(media[1]),false);
  assert.equal(ctx.matches({...media[0],category:'Doorskin'}),true);
  const env={PRODUCT_MEDIA:{list:async options=>({objects:options.prefix==='product-sync/'?[{key:'product-sync/door-skin/rainbow/catalogue.pdf',customMetadata:media[0]}]:[],truncated:false})}};

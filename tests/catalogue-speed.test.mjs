@@ -15,6 +15,7 @@ test('Catalogue landing uses one public index, retains legacy PDFs and reuses pe
   localStorage:{getItem:k=>cache.get(k),setItem:(k,v)=>cache.set(k,v)},
   fetch:async url=>{requests.push(url);return new Promise(r=>resolveResponse=r)}
  });
+ context.window={};vm.runInContext(await readFile(new URL('../assets/catalogue-presentation.js',import.meta.url),'utf8'),context);context.WoodrickCatalogue={...context.window.WoodrickCatalogue,observe(){}};
  vm.runInContext(code,context);
  const items=[{key:'louvers/image/led.pdf',type:'image',originalName:'LED.pdf',brand:'Woodline',category:'Louvers',title:'Woodline LED'}, {key:'vendor-public/new/pdf.pdf',type:'pdf',title:'New brand PDF',brand:'New',category:'Laminates'}];
  resolveResponse({ok:true,json:async()=>({items,truncated:false})});
