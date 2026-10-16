@@ -47,6 +47,7 @@ test('mobile contact row stays fixed instead of jumping as the rail scrolls',()=
 test('header quicklinks align and legacy injected vendor entry is hidden on mobile',()=>{
   assert.match(homepageSource,/class="wh-mobile-header-links"/);
   assert.ok(homepageSource.includes('grid-template-columns:repeat(2,minmax(0,1fr))'));
+  assert.match(homepageSource,/\.nav \.category-mobile-trigger\{display:none!important\}/);
   assert.match(homepageSource,/Browse product categories/);
   assert.match(homepageSource,/Become a Woodrick Homes vendor/);
   assert.ok(legacyWorkerSource.includes('@media(max-width:850px){#woodrick-vendor-topbar{display:none!important}}'));
