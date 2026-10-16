@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const workerSource=readFileSync(new URL('../worker-ai.js', import.meta.url),'utf8');
+const homepageSource=readFileSync(new URL('../index.html', import.meta.url),'utf8');
+const legacyWorkerSource=readFileSync(new URL('../worker.js', import.meta.url),'utf8');
 const matcher=/var railClearance=function\(\)\{(.*?)\};var pending=false;/s;
 const clearanceBody=workerSource.match(matcher)?.[1];
 
@@ -23,9 +25,9 @@ function getClearance({height=800,railTop,railBottom,buttonHeight=54,actionsHeig
     querySelector(selector){
       return selector==='.hero-brand-dock'?rail:selector==='.hey-woodrick-float'?button:selector==='.float-actions'?actions:null;
     },
-    body:{style:{setProperty(key,value){assert.equal(key,'--woodrick-brand-actions-bottom');saved=value;}}}
+    body:{style:{setProperty(key,value){assert.equal(key,'--woodrick-brand-actions-bottom');saved=value;},removeProperty(key){assert.equal(key,'--woodrick-brand-actions-bottom');saved='cleared';}}}
   };
-  const window={innerHeight:height,matchMedia:()=>({matches:mobile})};
+  const window={innerHeight:height,innerWidth:mobile?390:1024,matchMedia:()=>({matches:mobile})};
   const handler=Function('document','window',`return function(){${clearanceBody}}`)(document,window);
   handler();
   return saved;
@@ -37,7 +39,15 @@ test('desktop buttons move above rail only while the rail is behind them',()=>{
   assert.equal(getClearance({railTop:840,railBottom:950}),'22px');
 });
 
-test('mobile bottom row clears the rail without moving unnecessarily',()=>{
-  assert.equal(getClearance({height:720,railTop:590,railBottom:700,actionsHeight:54,mobile:true}),'154px');
-  assert.equal(getClearance({height:720,railTop:150,railBottom:260,actionsHeight:54,mobile:true}),'8px');
+test('mobile contact row stays fixed instead of jumping as the rail scrolls',()=>{
+  assert.equal(getClearance({height:720,railTop:590,railBottom:700,actionsHeight:54,mobile:true}),'cleared');
+  assert.equal(getClearance({height:720,railTop:150,railBottom:260,actionsHeight:54,mobile:true}),'cleared');
+});
+
+test('header quicklinks align and legacy injected vendor entry is hidden on mobile',()=>{
+  assert.match(homepageSource,/class="wh-mobile-header-links"/);
+  assert.match(homepageSource,/grid-template-columns:repeat\\(2,minmax\\(0,1fr\\)\\)/);
+  assert.match(homepageSource,/Browse product categories/);
+  assert.match(homepageSource,/Become a Woodrick Homes vendor/);
+  assert.match(legacyWorkerSource,/@media\\(max-width:850px\\)\\{#woodrick-vendor-topbar\\{display:none!important\\}\\}/);
 });
