@@ -15,9 +15,12 @@ test('Central WhatsApp route preserves enquiry details and uses latest number wi
  const response=whatsappRedirect(request,{WHATSAPP_NUMBER:'8090781347'});
  const target=new URL(response.headers.get('location'));
  assert.equal(response.status,302);assert.equal(target.origin,'https://wa.me');
- assert.equal(target.pathname,'/918090781347');assert.equal(target.searchParams.get('text'),text);
+ assert.equal(target.pathname,'/918090781347');assert.equal(target.searchParams.get('text'),'Woodrick Homes Website Enquiry\n\n'+text);
  assert.deepEqual([...target.searchParams.keys()],['text']);assert.equal(response.headers.get('cache-control'),'no-store');
  assert.equal(whatsappRedirect(new Request(request,{method:'POST'}),{}).status,405);
+ const greeting=new URL(whatsappRedirect(new Request('https://woodrickhomes.com/whatsapp?text='+encodeURIComponent('Hello Woodrick Homes, I am interested in Woodline 1mm 1646HG, 10 sheets.')),{}).headers.get('location')).searchParams.get('text');
+ assert.equal(greeting,'Woodrick Homes Website Enquiry\n\nI am interested in Woodline 1mm 1646HG, 10 sheets.');
+ assert.match(new URL(whatsappRedirect(new Request('https://woodrickhomes.com/whatsapp'),{}).headers.get('location')).searchParams.get('text'),/^Woodrick Homes Website Enquiry/);
 });
 test('Homepage, product and design enquiry links use central route and retain call numbers',async()=>{
  for(const path of ['index.html','products/index.html','design-your-space.html','finance/enquiry.js']){

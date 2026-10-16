@@ -9,7 +9,10 @@ export function whatsappNumber(env={}){
 export function whatsappRedirect(request,env){
  if(!['GET','HEAD'].includes(request.method))return new Response('Method not allowed',{status:405,headers:{allow:'GET, HEAD'}});
  const input=new URL(request.url),target=new URL('https://wa.me/'+whatsappNumber(env));
- if(input.searchParams.has('text'))target.searchParams.set('text',input.searchParams.get('text'));
+ // Route website enquiries through the tested Woodrick keyword, avoiding the
+ // shared account's generic greeting trigger while retaining product details.
+ const details=(input.searchParams.get('text')||'').replace(/^\s*(?:hello|hi)\b[\s,!:.\-]*/i,'').replace(/^Woodrick Homes\b[\s,!:.\-]*/i,'').trim();
+ target.searchParams.set('text','Woodrick Homes Website Enquiry'+(details?'\n\n'+details:': Mujhe products ki jaankari chahiye.'));
  return new Response(null,{status:302,headers:{location:target.href,'cache-control':'no-store'}});
 }
 export async function whatsappContactResponse(response,url,env){
