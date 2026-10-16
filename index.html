@@ -1105,6 +1105,34 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
 }
 @media(max-width:365px){.wh-social-row{gap:7px}.wh-footer .wh-social-icon{width:34px;height:34px;flex-basis:34px}}
 </style>
+<style id="woodrick-mobile-navigation-alignment-20261016">
+/* WT-001: keep the two mobile entry links on ONE aligned row, not a diagonal stack.
+   Desktop navigation, hero slides and the brand rail are unchanged. */
+.wh-mobile-header-links{display:none}
+@media(max-width:850px){
+  .nav .nav-inner{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;padding:10px 14px!important}
+  .nav .logo{min-width:0!important;flex:0 1 auto!important}
+  .nav .logo span{white-space:nowrap}
+  .nav .mobile-menu{flex:0 0 auto!important;margin-left:auto!important}
+  .nav .nav-inner > a:not(.logo){display:none!important}
+  .nav .wh-mobile-header-links{
+    display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:8px!important;box-sizing:border-box!important;
+    padding:0 14px 10px!important;width:100%!important;
+    background:#050505!important;align-items:stretch!important
+  }
+  .nav .wh-mobile-header-links a{
+    display:flex!important;align-items:center!important;justify-content:center!important;
+    box-sizing:border-box!important;min-width:0!important;min-height:34px!important;
+    padding:7px 5px!important;border:1px solid #d7b36a!important;
+    border-radius:5px!important;color:#f0c96b!important;background:#12110e!important;
+    font:800 clamp(9px,2.6vw,11px)/1.2 Arial,sans-serif!important;
+    letter-spacing:.025em!important;text-align:center!important;white-space:normal!important;
+    text-decoration:none!important
+  }
+  .nav .wh-mobile-header-links a:focus-visible{outline:2px solid #ffe39a;outline-offset:2px}
+}
+</style>
 </head>
 <body>
 <div class="topbar"><div class="container"><span>Welcome to Woodrick Homes</span><span>Mon–Sat · 10:00 AM–8:00 PM   |   Premium Building Materials &amp; Interior Solutions</span></div></div>
@@ -1117,6 +1145,10 @@ section{padding:105px 0}.section-head{margin-bottom:55px}.section-head h2{letter
 <a class="btn btn-gold" href="/catalogues/">VIEW CATALOGUE</a>
 <button class="mobile-menu" onclick="toggleMenu()">☰</button>
 </div>
+  <div class="wh-mobile-header-links" aria-label="Mobile quick links">
+    <a href="/products/" aria-label="Browse product categories">CATEGORIES</a>
+    <a href="/become-a-vendor/" aria-label="Become a Woodrick Homes vendor">BECOME A VENDOR</a>
+  </div>
 </header>
 <main>
 
