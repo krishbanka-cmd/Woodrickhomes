@@ -1,6 +1,7 @@
 import {canonicalCatalogueKey,dedupeCatalogueItems} from './worker-catalogue-identity.js';
 import {buildBrandDirectory,buildCatalogMaster,canonicalBrowseCategory,canonicalBrand,brandKey,canonicalMediaCategory} from './worker-brand-directory.js';
 import {consistentCustomerResponse} from './worker-ui-consistency.js';
+import {whatsappRedirect,whatsappContactResponse} from './worker-whatsapp-contact.js';
 import {handleListQuote} from './worker-list-quotes.js';
 import {handleVendor} from './worker-vendors.js';
 import {handleEnquiries} from './worker-enquiries.js';
@@ -235,9 +236,10 @@ async function rangedPdf(request,url,env){
   headers.set('content-length',String(object.size));return new Response(object.body,{status:200,headers});
 }
 
-export default{
+const worker={
   async fetch(request,env,ctx){
     const url=new URL(request.url);
+    if(url.pathname==='/whatsapp'||url.pathname==='/whatsapp/')return whatsappRedirect(request,env);
     // Finance is paused while its independent platform is completed.
     if(url.pathname==='/finance'||url.pathname.startsWith('/finance/'))return new Response(null,{status:302,headers:{location:'/','cache-control':'no-store','x-robots-tag':'noindex'}});
     if(request.method==='GET'&&['/products/','/products','/products/index.html'].includes(url.pathname)&&url.searchParams.get('category')){
@@ -363,4 +365,11 @@ export default{
       syncAndClean(env).then(()=>refreshPublicMediaIndex(env))
     ]));
   }
+};
+export default{
+ ...worker,
+ async fetch(request,env,ctx){
+  const response=await worker.fetch(request,env,ctx);
+  return request.method==='GET'?whatsappContactResponse(response,new URL(request.url),env):response;
+ }
 };
