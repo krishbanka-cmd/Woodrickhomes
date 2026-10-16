@@ -97,8 +97,38 @@ body.woodrick-home-actions .float-actions{bottom:var(--woodrick-brand-actions-bo
 body.woodrick-home-actions .hey-woodrick-float,
 body.woodrick-home-actions .float-actions{bottom:calc(var(--woodrick-brand-actions-bottom,8px) + env(safe-area-inset-bottom,0px))!important}
 }
+
+/* WT-001 mobile CTA regression fix: buttons must never jump when hero/brand rail scrolls. */
+@media(max-width:620px){
+  body.woodrick-home-actions .hey-woodrick-float,
+  body.woodrick-home-actions .float-actions{
+    bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;
+    transition:none!important;
+  }
+  body.woodrick-home-actions .hey-woodrick-float{
+    height:52px!important;min-height:52px!important;box-sizing:border-box!important;
+    width:31%!important;max-width:31%!important;left:8px!important;right:auto!important;
+  }
+  body.woodrick-home-actions .float-actions{
+    left:calc(31% + 12px)!important;right:8px!important;
+    height:52px!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    align-items:stretch!important;gap:6px!important
+  }
+  body.woodrick-home-actions .float-actions a{
+    box-sizing:border-box!important;width:100%!important;height:52px!important;
+    min-height:52px!important;padding:0 5px!important;
+    font-size:clamp(9px,2.4vw,11px)!important;line-height:1.2!important;
+    font-weight:800!important;white-space:normal!important;overflow:hidden!important;
+    text-align:center!important
+  }
+  body.woodrick-home-actions .float-actions .whatsapp:before,
+  body.woodrick-home-actions .float-actions .call:before{
+    content:none!important;display:none!important
+  }
+  body.woodrick-home-actions .float-actions .call{color:#17130b!important}
+}
 </style>
-<a class="hey-woodrick-float" href="/voice-design-assistant.html?new=1" aria-label="Start a new Hey Woodrick design" title="Hey Woodrick — Start New Design"><span class="hey-woodrick-mic">🎙</span><span>HEY WOODRICK<small>Start New Design</small></span></a><script>(function(){var w=document.querySelector('.hey-woodrick-float'),n=document.getElementById('woodrickGlobalNav');if(w&&n){w.classList.add('nav-integrated');var a=n.querySelector('.woodrick-global-actions');n.insertBefore(w,a||null);return}if(location.pathname==='/'||location.pathname==='/index.html'){document.body.classList.add('woodrick-home-actions');var compact=function(){document.body.classList.toggle('woodrick-actions-compact',scrollY>520)};var railClearance=function(){var rail=document.querySelector('.hero-brand-dock'),button=document.querySelector('.hey-woodrick-float'),actions=document.querySelector('.float-actions');if(!rail||!button)return;var h=window.innerHeight||document.documentElement.clientHeight,base=window.matchMedia&&window.matchMedia('(max-width:620px)').matches?8:22,tallest=Math.max(button.offsetHeight||0,actions?actions.offsetHeight:0,54),rect=rail.getBoundingClientRect(),collides=rect.bottom>h-base-tallest&&rect.top<h-base;var bottom=collides&&rect.top>tallest+24?Math.ceil(h-rect.top+24):base;document.body.style.setProperty('--woodrick-brand-actions-bottom',bottom+'px')};var pending=false;var update=function(){if(pending)return;pending=true;requestAnimationFrame(function(){pending=false;compact();railClearance()})};compact();railClearance();addEventListener('scroll',update,{passive:true});addEventListener('resize',update)}})();<\/script>`;
+<a class="hey-woodrick-float" href="/voice-design-assistant.html?new=1" aria-label="Start a new Hey Woodrick design" title="Hey Woodrick — Start New Design"><span class="hey-woodrick-mic">🎙</span><span>HEY WOODRICK<small>Start New Design</small></span></a><script>(function(){var w=document.querySelector('.hey-woodrick-float'),n=document.getElementById('woodrickGlobalNav');if(w&&n){w.classList.add('nav-integrated');var a=n.querySelector('.woodrick-global-actions');n.insertBefore(w,a||null);return}if(location.pathname==='/'||location.pathname==='/index.html'){document.body.classList.add('woodrick-home-actions');var compact=function(){document.body.classList.toggle('woodrick-actions-compact',scrollY>520 && window.innerWidth>620)};var railClearance=function(){if(window.innerWidth<=620){document.body.style.removeProperty('--woodrick-brand-actions-bottom');return;}var rail=document.querySelector('.hero-brand-dock'),button=document.querySelector('.hey-woodrick-float'),actions=document.querySelector('.float-actions');if(!rail||!button)return;var h=window.innerHeight||document.documentElement.clientHeight,base=window.matchMedia&&window.matchMedia('(max-width:620px)').matches?8:22,tallest=Math.max(button.offsetHeight||0,actions?actions.offsetHeight:0,54),rect=rail.getBoundingClientRect(),collides=rect.bottom>h-base-tallest&&rect.top<h-base;var bottom=collides&&rect.top>tallest+24?Math.ceil(h-rect.top+24):base;document.body.style.setProperty('--woodrick-brand-actions-bottom',bottom+'px')};var pending=false;var update=function(){if(pending)return;pending=true;requestAnimationFrame(function(){pending=false;compact();railClearance()})};compact();railClearance();addEventListener('scroll',update,{passive:true});addEventListener('resize',update)}})();<\/script>`;
 
 const DESIGN_PREFILL=`<script id="hey-woodrick-prefill">(function(){if(!location.pathname.endsWith('/design-your-space.html'))return;var p=new URLSearchParams(location.search);if(p.get('voice')!=='1')return;function set(name,key){var el=document.querySelector('[name="'+name+'"]');var v=p.get(key||name);if(el&&v)el.value=v;}set('roomType');set('length');set('width');set('height');set('openings');set('style');set('change');var ref=p.get('reference');if(ref){var ch=document.querySelector('[name="change"]');if(ch&&!ch.value.includes(ref))ch.value=(ch.value?'\\n':'')+'Preferred Design No. / SKU: '+ref;}var form=document.getElementById('spaceForm');if(form){var note=document.createElement('div');note.className='voice-arrival';note.textContent='🎙 Hey Woodrick has filled the details it understood. Please verify dimensions, Design/SKU and openings, then add your room photo.';form.insertBefore(note,form.firstChild);form.scrollIntoView({behavior:'smooth',block:'start'});}})();<\/script>`;
 async function withVoiceUi(response,url){const type=response.headers.get('content-type')||'';if(!response.ok||!type.includes('text/html'))return response;let html=await response.text();if(url.pathname!=='/voice-design-assistant.html'&&!html.includes('hey-woodrick-global-style'))html=html.replace(/<\/body>/i,VOICE_WIDGET+'\n</body>');if(url.pathname.endsWith('/design-your-space.html')&&!html.includes('hey-woodrick-prefill'))html=html.replace(/<\/body>/i,DESIGN_PREFILL+'\n</body>');const headers=new Headers(response.headers);headers.delete('content-length');headers.set('cache-control','no-cache');return new Response(html,{status:response.status,statusText:response.statusText,headers});}
