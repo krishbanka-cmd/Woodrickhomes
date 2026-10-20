@@ -25,7 +25,7 @@ export async function handleEnquiries(req,env){
       if(!(req.headers.get('content-type')||'').includes('application/json'))return reply({error:'JSON required'},415);
       if(Number(req.headers.get('content-length')||0)>8192)return reply({error:'Request too large'},413);
       const body=await req.json();if(clean(body.website,100))return reply({error:'Unable to submit'},400);
-      const name=clean(body.name,100),mobile=clean(body.mobile,30).replace(/\D/g,''),email=clean(body.email,150),city=clean(body.city,120),requirement=clean(body.requirement,120),message=clean(body.message,1000);
+      const name=clean(body.name,100),mobile=clean(body.mobile,30).replace(/\D/g,''),email=clean(body.email,150),city=clean(body.city,120),requirement=clean(body.requirement,1000),message=clean(body.message,1000);
       if(name.length<2||!/^\d{10}$/.test(mobile))return reply({error:'Name and 10-digit mobile are required'},400);
       if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return reply({error:'Please check the email address'},400);
       if(String(body.message||'').length>1000)return reply({error:'Message must be 1000 characters or fewer'},400);
