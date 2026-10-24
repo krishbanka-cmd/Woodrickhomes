@@ -21,7 +21,7 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
     document.getElementById('count').textContent = '– / –';
     return;
   }
-  let pdf = null, current = 1, generation = 0, zoomed = false, referenceAspect = 0, activeRender = null, loadingTask=null;
+  let pdf = null, current = 1, displayedPage = 0, generation = 0, zoomed = false, referenceAspect = 0, activeRender = null, loadingTask=null;
 
   // Customer-supplied query parameters must never load an external preview.
   // Existing static covers and our R2-generated first page thumbnails are safe.
@@ -41,7 +41,7 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
     quickPreview.alt=catalogueTitle+' cover preview (full pages loading)';
     quickPreview.onload=()=>{
       quickPreview.dataset.ready='1';
-      if(!pdf){
+      if(!displayedPage){
         referenceAspect=quickPreview.naturalWidth&&quickPreview.naturalHeight
           ?quickPreview.naturalWidth/quickPreview.naturalHeight:.75;
         sizeFrame();quickPreview.hidden=false;frame.hidden=false;
@@ -53,7 +53,7 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
       quickPreview.dataset.ready='0';
       quickPreview.hidden=true;
       stage.classList.remove('has-preview');
-      if(!pdf)frame.hidden=true;
+      if(!displayedPage)frame.hidden=true;
     };
     quickPreview.src=previewUrl;
   }
@@ -75,7 +75,7 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
   function setStatus(message, retry = false) {
     status.replaceChildren(document.createTextNode(message));
     if (retry) {
-      const button = document.createElement('button'); button.textContent = 'Retry'; button.onclick = start; status.appendChild(button);
+      const button = document.createElement('button'); button.textContent = 'Retry'; button.onclick = typeof retry === 'function' ? retry : start; status.appendChild(button);
     }
     // Never trap visitors behind a spinner: the original file is accessible
     // immediately, including on very slow mobile connections.
@@ -87,15 +87,16 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
   function controls() {
     const total = pdf ? pdf.numPages : 0;
     previous.disabled = !pdf || current <= 1; next.disabled = !pdf || current >= total; zoom.disabled = !pdf;
-    document.getElementById('count').textContent = pdf ? current + ' / ' + total : '– / –';
+    document.getElementById('count').textContent = pdf && displayedPage ? displayedPage + ' / ' + total : '– / –';
   }
-  function sizeFrame() {
-    const aspect = referenceAspect || .75;
+  function sizeFrame(aspect = referenceAspect || .75, apply = true) {
     const availableWidth = Math.max(1, stage.clientWidth - 2), availableHeight = Math.max(1, stage.clientHeight - 2);
     let width = Math.min(availableWidth, availableHeight * aspect), height = width / aspect;
     if (height > availableHeight) { height = availableHeight; width = height * aspect; }
-    frame.style.width = Math.max(1, Math.floor(width)) + 'px';
-    frame.style.height = Math.max(1, Math.floor(height)) + 'px';
+    if(apply){
+      frame.style.width = Math.max(1, Math.floor(width)) + 'px';
+      frame.style.height = Math.max(1, Math.floor(height)) + 'px';
+    }
     return {width, height};
   }
   async function render(n, preserveZoom = false) {
@@ -103,44 +104,49 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
     current = Math.max(1, Math.min(pdf.numPages, n));
     const ticket = ++generation;
     if (!preserveZoom) zoomed = false;
-    stage.classList.toggle('zoomed', zoomed); zoom.textContent = zoomed ? 'Fit page' : 'Zoom in';
-    zoom.setAttribute('aria-pressed', String(zoomed)); controls(); setStatus('Loading page…'); canvas.hidden = true;
+    const targetPage = current, targetZoom = zoomed;
+    controls(); setStatus('Loading page '+targetPage+'…'); stage.setAttribute('aria-busy','true');
     try {
-      // Wheel, resize and Next can overlap. Finish cancellation before reusing
-      // the canvas, and discard superseded requests.
-      if (activeRender) {
-        const previousRender = activeRender;
-        previousRender.cancel();
-        try { await previousRender.promise; } catch (_) {}
-      }
-      if (ticket !== generation) return;
-      const pdfPage = await withDeadline(pdf.getPage(current),20000);
+      if (activeRender) activeRender.cancel();
+      const pdfPage = await withDeadline(pdf.getPage(targetPage),20000);
       if (ticket !== generation) return;
       const natural = pdfPage.getViewport({scale: 1});
-      referenceAspect = natural.width / natural.height;
-      const frameSize = sizeFrame();
+      const aspect = natural.width / natural.height;
+      const frameSize = sizeFrame(aspect, false);
       const fitScale = Math.min(frameSize.width / natural.width, frameSize.height / natural.height);
-      const cssScale = fitScale * (zoomed ? 2 : 1), outputScale = Math.min(devicePixelRatio || 1, 2);
+      const cssScale = fitScale * (targetZoom ? 2 : 1), outputScale = Math.min(devicePixelRatio || 1, 2);
       const viewport = pdfPage.getViewport({scale: cssScale * outputScale});
-      canvas.width = Math.max(1, Math.floor(viewport.width)); canvas.height = Math.max(1, Math.floor(viewport.height));
-      canvas.style.width = Math.max(1, Math.floor(natural.width * cssScale)) + 'px';
-      canvas.style.height = Math.max(1, Math.floor(natural.height * cssScale)) + 'px';
-      const task = pdfPage.render({canvasContext: context, viewport});
+      // Render away from the visible canvas. A slow/failed/superseded page must
+      // never clear the last readable page or resize it halfway through a render.
+      const buffer = document.createElement('canvas');
+      buffer.width = Math.max(1, Math.floor(viewport.width));
+      buffer.height = Math.max(1, Math.floor(viewport.height));
+      const task = pdfPage.render({canvasContext: buffer.getContext('2d', {alpha:false}), viewport});
       activeRender = task;
       try { await withDeadline(task.promise,20000,()=>task.cancel()); } finally { if (activeRender === task) activeRender = null; }
       if (ticket !== generation) return;
-      frame.hidden = false; canvas.hidden = false; if(quickPreview)quickPreview.hidden=true;stage.classList.remove('has-preview'); status.hidden = true; canvas.setAttribute('aria-label', catalogueTitle + ', page ' + current);
-      if(current===1)stageTiming('first-page-visible');
-      if (!zoomed) { stage.scrollTop = 0; stage.scrollLeft = 0; }
+      referenceAspect = aspect;
+      sizeFrame();
+      canvas.width = buffer.width; canvas.height = buffer.height;
+      context.drawImage(buffer,0,0);
+      canvas.style.width = Math.max(1, Math.floor(natural.width * cssScale)) + 'px';
+      canvas.style.height = Math.max(1, Math.floor(natural.height * cssScale)) + 'px';
+      displayedPage = targetPage;
+      stage.classList.toggle('zoomed', targetZoom); zoom.textContent = targetZoom ? 'Fit page' : 'Zoom in';
+      zoom.setAttribute('aria-pressed', String(targetZoom)); controls();
+      frame.hidden = false; canvas.hidden = false; if(quickPreview)quickPreview.hidden=true;stage.classList.remove('has-preview');stage.classList.add('has-page');status.hidden = true; canvas.setAttribute('aria-label', catalogueTitle + ', page ' + targetPage);
+      if(targetPage===1)stageTiming('first-page-visible');
+      if (!targetZoom) { stage.scrollTop = 0; stage.scrollLeft = 0; }
       const neighbor = current < pdf.numPages ? current + 1 : current - 1;
       if (neighbor > 0) pdf.getPage(neighbor).catch(() => {});
-    } catch (error) { if (ticket === generation) setStatus('This page could not load. Check your connection and retry. ', true); }
+    } catch (error) { if (ticket === generation) setStatus('Page '+targetPage+' could not load. '+(displayedPage?'Your previous page is still available. ':''), () => render(targetPage, true)); }
+    finally { if(ticket===generation)stage.setAttribute('aria-busy','false'); }
   }
   async function start() {
     generation++;
     if(activeRender){activeRender.cancel();try{await activeRender.promise}catch{}activeRender=null;}
     if(loadingTask){const old=loadingTask;loadingTask=null;old.destroy().catch(()=>{});}
-    pdf = null; current = 1; referenceAspect = 0;
+    pdf = null; current = 1; displayedPage = 0; referenceAspect = 0; canvas.hidden=true; stage.classList.remove('has-page');
     const hasCover=!!quickPreview&&quickPreview.dataset.ready==='1';
     if(quickPreview)quickPreview.hidden=!hasCover;
     frame.hidden=!hasCover;stage.classList.toggle('has-preview',hasCover);
@@ -211,7 +217,7 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
   stage.addEventListener('click', event => { if (suppressClick) { event.stopImmediatePropagation(); event.preventDefault(); suppressClick = false; } }, true);
   fullscreen.hidden = !document.documentElement.requestFullscreen;
   fullscreen.onclick = async () => { try { if (document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen(); } catch { fullscreen.textContent = 'Full screen unavailable'; } };
-  document.addEventListener('fullscreenchange', () => { fullscreen.textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen'; if (pdf) render(current); });
+  document.addEventListener('fullscreenchange', () => { fullscreen.textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen'; if (pdf) render(current, true); });
   let resizeTimer;
   window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (pdf && !zoomed) render(current); }, 120); });
   start();
