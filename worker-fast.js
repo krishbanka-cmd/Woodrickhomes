@@ -1,3 +1,4 @@
+import {cataloguePages} from './worker-catalogue-pages.js';
 import {canonicalCatalogueKey,dedupeCatalogueItems} from './worker-catalogue-identity.js';
 import {buildBrandDirectory,buildCatalogMaster,canonicalBrowseCategory,canonicalBrand,brandKey,canonicalMediaCategory} from './worker-brand-directory.js';
 import {consistentCustomerResponse} from './worker-ui-consistency.js';
@@ -244,6 +245,7 @@ async function rangedPdf(request,url,env){
 const worker={
   async fetch(request,env,ctx){
     const url=new URL(request.url);
+    if(/^\/assets\/catalogue-pages(?:\/|$)/i.test(decodeURIComponent(url.pathname)))return new Response('Not found',{status:404});
     if(url.pathname==='/whatsapp'||url.pathname==='/whatsapp/')return whatsappRedirect(request,env);
     // Finance is paused while its independent platform is completed.
     if(url.pathname==='/finance'||url.pathname.startsWith('/finance/'))return new Response(null,{status:302,headers:{location:'/','cache-control':'no-store','x-robots-tag':'noindex'}});
@@ -256,12 +258,13 @@ const worker={
       const asset=STATIC_PUBLIC_MEDIA.find(item=>item.key===url.searchParams.get('key'));
       if(asset)return env.ASSETS.fetch(new Request(new URL(asset.staticUrl,url),request));
     }
-    if(url.pathname==='/api/media'&&(url.searchParams.get('key')||'').startsWith('vendor-public/')){
+    if(['/api/media','/api/catalogue-pages'].includes(url.pathname)&&(url.searchParams.get('key')||'').startsWith('vendor-public/')){
       const key=url.searchParams.get('key'),parts=key.split('/');
       const [vendorObject,productObject]=await Promise.all([env.PRODUCT_MEDIA.get('private/vendors/records/'+parts[1]+'.json'),env.PRODUCT_MEDIA.get('private/vendors/products/'+parts[2]+'.json')]);
       const vendor=vendorObject?await vendorObject.json():null,product=productObject?await productObject.json():null;
       if(vendor?.status!=='approved'||product?.vendorId!==parts[1]||!product?.publicKeys?.includes(key))return brandJson({error:'Not found'},404);
     }
+    if(url.pathname==='/api/catalogue-pages'&&['GET','HEAD'].includes(request.method))return cataloguePages(request,env);
     if(url.pathname==='/api/list-quote'||url.pathname.startsWith('/api/list-quote/'))return handleListQuote(request,env);
     if(url.pathname==='/api/vendor-applications'||url.pathname.startsWith('/api/vendor-applications/')||url.pathname.startsWith('/api/vendor/')){
       const response=await handleVendor(request,env,ctx);
