@@ -28,3 +28,34 @@ Baseline: every catalogue rendered its first page. For every multi-page file, pa
 These are browser-interaction timings, including automation overhead and network conditions, not universal performance guarantees. The navigation cache worked, but first opening of several PDFs was too slow.
 
 Improvement: build 2400-pixel WebP derivatives from every page of the current public originals during deployment. Serve them behind original ETag and vendor visibility checks. The shared viewer prefers these smaller pages and preserves the existing PDF engine as fallback. Original PDF download remains available. Generated derivatives are deployment assets, not committed duplicate source files. Source changes invalidate derivatives until the next build.
+
+## Published result
+
+Production deployment: commit cfdbeddf309d979988636454d441b551db3c4e06, GitHub Actions run 40210832232 succeeded.
+
+All 18 catalogue viewers reported `data-catalogue-mode=prepared-images`. Every multi-page catalogue passed sampled page 2 and 3 navigation, Previous, zoom in/out and return to listing. The single-page brochure passed opening, zoom and return. No routine loading badge was visible after pages were ready. Every catalogue's page count matched the original PDF; total 902.
+
+| Catalogue | Published initial open ms | Sampled Next ms |
+|---|---:|---|
+| Godrej (first uncached viewer/module load) | 9430 | 897, 1016 |
+| IPSA | 1031 | 468, 816 |
+| MWUD | 1092 | 510, 1009 |
+| Rainbow | 1278 | 986, 1014 |
+| Ristal 0.82mm | 1079 | 478, 750 |
+| Ristal 1mm | 1228 | 1073, 1006 |
+| Ristal Slim | 1312 | 533, 669 |
+| Ristal Solid Colour | 1191 | 510, 915 |
+| Royal Crown | 1887 | 729, 831 |
+| Senator | 2044 | 840, 795 |
+| Woodline 0.8mm | 1048 | 404, 797 |
+| Woodline Acrylic | 1061 | 495, 1011 |
+| Woodline Doorskin | 1222 | 505, 903 |
+| Woodline Louvers 8x5 | 1130 | 508, 1014 |
+| Woodline LED Louvers | 936 | 572, 1019 |
+| Woodline Louvers 9.5x6 | 950 | 671, 1002 |
+| Woodrick Kitchen | 1058 | 577, 611 |
+| Woodrick Shuttering | 943 | N/A |
+
+Server audit after publication: 902/902 prepared page URLs returned image/webp successfully, checked individually with HEAD requests. All 18 Original PDF download URLs returned a valid PDF byte-range response. Local decode validation also verified all 902 WebP files. Generated page payload totals approximately 172.3 MB, with the largest individual page 705,812 bytes.
+
+123 Node tests pass, including source revision invalidation, vendor revocation, private asset protection, image reuse, PDF fallback, rapid navigation and retry. The initial uncached viewer still has setup/network cost; timings above are observed desktop-browser interaction timings, not a promise of identical timing on every device. This was not an exhaustive live visual review of all 902 pages or a physical-device Safari/Android test.
