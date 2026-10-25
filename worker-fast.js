@@ -196,7 +196,7 @@ async function cachedCatalogueCover(request,env){
 async function rangedPdf(request,url,env){
   if(!env.PRODUCT_MEDIA)return null;
   let key=url.searchParams.get('key')||'';
-  if(url.pathname!=='/api/media'||url.searchParams.get('raw')!=='1'||!/\.pdf$/i.test(key))return null;
+  if(url.pathname!=='/api/media'||(url.searchParams.get('raw')!=='1'&&url.searchParams.get('download')!=='1')||!/\.pdf$/i.test(key))return null;
   const range=request.headers.get('range');
   let match;
   if(range){
@@ -226,6 +226,11 @@ async function rangedPdf(request,url,env){
   }
   if(!object)return new Response('Not found',{status:404});
   const headers=new Headers();object.writeHttpMetadata(headers);headers.set('etag',object.httpEtag);headers.set('accept-ranges','bytes');headers.set('cache-control','public, max-age=86400, stale-while-revalidate=604800');headers.set('x-content-type-options','nosniff');
+  if(url.searchParams.get('download')==='1'){
+    const name=String(object.customMetadata?.originalName||key.split('/').pop()||'catalogue.pdf').replace(/[\x00-\x1f\x7f"\\]/g,'_');
+    headers.set('content-type','application/pdf');
+    headers.set('content-disposition',`attachment; filename="${name.replace(/[^\x20-\x7e]/g,'_')}"; filename*=UTF-8''${encodeURIComponent(name).replace(/['()*]/g,c=>'%'+c.charCodeAt(0).toString(16).toUpperCase())}`);
+  }
   if(request.method==='HEAD'){headers.set('content-length',String(object.size));return new Response(null,{status:200,headers})}
   if(match){
     const end=Math.min(start+length-1,object.size-1);
