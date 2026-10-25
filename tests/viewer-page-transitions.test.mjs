@@ -5,7 +5,7 @@ import {readFile} from 'node:fs/promises';
 import {withDeadline} from '../assets/pdf-loading.mjs';
 
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
-async function viewer(){
+async function viewer(prefetch=false){
  const elements=new Map(),renders=[],draws=[],pageRequests=[];
  function element(id){
   const classes=new Set();
@@ -31,7 +31,7 @@ async function viewer(){
  let code=await readFile(new URL('../products/presentation/viewer.js',import.meta.url),'utf8');
  code=code.replace(/^import .*\n/,'').replace("import('/assets/pdf-engine.mjs?v=20261013-parallel-loader')","Promise.resolve({pdfEngine:async()=>engine})");
  vm.runInNewContext(code,{withDeadline,engine,URL,URLSearchParams,document,devicePixelRatio:1,
-  location:{search:'?key=test.pdf',origin:'https://example.com'},navigator:{},performance:{mark(){}},
+  location:{search:'?key=test.pdf',origin:'https://example.com'},navigator:{connection:{saveData:!prefetch}},performance:{mark(){}},
   window:{addEventListener(){}},setTimeout,clearTimeout,console});
  await tick();
  return {elements,renders,draws,pageRequests};
@@ -67,4 +67,33 @@ test('Rapid navigation cancels stale work; failed page retries stay on the reque
  assert.equal(h.renders.at(-1).n,5,'retry must not restart the document at page 1');
  h.renders.at(-1).finish();await tick();
  assert.deepEqual(h.draws,[1,3,5]);
+});
+
+
+test('Next reuses a fully rendered neighbour and Back reuses the previous canvas',async()=>{
+ const h=await viewer(true);h.renders[0].finish();await tick();
+ assert.equal(h.renders.length,2,'paint next page in the background');
+ assert.equal(h.renders[1].n,2);
+ h.renders[1].finish();await tick();
+ assert.deepEqual(h.draws,[1],'prefetch must not change the visible page');
+ h.elements.get('next').onclick();await tick();
+ assert.deepEqual(h.draws,[1,2]);
+ assert.equal(h.renders.filter(x=>x.n===2).length,1,'no second render on Next');
+ assert.equal(h.elements.get('status').hidden,true,'no loading badge over a readable page');
+ h.elements.get('previous').onclick();await tick();
+ assert.deepEqual(h.draws,[1,2,1]);
+ assert.equal(h.renders.filter(x=>x.n===1).length,1,'Back reuses the previous page');
+ for(const render of h.renders)render.finish();await tick();
+});
+
+test('Clicking Next while its prefetch is pending shares the same render',async()=>{
+ const h=await viewer(true);h.renders[0].finish();await tick();
+ const neighbour=h.renders[1];
+ h.elements.get('next').onclick();await tick();
+ assert.equal(h.renders.filter(x=>x.n===2).length,1);
+ assert.deepEqual(h.draws,[1]);
+ assert.equal(h.elements.get('status').hidden,true);
+ neighbour.finish();await tick();
+ assert.deepEqual(h.draws,[1,2]);
+ for(const render of h.renders)render.finish();await tick();
 });
