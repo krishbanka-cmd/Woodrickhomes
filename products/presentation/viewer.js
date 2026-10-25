@@ -175,10 +175,10 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
       if(targetPage===1)stageTiming('first-page-visible');
       if (!targetZoom) { stage.scrollTop = 0; stage.scrollLeft = 0; }
       warmNextPage();
-    } catch (error) { if (ticket === generation) setStatus('Page '+targetPage+' could not load. '+(displayedPage?'Your previous page is still available. ':''), () => render(targetPage, true)); }
+    } catch (error) { if(ticket===generation&&pdf?._preparedImages){await start(false,targetPage);return;} if (ticket === generation) setStatus('Page '+targetPage+' could not load. '+(displayedPage?'Your previous page is still available. ':''), () => render(targetPage, true)); }
     finally { if(ticket===generation)stage.setAttribute('aria-busy','false'); }
   }
-  async function start() {
+  async function start(usePrepared = true, firstPage = 1) {
     generation++;
     if(activeRender){activeRender.cancel();try{await activeRender.promise}catch{}activeRender=null;}
     if(loadingTask){const old=loadingTask;loadingTask=null;old.destroy().catch(()=>{});}
@@ -192,6 +192,14 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
     const ticket=generation;
     const slowTimer=setTimeout(()=>{if(ticket===generation&&!pdf)setStatus('Opening the first page… Large catalogues may take a few moments.');},5000);
     try {
+      if(usePrepared){
+        try{
+          const {preparedCatalogue}=await withDeadline(import('/assets/prepared-catalogue.mjs?v=20261025'),3000);
+          const prepared=await preparedCatalogue(key);
+          if(ticket!==generation){await prepared?.destroy();return;}
+          if(prepared){pdf=prepared;stage.dataset.catalogueMode='prepared-images';clearTimeout(slowTimer);stageTiming('document-ready');await render(firstPage);return;}
+        }catch{}
+      }
       const {pdfEngine}=await withDeadline(import('/assets/pdf-engine.mjs?v=20261013-parallel-loader'),15000);
       const pdfjsLib=await withDeadline(pdfEngine(),15000);
       if(ticket!==generation)return;
@@ -208,7 +216,7 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
       task.onProgress=progress=>{if(ticket!==generation||pdf||!progress||!progress.total)return;const percent=Math.min(99,Math.round(progress.loaded/progress.total*100));setStatus('Preparing catalogue… '+percent+'%');};
       const loaded=await withDeadline(task.promise,30000,()=>task.destroy());
       if(ticket!==generation){await loaded.destroy();return;}
-      pdf=loaded;clearTimeout(slowTimer);stageTiming('document-ready');await render(1);
+      pdf=loaded;stage.dataset.catalogueMode='pdf';clearTimeout(slowTimer);stageTiming('document-ready');await render(firstPage);
     }
     catch (error) { clearTimeout(slowTimer);if(ticket!==generation)return;console.error('Catalogue load failed:', error); setStatus('This catalogue could not load. Check your connection and retry. ', true); }
   }
