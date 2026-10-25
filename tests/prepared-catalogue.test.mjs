@@ -8,7 +8,7 @@ const envFor=(etag='"v1"')=>({PRODUCT_MEDIA:{head:async()=>({httpEtag:etag})},AS
 test('Prepared catalogue manifest and page bytes require an unchanged original',async()=>{
  const base='https://example.com/api/catalogue-pages?key=public.pdf';
  const data=await (await cataloguePages(new Request(base),envFor())).json();
- assert.equal(data.pages.length,1);assert.equal(data.pages[0].url,'/api/catalogue-pages?key=public.pdf&page=1');
+ assert.equal(data.pages.length,1);assert.equal(new URL(data.pages[0].url,'https://example.com').searchParams.get('revision'),'\"v1\"');
  const image=await cataloguePages(new Request(base+'&page=1'),envFor());assert.equal(image.status,200);assert.equal(image.headers.get('content-type'),'image/webp');
  assert.equal((await cataloguePages(new Request(base),envFor('"v2"'))).status,404);
  assert.equal((await cataloguePages(new Request(base+'&page=0'),envFor())).status,404);

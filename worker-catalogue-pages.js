@@ -9,7 +9,8 @@ export async function cataloguePages(request,env){
   if(!entry||!Array.isArray(entry.pages)||!entry.pages.length)return new Response('Not found',{status:404});
   const original=await env.PRODUCT_MEDIA.head(key);
   if(!original||original.httpEtag!==entry.etag)return new Response('Original changed',{status:404,headers:{'cache-control':'no-store'}});
-  if(!url.searchParams.has('page'))return Response.json({pages:entry.pages.map((p,i)=>({width:p.width,height:p.height,url:'/api/catalogue-pages?'+new URLSearchParams({key,page:String(i+1)})}))},{headers:{'cache-control':'private, max-age=60'}});
+  if(!url.searchParams.has('page'))return Response.json({pages:entry.pages.map((p,i)=>({width:p.width,height:p.height,url:'/api/catalogue-pages?'+new URLSearchParams({key,page:String(i+1),revision:entry.etag})}))},{headers:{'cache-control':'private, max-age=60'}});
+  if(url.searchParams.has('revision')&&url.searchParams.get('revision')!==entry.etag)return new Response('Original changed',{status:404});
   const n=Number(url.searchParams.get('page'));
   if(!Number.isInteger(n)||n<1||n>entry.pages.length)return new Response('Not found',{status:404});
   const file=entry.pages[n-1].file;
