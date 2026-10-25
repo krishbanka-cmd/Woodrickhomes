@@ -46,6 +46,7 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
           ?quickPreview.naturalWidth/quickPreview.naturalHeight:.75;
         sizeFrame();quickPreview.hidden=false;frame.hidden=false;
         stage.classList.add('has-preview');
+        if (!status.querySelector?.('button')) status.hidden=true;
         stageTiming('cover-preview-visible');
       }
     };
@@ -82,7 +83,7 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
     if(retry||!pdf){
       const original=document.createElement('a');original.className='link';original.textContent='Open original PDF';original.href=rawUrl;original.target='_blank';original.rel='noopener';status.appendChild(original);
     }
-    status.hidden = false;
+    status.hidden = !retry && (displayedPage > 0 || quickPreview?.dataset.ready === '1');
   }
   function controls() {
     const total = pdf ? pdf.numPages : 0;
@@ -99,6 +100,56 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
     }
     return {width, height};
   }
+  // Retain a few fully painted pages, not just PDF page metadata. Rendering a
+  // neighbour fetches its fonts/images too, so Next can reuse a finished canvas.
+  const preparedPages = new Map();
+  let warming = false;
+  function preparePage(n, enlarged, foreground = false) {
+    const cacheKey = [n, enlarged, stage.clientWidth, stage.clientHeight, devicePixelRatio || 1].join('|');
+    let entry = preparedPages.get(cacheKey);
+    if (entry) {
+      if (foreground && entry.task) activeRender = entry.task;
+      return entry.promise;
+    }
+    entry = {task:null};
+    entry.promise = (async () => {
+      const pdfPage = await withDeadline(pdf.getPage(n), 20000);
+      const natural = pdfPage.getViewport({scale:1}), aspect = natural.width / natural.height;
+      const frameSize = sizeFrame(aspect, false);
+      const fitScale = Math.min(frameSize.width / natural.width, frameSize.height / natural.height);
+      const cssScale = fitScale * (enlarged ? 2 : 1), outputScale = Math.min(devicePixelRatio || 1, 2);
+      const viewport = pdfPage.getViewport({scale:cssScale * outputScale});
+      const buffer = document.createElement('canvas');
+      buffer.width = Math.max(1, Math.floor(viewport.width));
+      buffer.height = Math.max(1, Math.floor(viewport.height));
+      const task = pdfPage.render({canvasContext:buffer.getContext('2d', {alpha:false}), viewport});
+      task.viewerCacheKey = cacheKey;
+      entry.task = task;
+      if (foreground) activeRender = task;
+      try { await withDeadline(task.promise, 20000, () => task.cancel()); }
+      finally { if (activeRender === task) activeRender = null; entry.task = null; }
+      // Bound canvas memory on phones and release obsolete size/zoom variants.
+      while (preparedPages.size > 4) {
+        const oldest = preparedPages.keys().next().value;
+        if (oldest === cacheKey) break;
+        preparedPages.delete(oldest);
+      }
+      return {buffer, natural, cssScale, aspect};
+    })();
+    preparedPages.set(cacheKey, entry);
+    entry.promise.catch(() => { if (preparedPages.get(cacheKey) === entry) preparedPages.delete(cacheKey); });
+    return entry.promise;
+  }
+  function warmNextPage() {
+    if (warming || !pdf || navigator.connection?.saveData || zoomed) return;
+    const documentAtStart = pdf, pageAtStart = displayedPage;
+    if (pageAtStart >= pdf.numPages) return;
+    warming = true;
+    preparePage(pageAtStart + 1, false).catch(() => {}).finally(() => {
+      warming = false;
+      if (pdf === documentAtStart && displayedPage !== pageAtStart) warmNextPage();
+    });
+  }
   async function render(n, preserveZoom = false) {
     if (!pdf) return;
     current = Math.max(1, Math.min(pdf.numPages, n));
@@ -107,23 +158,9 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
     const targetPage = current, targetZoom = zoomed;
     controls(); setStatus('Loading page '+targetPage+'…'); stage.setAttribute('aria-busy','true');
     try {
-      if (activeRender) activeRender.cancel();
-      const pdfPage = await withDeadline(pdf.getPage(targetPage),20000);
-      if (ticket !== generation) return;
-      const natural = pdfPage.getViewport({scale: 1});
-      const aspect = natural.width / natural.height;
-      const frameSize = sizeFrame(aspect, false);
-      const fitScale = Math.min(frameSize.width / natural.width, frameSize.height / natural.height);
-      const cssScale = fitScale * (targetZoom ? 2 : 1), outputScale = Math.min(devicePixelRatio || 1, 2);
-      const viewport = pdfPage.getViewport({scale: cssScale * outputScale});
-      // Render away from the visible canvas. A slow/failed/superseded page must
-      // never clear the last readable page or resize it halfway through a render.
-      const buffer = document.createElement('canvas');
-      buffer.width = Math.max(1, Math.floor(viewport.width));
-      buffer.height = Math.max(1, Math.floor(viewport.height));
-      const task = pdfPage.render({canvasContext: buffer.getContext('2d', {alpha:false}), viewport});
-      activeRender = task;
-      try { await withDeadline(task.promise,20000,()=>task.cancel()); } finally { if (activeRender === task) activeRender = null; }
+      const targetCacheKey = [targetPage, targetZoom, stage.clientWidth, stage.clientHeight, devicePixelRatio || 1].join('|');
+      if (activeRender && activeRender.viewerCacheKey !== targetCacheKey) activeRender.cancel();
+      const {buffer, natural, cssScale, aspect} = await preparePage(targetPage, targetZoom, true);
       if (ticket !== generation) return;
       referenceAspect = aspect;
       sizeFrame();
@@ -137,8 +174,7 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
       frame.hidden = false; canvas.hidden = false; if(quickPreview)quickPreview.hidden=true;stage.classList.remove('has-preview');stage.classList.add('has-page');status.hidden = true; canvas.setAttribute('aria-label', catalogueTitle + ', page ' + targetPage);
       if(targetPage===1)stageTiming('first-page-visible');
       if (!targetZoom) { stage.scrollTop = 0; stage.scrollLeft = 0; }
-      const neighbor = current < pdf.numPages ? current + 1 : current - 1;
-      if (neighbor > 0) pdf.getPage(neighbor).catch(() => {});
+      warmNextPage();
     } catch (error) { if (ticket === generation) setStatus('Page '+targetPage+' could not load. '+(displayedPage?'Your previous page is still available. ':''), () => render(targetPage, true)); }
     finally { if(ticket===generation)stage.setAttribute('aria-busy','false'); }
   }
@@ -146,6 +182,8 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
     generation++;
     if(activeRender){activeRender.cancel();try{await activeRender.promise}catch{}activeRender=null;}
     if(loadingTask){const old=loadingTask;loadingTask=null;old.destroy().catch(()=>{});}
+    for (const entry of preparedPages.values()) { if (entry.task) entry.task.cancel(); }
+    preparedPages.clear();
     pdf = null; current = 1; displayedPage = 0; referenceAspect = 0; canvas.hidden=true; stage.classList.remove('has-page');
     const hasCover=!!quickPreview&&quickPreview.dataset.ready==='1';
     if(quickPreview)quickPreview.hidden=!hasCover;
