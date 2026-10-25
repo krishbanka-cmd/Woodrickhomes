@@ -87,3 +87,18 @@ test('A card opened before cleanup still reads and downloads its surviving origi
   const download=await worker.fetch(new Request(base+'&download=1'),env,{});
   assert.equal(download.status,302);assert.equal(new URL(download.headers.get('location')).searchParams.get('key'),stable);
 });
+
+test('Original PDF supports HEAD and resumable downloads without falling through to assets',async()=>{
+  const bytes=new TextEncoder().encode('%PDF-1.7 test catalogue'),seen=[];
+  const object={size:bytes.length,httpEtag:'"original-v1"',customMetadata:{originalName:'Ristal Catalogue.pdf'},writeHttpMetadata:h=>h.set('content-type','application/pdf')};
+  const env={PRODUCT_MEDIA:{head:async()=>object,get:async(_key,opts)=>{seen.push(opts);return {...object,body:opts?.range?bytes.slice(opts.range.offset,opts.range.offset+opts.range.length):bytes}}},ASSETS:{fetch(){throw Error('PDF must never fall through to static asset routing')}}};
+  const url='https://example.com/api/media?download=1&key=original.pdf';
+  const head=await worker.fetch(new Request(url,{method:'HEAD'}),env,{});
+  assert.equal(head.status,200);assert.equal(head.headers.get('content-length'),String(bytes.length));assert.equal(await head.text(),'');assert.equal(seen.length,0);
+  const get=await worker.fetch(new Request(url),env,{});
+  assert.equal(get.status,200);assert.match(get.headers.get('content-disposition'),/attachment; filename="Ristal Catalogue.pdf"/);assert.equal(get.headers.get('accept-ranges'),'bytes');assert.equal(await get.text(),new TextDecoder().decode(bytes));
+  const resumed=await worker.fetch(new Request(url,{headers:{Range:'bytes=5-10'}}),env,{});
+  assert.equal(resumed.status,206);assert.equal(resumed.headers.get('content-range'),`bytes 5-10/${bytes.length}`);assert.equal((await resumed.arrayBuffer()).byteLength,6);
+  const hidden=await worker.fetch(new Request('https://example.com/api/media?download=1&key=private/catalogue.pdf',{method:'HEAD'}),env,{});
+  assert.equal(hidden.status,404);
+});
