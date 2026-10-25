@@ -16,6 +16,7 @@ on:
       - 'vendor/**'
       - 'tests/**'
       - 'scripts/build-catalogue-pages.py'
+      - 'scripts/prepare-catalogues.sh'
       - 'catalogues/**'
       - 'finance/**'
       - 'sitemap.xml'

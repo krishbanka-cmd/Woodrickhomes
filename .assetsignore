@@ -13,3 +13,4 @@ npm-debug.log*
 tests/
 docs/
 finance/
+.catalogue-build-env/

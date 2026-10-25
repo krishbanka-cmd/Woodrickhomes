@@ -197,7 +197,7 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
           const {preparedCatalogue}=await withDeadline(import('/assets/prepared-catalogue.mjs?v=20261025'),3000);
           const prepared=await preparedCatalogue(key);
           if(ticket!==generation){await prepared?.destroy();return;}
-          if(prepared){pdf=prepared;clearTimeout(slowTimer);stageTiming('document-ready');await render(firstPage);return;}
+          if(prepared){pdf=prepared;stage.dataset.catalogueMode='prepared-images';clearTimeout(slowTimer);stageTiming('document-ready');await render(firstPage);return;}
         }catch{}
       }
       const {pdfEngine}=await withDeadline(import('/assets/pdf-engine.mjs?v=20261013-parallel-loader'),15000);
@@ -216,7 +216,7 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
       task.onProgress=progress=>{if(ticket!==generation||pdf||!progress||!progress.total)return;const percent=Math.min(99,Math.round(progress.loaded/progress.total*100));setStatus('Preparing catalogue… '+percent+'%');};
       const loaded=await withDeadline(task.promise,30000,()=>task.destroy());
       if(ticket!==generation){await loaded.destroy();return;}
-      pdf=loaded;clearTimeout(slowTimer);stageTiming('document-ready');await render(firstPage);
+      pdf=loaded;stage.dataset.catalogueMode='pdf';clearTimeout(slowTimer);stageTiming('document-ready');await render(firstPage);
     }
     catch (error) { clearTimeout(slowTimer);if(ticket!==generation)return;console.error('Catalogue load failed:', error); setStatus('This catalogue could not load. Check your connection and retry. ', true); }
   }
