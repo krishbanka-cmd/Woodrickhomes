@@ -239,7 +239,7 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
   // presentation. Let the browser scroll normally while zoomed in.
   let wheelAmount = 0, wheelReset, lastWheelPage = 0;
   stage.addEventListener('wheel', event => {
-    if (!pdf || zoomed || Math.abs(event.deltaY) < Math.abs(event.deltaX)) return;
+    if (event.ctrlKey || !pdf || zoomed || browserZoomed() || Math.abs(event.deltaY) < Math.abs(event.deltaX)) return;
     event.preventDefault();
     if (Date.now() - lastWheelPage < 450) return;
     wheelAmount += event.deltaY;
@@ -252,15 +252,39 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
     lastWheelPage = Date.now();
     render(current + direction);
   }, {passive: false});
-  let startPoint = null, suppressClick = false;
-  stage.addEventListener('pointerdown', event => { if (!zoomed && event.isPrimary) startPoint = {x:event.clientX,y:event.clientY}; });
+  // Native pinch zoom keeps the existing canvas, PDF loading and render cache
+  // intact. Never interpret the end of a two-finger gesture as a page swipe.
+  const activePointers = new Set();
+  const browserZoomed = () => (window.visualViewport?.scale || 1) > 1.01;
+  let startPoint = null, suppressClick = false, pinchUntil = 0;
+  stage.addEventListener('pointerdown', event => {
+    activePointers.add(event.pointerId);
+    if (activePointers.size > 1) {
+      startPoint = null; pinchUntil = Date.now() + 600;
+    } else if (!zoomed && !browserZoomed() && event.isPrimary) {
+      startPoint = {x:event.clientX,y:event.clientY};
+    }
+  });
   stage.addEventListener('pointerup', event => {
+    const multiple = activePointers.size > 1;
+    activePointers.delete(event.pointerId);
+    if (multiple || Date.now() < pinchUntil || browserZoomed()) {
+      startPoint = null; pinchUntil = Date.now() + 600; return;
+    }
     if (!startPoint) return;
     const dx = event.clientX - startPoint.x, dy = event.clientY - startPoint.y; startPoint = null;
     if (!zoomed && Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.5) { suppressClick = true; render(current + (dx < 0 ? 1 : -1)); setTimeout(() => { suppressClick = false; }, 400); }
   });
-  stage.addEventListener('pointercancel', () => { startPoint = null; });
-  stage.addEventListener('click', event => { if (suppressClick) { event.stopImmediatePropagation(); event.preventDefault(); suppressClick = false; } }, true);
+  stage.addEventListener('pointercancel', event => {
+    activePointers.delete(event.pointerId); startPoint = null;
+    // Mobile browsers cancel pointers when taking over a native pinch/pan.
+    pinchUntil = Date.now() + 600;
+  });
+  stage.addEventListener('click', event => {
+    if (suppressClick || Date.now() < pinchUntil || browserZoomed()) {
+      event.stopImmediatePropagation(); event.preventDefault(); suppressClick = false;
+    }
+  }, true);
   fullscreen.hidden = !document.documentElement.requestFullscreen;
   fullscreen.onclick = async () => { try { if (document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen(); } catch { fullscreen.textContent = 'Full screen unavailable'; } };
   document.addEventListener('fullscreenchange', () => { fullscreen.textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen'; if (pdf) render(current, true); });

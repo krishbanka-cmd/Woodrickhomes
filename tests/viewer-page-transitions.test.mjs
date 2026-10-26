@@ -10,8 +10,8 @@ async function viewer(prefetch=false){
  function element(id){
   const classes=new Set();
   return {hidden:true,disabled:false,dataset:{},style:{},clientWidth:800,clientHeight:900,
-   textContent:'',classList:{add:x=>classes.add(x),remove:x=>classes.delete(x),toggle(x,on){if(on)classes.add(x);else classes.delete(x)}},
-   setAttribute(k,v){this[k]=v},addEventListener(){},replaceChildren(){},appendChild(){},
+   listeners:{},textContent:'',classList:{add:x=>classes.add(x),remove:x=>classes.delete(x),toggle(x,on){if(on)classes.add(x);else classes.delete(x)}},
+   setAttribute(k,v){this[k]=v},addEventListener(name,fn){this.listeners[name]=fn},replaceChildren(){},appendChild(){},
    getContext:()=>({drawImage:buffer=>draws.push(buffer.page)}),getBoundingClientRect:()=>({left:0,top:0,width:800,height:900})};
  }
  const pdf={numPages:8,destroy:async()=>{},getPage:async n=>{
@@ -96,4 +96,31 @@ test('Clicking Next while its prefetch is pending shares the same render',async(
  neighbour.finish();await tick();
  assert.deepEqual(h.draws,[1,2]);
  for(const render of h.renders)render.finish();await tick();
+});
+
+
+test('Native pinch does not navigate or rerender; ordinary swipes still change pages',async()=>{
+ const h=await viewer();h.renders[0].finish();await tick();
+ const stage=h.elements.get('stage'),events=stage.listeners;
+ events.pointerdown({pointerId:1,isPrimary:true,clientX:300,clientY:200});
+ events.pointerdown({pointerId:2,isPrimary:false,clientX:400,clientY:200});
+ events.pointerup({pointerId:1,clientX:100,clientY:200});
+ events.pointerup({pointerId:2,clientX:600,clientY:200});
+ let prevented=false;events.click({preventDefault(){prevented=true},stopImmediatePropagation(){}});
+ assert.equal(prevented,true);assert.equal(h.renders.length,1);assert.deepEqual(h.draws,[1]);
+ const fresh=await viewer();fresh.renders[0].finish();await tick();
+ const swipe=fresh.elements.get('stage').listeners;
+ swipe.pointerdown({pointerId:3,isPrimary:true,clientX:300,clientY:200});
+ swipe.pointerup({pointerId:3,clientX:100,clientY:200});await tick();
+ assert.equal(fresh.renders.at(-1).n,2);fresh.renders.at(-1).finish();await tick();
+ assert.deepEqual(fresh.draws,[1,2]);
+});
+
+test('Trackpad pinch is left to the browser rather than turning catalogue pages',async()=>{
+ const h=await viewer();h.renders[0].finish();await tick();
+ h.elements.get('stage').listeners.wheel({ctrlKey:true,deltaY:150,deltaX:0,preventDefault(){assert.fail('native zoom blocked')}});
+ assert.equal(h.renders.length,1);
+ const html=await readFile(new URL('../products/presentation/index.html',import.meta.url),'utf8');
+ assert.match(html,/touch-action:pan-y pinch-zoom/);
+ assert.match(html,/touch-action:pan-x pan-y pinch-zoom/);
 });
