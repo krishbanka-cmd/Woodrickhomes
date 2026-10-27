@@ -1,3 +1,4 @@
+import {handleProjects} from './worker-completed-projects.js';
 import {cataloguePages} from './worker-catalogue-pages.js';
 import {canonicalCatalogueKey,dedupeCatalogueItems} from './worker-catalogue-identity.js';
 import {buildBrandDirectory,buildCatalogMaster,canonicalBrowseCategory,canonicalBrand,brandKey,canonicalMediaCategory} from './worker-brand-directory.js';
@@ -245,6 +246,12 @@ async function rangedPdf(request,url,env){
 const worker={
   async fetch(request,env,ctx){
     const url=new URL(request.url);
+    if(url.pathname==='/api/projects'||url.pathname==='/api/projects/media')return handleProjects(request,env,brandAuthorized);
+    if(/^\/admin-products\/projects(?:\/|\/index.html)?$/.test(url.pathname)){
+      if(!await brandAuthorized(request,env))return Response.redirect(new URL('/admin-products/',url).href,302);
+      const asset=await env.ASSETS.fetch(new Request(new URL('/admin-products/projects/index.html',url),request));
+      return new Response(asset.body,{status:asset.status,headers:{'content-type':'text/html; charset=utf-8','cache-control':'private, no-store','x-robots-tag':'noindex'}});
+    }
     if(/^\/assets\/catalogue-pages(?:\/|$)/i.test(decodeURIComponent(url.pathname)))return new Response('Not found',{status:404});
     if(url.pathname==='/whatsapp'||url.pathname==='/whatsapp/')return whatsappRedirect(request,env);
     // Finance is paused while its independent platform is completed.
