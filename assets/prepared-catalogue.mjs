@@ -1,7 +1,7 @@
 // PDF-compatible page adapter: existing navigation, zoom, retries and page cache
 // can use small prepared images while Original PDF retains the source document.
 export async function preparedCatalogue(key,{fetcher=fetch,makeImage=()=>document.createElement('img')}={}){
-  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),2500);
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
   let data;
   try{const r=await fetcher('/api/catalogue-pages?'+new URLSearchParams({key}),{signal:controller.signal});if(!r.ok)return null;data=await r.json();}
   catch{return null}finally{clearTimeout(timer)}

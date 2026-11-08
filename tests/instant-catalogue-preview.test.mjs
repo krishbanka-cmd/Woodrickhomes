@@ -18,16 +18,15 @@ test('All three catalogue entry points provide a first-page preview without chan
   }
 });
 
-test('Quick preview loads before PDF.js and is never a remote image',async()=>{
+test('Fallback preview is safe and prepared opening avoids a duplicate image',async()=>{
   const [html,viewer]=await Promise.all([
     source('../products/presentation/index.html'),source('../products/presentation/viewer.js')
   ]);
   assert.match(html,/<img id="quickPreview" class="quick-preview"/);
-  assert.match(html,/viewer.js\?v=20261108-stable-cover/);
+  assert.match(html,/viewer.js\?v=20261108-single-first-page/);
   assert.match(viewer,/stageTiming\('cover-preview-visible'\)/);
   assert.match(viewer,/quickPreview\.src=previewUrl/);
-  assert.ok(viewer.indexOf('quickPreview.src=previewUrl')<viewer.indexOf('  async function start('),
-    'cover can begin downloading before the heavy PDF engine initialises');
+  assert.ok(viewer.indexOf('quickPreview.src=previewUrl')>viewer.indexOf('if(prepared){'),'fallback cover starts only when prepared pages are unavailable');
   assert.match(viewer,/if\(quickPreview\)quickPreview.hidden=true/,'real PDF replaces the cover');
 
   const snippet=viewer.match(/function safePreviewUrl\(value\)\{[\s\S]*?\n  \}/)?.[0];

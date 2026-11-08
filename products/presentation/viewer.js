@@ -36,10 +36,10 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
       return url.pathname+url.search;
     } catch { return ''; }
   }
-  const fallbackPreviewUrl=safePreviewUrl(params.get('cover')||'');
-  // Use the same uncropped first page as the final renderer. Listing covers
-  // can have different margins/aspects and visibly jump when replaced.
-  const previewUrl='/api/catalogue-pages?'+new URLSearchParams({key,page:'1'});
+  // Prepared catalogues paint their first page once. A separate preview URL
+  // would download the same image twice and then replace it with a canvas.
+  // Listing covers are used only when the prepared document is unavailable.
+  const previewUrl=safePreviewUrl(params.get('cover')||'');
   if(quickPreview&&previewUrl){
     quickPreview.alt=catalogueTitle+' cover preview (full pages loading)';
     quickPreview.onload=()=>{
@@ -54,15 +54,11 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
       }
     };
     quickPreview.onerror=()=>{
-      if(fallbackPreviewUrl&&quickPreview.dataset.fallback!=='1'){
-        quickPreview.dataset.fallback='1';quickPreview.src=fallbackPreviewUrl;return;
-      }
       quickPreview.dataset.ready='0';
       quickPreview.hidden=true;
       stage.classList.remove('has-preview');
       if(!displayedPage)frame.hidden=true;
     };
-    quickPreview.src=previewUrl;
   }
 
   document.title = catalogueTitle + ' | Woodrick Homes';
@@ -198,23 +194,18 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
     const ticket=generation;
     const slowTimer=setTimeout(()=>{if(ticket===generation&&!pdf)setStatus('Opening the first page… Large catalogues may take a few moments.');},5000);
     try {
-      // Warm the shared engine while checking for prepared pages, rather than
-      // adding the manifest round trip to every PDF-only catalogue opening.
-      // Settle errors here: prepared pages must still work if the engine fails.
-      const engineReady=withDeadline(import('/assets/pdf-engine.mjs?v=20261013-parallel-loader'),15000)
-        .then(({pdfEngine})=>withDeadline(pdfEngine(),15000))
-        .then(engine=>({engine}),error=>({error}));
       if(usePrepared){
         try{
-          const {preparedCatalogue}=await withDeadline(import('/assets/prepared-catalogue.mjs?v=20261025'),3000);
+          const {preparedCatalogue}=await withDeadline(import('/assets/prepared-catalogue.mjs?v=20261108-single-first-page'),15000);
           const prepared=await preparedCatalogue(key);
           if(ticket!==generation){await prepared?.destroy();return;}
           if(prepared){pdf=prepared;stage.dataset.catalogueMode='prepared-images';clearTimeout(slowTimer);stageTiming('document-ready');await render(firstPage);return;}
         }catch{}
       }
-      const engineResult=await engineReady;
-      if(engineResult.error)throw engineResult.error;
-      const pdfjsLib=engineResult.engine;
+      if(ticket!==generation)return;
+      if(quickPreview&&previewUrl&&!quickPreview.getAttribute('src'))quickPreview.src=previewUrl;
+      const {pdfEngine}=await withDeadline(import('/assets/pdf-engine.mjs?v=20261013-parallel-loader'),15000);
+      const pdfjsLib=await withDeadline(pdfEngine(),15000);
       if(ticket!==generation)return;
       // Streaming keeps downloading the entire catalogue while range reads also
       // run. Disable it so first-page reads use bounded byte ranges instead.
