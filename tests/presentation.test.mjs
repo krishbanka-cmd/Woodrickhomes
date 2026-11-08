@@ -45,7 +45,7 @@ test('Every HTML route produces syntactically valid inline scripts after live wo
     for(const entry of entries){const path=dir+entry.name;if(entry.isDirectory()&&!['.git','node_modules','android-app'].includes(entry.name))result.push(...await files(path+'/'));else if(entry.isFile()&&entry.name.endsWith('.html'))result.push(path)}return result;
   }
   const pages=await files(),env={ADMIN_UPLOAD_TOKEN:'presentation-test-only',PRODUCT_MEDIA:{get:async()=>null,head:async()=>null,list:async()=>({objects:[],truncated:false}),put:async()=>{},delete:async()=>{}},ASSETS:{fetch:async request=>{
-    const p=new URL(request.url).pathname.slice(1),path=p||'index.html';
+    const p=new URL(request.url).pathname.slice(1),path=!p?'index.html':p.endsWith('/')?p+'index.html':p;
     try{return new Response(await readFile(new URL('../'+path,import.meta.url)),{headers:{'content-type':'text/html'}})}catch{return new Response('Missing asset',{status:404})}
   }}};
   for(const page of pages){

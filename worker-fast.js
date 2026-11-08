@@ -249,8 +249,9 @@ const worker={
     if(url.pathname==='/api/projects'||url.pathname==='/api/projects/media')return handleProjects(request,env,brandAuthorized);
     if(/^\/admin-products\/projects(?:\/|\/index.html)?$/.test(url.pathname)){
       if(!await brandAuthorized(request,env))return Response.redirect(new URL('/admin-products/',url).href,302);
-      const asset=await env.ASSETS.fetch(new Request(new URL('/admin-products/projects/index.html',url),request));
-      return new Response(asset.body,{status:asset.status,headers:{'content-type':'text/html; charset=utf-8','cache-control':'private, no-store','x-robots-tag':'noindex'}});
+      const asset=await env.ASSETS.fetch(new Request(new URL('/admin-products/projects/',url),request));
+      const headers=new Headers(asset.headers);headers.set('cache-control','private, no-store');headers.set('x-robots-tag','noindex');
+      return new Response(asset.body,{status:asset.status,statusText:asset.statusText,headers});
     }
     if(/^\/assets\/catalogue-pages(?:\/|$)/i.test(decodeURIComponent(url.pathname)))return new Response('Not found',{status:404});
     if(url.pathname==='/whatsapp'||url.pathname==='/whatsapp/')return whatsappRedirect(request,env);

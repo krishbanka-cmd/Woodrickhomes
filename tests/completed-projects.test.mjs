@@ -1,6 +1,32 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
+import worker from '../worker-fast.js';
+
+test('Completed Projects serves canonical asset HTML instead of a stripped index redirect',async()=>{
+ const html=await readFile(new URL('../admin-products/projects/index.html',import.meta.url),'utf8');
+ const paths=[];
+ const pageEnv={ADMIN_UPLOAD_TOKEN:'route-test-only',ASSETS:{fetch:async req=>{
+  const path=new URL(req.url).pathname;paths.push(path);
+  // Workers Assets redirects explicit index.html to the directory URL.
+  if(path.endsWith('/index.html'))return new Response(null,{status:307,headers:{location:'/admin-products/projects/'}});
+  return new Response(html,{headers:{'content-type':'text/html;charset=utf-8'}});
+ }}};
+ for(const path of ['/admin-products/projects/','/admin-products/projects','/admin-products/projects/index.html']){
+  const r=await worker.fetch(new Request('https://example.com'+path,{headers:{authorization:'Bearer route-test-only'}}),pageEnv,{});
+  assert.equal(r.status,200);
+  assert.match(await r.text(),/Upload photos and videos/);
+  assert.equal(r.headers.get('cache-control'),'private, no-store');
+ }
+ assert.ok(paths.every(p=>p==='/admin-products/projects/'));
+ const blocked=await worker.fetch(new Request('https://example.com/admin-products/projects/'),pageEnv,{});
+ assert.equal(blocked.status,302);assert.equal(blocked.headers.get('location'),'https://example.com/admin-products/');
+});
+
+test('Project page preserves asset redirects rather than returning a blank redirect without Location',async()=>{
+ const r=await worker.fetch(new Request('https://example.com/admin-products/projects/',{headers:{authorization:'Bearer route-test-only'}}),{ADMIN_UPLOAD_TOKEN:'route-test-only',ASSETS:{fetch:async()=>new Response(null,{status:307,headers:{location:'/canonical-projects/'}})}},{});
+ assert.equal(r.status,307);assert.equal(r.headers.get('location'),'/canonical-projects/');
+});
 const source=await readFile(new URL('../worker-completed-projects.js',import.meta.url),'utf8');
 const {handleProjects}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 const id='12345678-1234-1234-1234-123456789abc';
