@@ -13,6 +13,25 @@
 <header><a class="link" id="catalogueBack" href="/catalogues/" aria-label="Back to catalogue folders">← Back</a><div><h1 id="title">Catalogue</h1><p>WOODRICK HOMES · PRESENTATION</p></div><div class="tools"><button id="zoom" aria-pressed="false" disabled>Zoom in</button><button id="fullscreen">Full screen</button><a class="link" id="download" href="#" target="_blank" rel="noopener">Original PDF</a></div></header>
 <main class="stage" id="stage" aria-label="Catalogue page"><div class="page-frame" id="pageFrame" hidden><img id="quickPreview" class="quick-preview" alt="Catalogue cover preview" hidden><canvas class="page" id="page" aria-label="Catalogue page" hidden></canvas></div><div class="status" id="status" role="status">Preparing catalogue…</div></main>
 <footer><button class="nav" id="previous" disabled>← Previous</button><div class="count"><span id="count" aria-live="polite">– / –</span><small>Swipe or use ← →</small></div><button class="nav" id="next" disabled>Next →</button></footer>
-<script type="module" src="/products/presentation/viewer.js?v=20261108-single-first-page"></script>
+<script>
+// Paint the already-visible listing cover before the module and manifest load.
+(function(){
+ const p=new URLSearchParams(location.search),v=p.get('cover')||'';
+ const title=p.get('title');if(title)document.getElementById('title').textContent=title;
+ if(!v.startsWith('/')||v.startsWith('//'))return;
+ let u;try{u=new URL(v,location.origin)}catch{return}
+ if(u.origin!==location.origin||!/^\/catalogue-covers\/[a-z0-9._/-]+\.(?:webp|png|jpe?g)$/i.test(u.pathname))return;
+ const img=document.getElementById('quickPreview'),frame=document.getElementById('pageFrame'),stage=document.getElementById('stage');
+ img.onload=function(){
+  if(stage.classList.contains('has-page'))return;
+  const aspect=img.naturalWidth/img.naturalHeight,w=Math.min(stage.clientWidth-2,(stage.clientHeight-2)*aspect);
+  frame.style.width=Math.floor(w)+'px';frame.style.height=Math.floor(w/aspect)+'px';
+  img.dataset.ready='1';img.hidden=false;frame.hidden=false;stage.classList.add('has-preview');document.getElementById('status').hidden=true;
+ };
+ img.src=u.pathname+u.search;
+ if(img.complete&&img.naturalWidth)img.onload();
+})();
+</script>
+<script type="module" src="/products/presentation/viewer.js?v=20261108-immediate-cover"></script>
 </body>
 </html>

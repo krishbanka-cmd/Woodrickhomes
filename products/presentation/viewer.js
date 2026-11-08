@@ -36,9 +36,8 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
       return url.pathname+url.search;
     } catch { return ''; }
   }
-  // Prepared catalogues paint their first page once. A separate preview URL
-  // would download the same image twice and then replace it with a canvas.
-  // Listing covers are used only when the prepared document is unavailable.
+  // Reuse the small listing cover, not a second full-size prepared page URL.
+  // The real first page paints once while the cached cover fills the wait.
   const previewUrl=safePreviewUrl(params.get('cover')||'');
   if(quickPreview&&previewUrl){
     quickPreview.alt=catalogueTitle+' cover preview (full pages loading)';
@@ -59,6 +58,10 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
       stage.classList.remove('has-preview');
       if(!displayedPage)frame.hidden=true;
     };
+    // The listing cover is already browser-cached. Keep it visible while the
+    // prepared first page loads; it does not fetch a second full-size page.
+    if(quickPreview.getAttribute('src')!==previewUrl)quickPreview.src=previewUrl;
+    if(quickPreview.complete&&quickPreview.naturalWidth)quickPreview.onload();
   }
 
   document.title = catalogueTitle + ' | Woodrick Homes';
@@ -203,7 +206,6 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
         }catch{}
       }
       if(ticket!==generation)return;
-      if(quickPreview&&previewUrl&&!quickPreview.getAttribute('src'))quickPreview.src=previewUrl;
       const {pdfEngine}=await withDeadline(import('/assets/pdf-engine.mjs?v=20261013-parallel-loader'),15000);
       const pdfjsLib=await withDeadline(pdfEngine(),15000);
       if(ticket!==generation)return;

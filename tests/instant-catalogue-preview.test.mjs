@@ -6,6 +6,24 @@ import worker from '../worker-fast.js';
 
 const source=path=>readFile(new URL(path,import.meta.url),'utf8');
 
+test('Opening HTML shows a cached cover before any viewer module or manifest is available',async()=>{
+ const html=await source('../products/presentation/index.html');
+ const bootstrap=html.match(/<script>\s*\/\/ Paint[\s\S]*?<\/script>/)[0].replace(/^<script>|<\/script>$/g,'');
+ function run(cover){
+  const nodes={title:{},quickPreview:{dataset:{},hidden:true,naturalWidth:600,naturalHeight:800,complete:false},pageFrame:{style:{},hidden:true},stage:{clientWidth:800,clientHeight:900,classList:{contains:()=>false,add(){}}},status:{hidden:false}};
+  vm.runInNewContext(bootstrap,{URL,URLSearchParams,location:{origin:'https://example.com',search:'?title=Godrej&cover='+encodeURIComponent(cover)},document:{getElementById:id=>nodes[id]}});
+  return nodes;
+ }
+ const nodes=run('/catalogue-covers/godrej.webp');
+ assert.equal(nodes.quickPreview.src,'/catalogue-covers/godrej.webp');
+ nodes.quickPreview.onload();
+ assert.equal(nodes.quickPreview.hidden,false);
+ assert.equal(nodes.pageFrame.hidden,false);
+ assert.equal(nodes.status.hidden,true);
+ assert.equal(nodes.title.textContent,'Godrej');
+ for(const unsafe of ['https://external.example/a.jpg','//external.example/a.jpg','/private/kyc.jpg'])assert.equal(run(unsafe).quickPreview.src,undefined);
+});
+
 test('All three catalogue entry points provide a first-page preview without changing the public PDF key',async()=>{
   const [library,brands,products]=await Promise.all([
     source('../catalogues/index.html'),source('../brands/index.html'),source('../products/index.html')
@@ -18,15 +36,15 @@ test('All three catalogue entry points provide a first-page preview without chan
   }
 });
 
-test('Fallback preview is safe and prepared opening avoids a duplicate image',async()=>{
+test('Cached listing cover starts immediately without a duplicate full-page image',async()=>{
   const [html,viewer]=await Promise.all([
     source('../products/presentation/index.html'),source('../products/presentation/viewer.js')
   ]);
   assert.match(html,/<img id="quickPreview" class="quick-preview"/);
-  assert.match(html,/viewer.js\?v=20261108-single-first-page/);
+  assert.match(html,/viewer.js\?v=20261108-immediate-cover/);
   assert.match(viewer,/stageTiming\('cover-preview-visible'\)/);
   assert.match(viewer,/quickPreview\.src=previewUrl/);
-  assert.ok(viewer.indexOf('quickPreview.src=previewUrl')>viewer.indexOf('if(prepared){'),'fallback cover starts only when prepared pages are unavailable');
+  assert.ok(viewer.indexOf('quickPreview.src=previewUrl')<viewer.indexOf('  async function start('),'cached cover starts before prepared manifest');
   assert.match(viewer,/if\(quickPreview\)quickPreview.hidden=true/,'real PDF replaces the cover');
 
   const snippet=viewer.match(/function safePreviewUrl\(value\)\{[\s\S]*?\n  \}/)?.[0];
