@@ -51,6 +51,23 @@ test('PDF engine starts before a slow prepared manifest finishes; fallback rende
  assert.equal(h.elements.get('count').textContent,'1 / 8');
 });
 
+test('Opening preview requests the real first page and remains visible until render completes',async()=>{
+ let finishManifest;
+ const h=await viewer(false,new Promise(resolve=>{finishManifest=resolve}));
+ const preview=h.elements.get('quickPreview');
+ const url=new URL(preview.src,'https://example.com');
+ assert.equal(url.pathname,'/api/catalogue-pages');
+ assert.equal(url.searchParams.get('key'),'test.pdf');
+ assert.equal(url.searchParams.get('page'),'1');
+ preview.naturalWidth=600;preview.naturalHeight=800;preview.onload();
+ const initial={...h.elements.get('pageFrame').style};
+ finishManifest(null);await tick();
+ assert.equal(preview.hidden,false,'keep first-page image while canvas renders');
+ h.renders[0].finish();await tick();
+ assert.equal(preview.hidden,true);
+ assert.deepEqual(h.elements.get('pageFrame').style,initial,'same first-page aspect prevents frame jump');
+});
+
 test('Page changes keep the readable page until the replacement is completely rendered',async()=>{
  const h=await viewer();h.renders[0].finish();await tick();
  const canvas=h.elements.get('page'),count=h.elements.get('count');

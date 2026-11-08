@@ -36,7 +36,10 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
       return url.pathname+url.search;
     } catch { return ''; }
   }
-  const previewUrl=safePreviewUrl(params.get('cover')||'');
+  const fallbackPreviewUrl=safePreviewUrl(params.get('cover')||'');
+  // Use the same uncropped first page as the final renderer. Listing covers
+  // can have different margins/aspects and visibly jump when replaced.
+  const previewUrl='/api/catalogue-pages?'+new URLSearchParams({key,page:'1'});
   if(quickPreview&&previewUrl){
     quickPreview.alt=catalogueTitle+' cover preview (full pages loading)';
     quickPreview.onload=()=>{
@@ -51,6 +54,9 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
       }
     };
     quickPreview.onerror=()=>{
+      if(fallbackPreviewUrl&&quickPreview.dataset.fallback!=='1'){
+        quickPreview.dataset.fallback='1';quickPreview.src=fallbackPreviewUrl;return;
+      }
       quickPreview.dataset.ready='0';
       quickPreview.hidden=true;
       stage.classList.remove('has-preview');
