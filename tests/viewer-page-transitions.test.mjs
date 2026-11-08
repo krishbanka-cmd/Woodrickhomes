@@ -5,7 +5,8 @@ import {readFile} from 'node:fs/promises';
 import {withDeadline} from '../assets/pdf-loading.mjs';
 
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
-async function viewer(prefetch=false){
+async function viewer(prefetch=false, manifestPromise=null){
+ let engineStarts=0;
  const elements=new Map(),renders=[],draws=[],pageRequests=[];
  function element(id){
   const classes=new Set();
@@ -29,13 +30,26 @@ async function viewer(prefetch=false){
   addEventListener(){},documentElement:{}};
  const engine={getDocument:()=>({promise:Promise.resolve(pdf),destroy:async()=>{}})};
  let code=await readFile(new URL('../products/presentation/viewer.js',import.meta.url),'utf8');
- code=code.replace(/^import .*\n/,'').replace("import('/assets/pdf-engine.mjs?v=20261013-parallel-loader')","Promise.resolve({pdfEngine:async()=>engine})");
- vm.runInNewContext(code,{withDeadline,engine,URL,URLSearchParams,document,devicePixelRatio:1,
+ code=code.replace(/^import .*\n/,'').replace("import('/assets/pdf-engine.mjs?v=20261013-parallel-loader')","Promise.resolve({pdfEngine:startEngine})");
+ if(manifestPromise)code=code.replace("import('/assets/prepared-catalogue.mjs?v=20261025')","Promise.resolve({preparedCatalogue:()=>manifestPromise})");
+ vm.runInNewContext(code,{withDeadline,engine,manifestPromise,startEngine:async()=>{engineStarts++;return engine},URL,URLSearchParams,document,devicePixelRatio:1,
   location:{search:'?key=test.pdf',origin:'https://example.com'},navigator:{connection:{saveData:!prefetch}},performance:{mark(){}},
   window:{addEventListener(){}},setTimeout,clearTimeout,console});
  await tick();
- return {elements,renders,draws,pageRequests};
+ return {elements,renders,draws,pageRequests,get engineStarts(){return engineStarts}};
 }
+
+test('PDF engine starts before a slow prepared manifest finishes; fallback renders normally',async()=>{
+ let finishManifest;
+ const manifest=new Promise(resolve=>{finishManifest=resolve});
+ const h=await viewer(false,manifest);
+ assert.equal(h.engineStarts,1,'engine startup overlaps the pending manifest request');
+ assert.equal(h.renders.length,0,'manifest selection still determines the document');
+ finishManifest(null);await tick();
+ assert.equal(h.renders[0].n,1);
+ h.renders[0].finish();await tick();
+ assert.equal(h.elements.get('count').textContent,'1 / 8');
+});
 
 test('Page changes keep the readable page until the replacement is completely rendered',async()=>{
  const h=await viewer();h.renders[0].finish();await tick();

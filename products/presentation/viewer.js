@@ -192,6 +192,12 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
     const ticket=generation;
     const slowTimer=setTimeout(()=>{if(ticket===generation&&!pdf)setStatus('Opening the first page… Large catalogues may take a few moments.');},5000);
     try {
+      // Warm the shared engine while checking for prepared pages, rather than
+      // adding the manifest round trip to every PDF-only catalogue opening.
+      // Settle errors here: prepared pages must still work if the engine fails.
+      const engineReady=withDeadline(import('/assets/pdf-engine.mjs?v=20261013-parallel-loader'),15000)
+        .then(({pdfEngine})=>withDeadline(pdfEngine(),15000))
+        .then(engine=>({engine}),error=>({error}));
       if(usePrepared){
         try{
           const {preparedCatalogue}=await withDeadline(import('/assets/prepared-catalogue.mjs?v=20261025'),3000);
@@ -200,8 +206,9 @@ import {withDeadline} from '/assets/pdf-loading.mjs?v=20261004-catalogue-reliabi
           if(prepared){pdf=prepared;stage.dataset.catalogueMode='prepared-images';clearTimeout(slowTimer);stageTiming('document-ready');await render(firstPage);return;}
         }catch{}
       }
-      const {pdfEngine}=await withDeadline(import('/assets/pdf-engine.mjs?v=20261013-parallel-loader'),15000);
-      const pdfjsLib=await withDeadline(pdfEngine(),15000);
+      const engineResult=await engineReady;
+      if(engineResult.error)throw engineResult.error;
+      const pdfjsLib=engineResult.engine;
       if(ticket!==generation)return;
       // Streaming keeps downloading the entire catalogue while range reads also
       // run. Disable it so first-page reads use bounded byte ranges instead.
