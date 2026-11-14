@@ -93,20 +93,31 @@ const VOICE_WIDGET=`
 @media(min-width:621px){
   body.woodrick-home-actions .hero:has(.home-hero-action){
     display:flex;flex-direction:column;height:auto!important;
-    min-height:max(610px,calc(100svh - 28px))!important;
+    min-height:max(520px,100svh)!important;
   }
   body.woodrick-home-actions .hero:has(.home-hero-action) .hero-content{
-    padding-bottom:28px!important;
+    padding-bottom:16px!important;
   }
   body.woodrick-home-actions .hero:has(.home-hero-action) .hero-brand-dock{
-    position:relative!important;inset:auto!important;margin-top:auto!important;
+    position:relative!important;inset:auto!important;margin-top:auto!important;flex:none;
   }
+  body.woodrick-home-actions .hero .hero-brand-title{min-height:68px!important;padding:6px 10px!important}
+  body.woodrick-home-actions .hero .hero-brand-marquee{padding-block:4px!important}
+  body.woodrick-home-actions .hero .hero-brand-mark{height:60px!important;padding-block:4px!important}
+  body.woodrick-home-actions .hero .hero-brand-mark img{max-height:34px!important;margin-bottom:2px!important}
+  body.woodrick-home-actions .hero .hero-slide-dots{bottom:76px!important}
   body.woodrick-home-actions .hey-woodrick-float.home-hero-action{
     position:relative;left:auto;bottom:auto!important;width:max-content!important;
     height:auto!important;margin:12px 0 0;transition:none;
   }
   body.woodrick-home-actions .hey-woodrick-float.home-hero-action>span:last-child{display:block}
   body.woodrick-home-actions .hey-woodrick-float.home-hero-action:after{content:none}
+}
+
+@media (min-width:621px) and (max-height:740px){
+  body.woodrick-home-actions .hero:has(.home-hero-action) .hero-content{padding-top:122px!important}
+  body.woodrick-home-actions .hero:has(.home-hero-action) h1{font-size:clamp(30px,6.4svh,46px)!important}
+  body.woodrick-home-actions .hero .hero-modular{top:88px!important}
 }
 
 /* Keep both homepage contact controls above the partner-logo strip when their default bottom position collides with it. */
