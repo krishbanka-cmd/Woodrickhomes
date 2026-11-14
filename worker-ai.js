@@ -93,7 +93,7 @@ const VOICE_WIDGET=`
 @media(min-width:621px){
   body.woodrick-home-actions .hero:has(.home-hero-action){
     display:flex;flex-direction:column;height:auto!important;
-    min-height:max(520px,100svh)!important;
+    min-height:calc(100svh - 32px)!important;
   }
   body.woodrick-home-actions .hero:has(.home-hero-action) .hero-content{
     padding-bottom:16px!important;
