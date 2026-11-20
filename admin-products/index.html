@@ -14,7 +14,7 @@
 <section class="hero"><div class="wrap"><h1>Woodrick Homes Admin</h1><p>Clear catalogue management: one PDF catalogue = one row. Catalogue pages are never shown as separate products.</p></div></section>
 <main class="wrap"><p><a class="btn" href="/admin-products/projects/">MANAGE COMPLETED PROJECTS →</a></p>
 <div class="tabs"><button class="tab active" data-view="products">PRODUCTS & MEDIA</button><button class="tab" data-view="library">WOODRICK HOME LIBRARY</button><button class="tab" data-view="brands">BRAND MANAGEMENT</button></div>
-<section id="products" class="view active"><div class="panel"><h2>Product Media Upload</h2><p class="sub">Category → Brand → Product / Catalogue. Upload a PDF catalogue, product photo or product video; it will appear automatically on that brand page.</p><div class="grid"><div class="field"><label>ADMIN UPLOAD CODE</label><input id="pToken" type="password" placeholder="Required for upload/delete"></div><div class="field"><label>CATEGORY</label><select id="pCategory"></select></div><div class="field"><label>BRAND</label><input id="pBrand" type="text" placeholder="Example: Senator"></div><div class="field"><label>PRODUCT / CATALOGUE NAME</label><input id="pCatalogue" type="text" placeholder="Example: Senator Wellness Collection"></div><div class="field"><label>MEDIA TYPE</label><select id="pType"><option value="pdf">PDF CATALOGUE</option><option value="image">PHOTO</option><option value="video">VIDEO</option></select></div><div class="field"><label>SELECT FILE</label><input id="pFile" type="file" accept="application/pdf"></div></div><div class="actions"><button id="pSaveBrand" class="btn" type="button">SAVE BRAND & CATEGORY</button><button id="pUpload" class="btn primary" type="button">UPLOAD MEDIA</button><button id="pRefresh" class="btn secondary" type="button">REFRESH PRODUCT LIST</button></div><div id="pStatus" class="status">Loading product media…</div><div class="field" style="margin-top:16px"><label for="pSearch">SEARCH CATEGORY, BRAND OR CATALOGUE</label><input id="pSearch" type="search" placeholder="Example: Ristal, Laminates"></div><div id="pList" class="list"></div></div></section>
+<section id="products" class="view active"><div class="panel"><h2>Product Media Upload</h2><p class="sub">Category → Brand → Product / Catalogue. Upload a PDF catalogue, product photo or product video; it will appear automatically on that brand page.</p><div class="grid"><div class="field"><label>ADMIN UPLOAD CODE</label><input id="pToken" type="password" placeholder="Required for upload/delete"></div><div class="field"><label>CATEGORY</label><select id="pCategory"></select></div><div class="field"><label for="pSavedBrand">BRAND</label><select id="pSavedBrand" aria-label="Select a saved brand"><option value="">Select a saved brand</option></select><input id="pBrand" type="text" autocomplete="off" aria-label="Brand name" placeholder="Select above or type a new brand" style="margin-top:6px"></div><div class="field"><label>PRODUCT / CATALOGUE NAME</label><input id="pCatalogue" type="text" placeholder="Example: Senator Wellness Collection"></div><div class="field"><label>MEDIA TYPE</label><select id="pType"><option value="pdf">PDF CATALOGUE</option><option value="image">PHOTO</option><option value="video">VIDEO</option></select></div><div class="field"><label>SELECT FILE</label><input id="pFile" type="file" accept="application/pdf"></div></div><div class="actions"><button id="pSaveBrand" class="btn" type="button">SAVE BRAND & CATEGORY</button><button id="pUpload" class="btn primary" type="button">UPLOAD MEDIA</button><button id="pRefresh" class="btn secondary" type="button">REFRESH PRODUCT LIST</button></div><div id="pStatus" class="status">Loading product media…</div><div class="field" style="margin-top:16px"><label for="pSearch">SEARCH CATEGORY, BRAND OR CATALOGUE</label><input id="pSearch" type="search" placeholder="Example: Ristal, Laminates"></div><div id="pList" class="list"></div></div></section>
 <section id="library" class="view"><div class="panel"><h2>Woodrick Home Library</h2><p class="sub">Original PDF + converted JPG pages remain grouped as one catalogue row.</p><div class="grid"><div class="field"><label>LIBRARY UPLOAD CODE</label><input id="lToken" type="password" placeholder="Required for upload/delete"></div><div class="field"><label>CATEGORY</label><select id="lCategory"></select></div><div class="field"><label>BRAND</label><input id="lBrand" type="text" placeholder="Example: Ristal"></div><div class="field"><label>CATALOGUE NAME</label><input id="lCatalogue" type="text" placeholder="Example: Ristal .82mm"></div><div class="field full"><label>SELECT PDF</label><input id="lFile" type="file" accept="application/pdf"></div></div><div class="actions"><button id="lUpload" class="btn primary" type="button">UPLOAD PDF & CONVERT TO JPG</button><button id="lRefresh" class="btn secondary" type="button">REFRESH LIBRARY</button></div><div id="lStatus" class="status">Ready for PDF upload.</div><div id="lList" class="list"></div></div></section>
 
 <section id="brands" class="view">
@@ -71,12 +71,29 @@ function renderBrands(){
   const items=(window.BRAND_RAIL_ITEMS||[]).filter(x=>(x.brand+' '+(x.label||'')).toLowerCase().includes(query));
   $('bList').innerHTML=items.length?items.map(x=>`<div class="item"><div class="brandmeta">${x.src?`<img class="brandthumb" src="${esc(x.src)}" alt="">`:`<div class="brandtextlogo">${esc(x.label||x.brand)}</div>`}<div class="meta"><b>${esc(x.label||x.brand)}</b><br><span>${esc(x.brand)}</span><br><span>${esc((x.categories||[]).join(' · ')||'No category assigned')}<br>${Number(x.mediaCount)||0} catalogue/photo/video items${x.source==='published-media'?' · From published media':''} · ${x.railEnabled===false?'Hidden from hero rail':'Visible on hero rail'}</span></div></div><div class="item-actions"><button class="rowbtn bedit" data-brand="${esc(x.brand)}">EDIT</button><button class="rowbtn ${x.railEnabled===false?'':'danger'} brail" data-brand="${esc(x.brand)}" data-enabled="${x.railEnabled===false?'true':'false'}">${x.railEnabled===false?'SHOW ON HERO RAIL':'HIDE FROM HERO RAIL'}</button></div></div>`).join(''):'<div class="item">'+(query?'No brands match your search.':'No brands available.')+'</div>';
 }
+const savedBrandSelect=$('pSavedBrand');
+const productBrandInput=$('pBrand');
+function syncSavedBrandSelection(){
+  savedBrandSelect.value=productBrandInput.value.trim();
+}
+savedBrandSelect.addEventListener('change',()=>{
+  if(savedBrandSelect.value)productBrandInput.value=savedBrandSelect.value;
+});
+productBrandInput.addEventListener('input',syncSavedBrandSelection);
+function renderSavedBrands(items){
+  const brands=[...new Set(items.map(item=>String(item.brand||'').trim()).filter(Boolean))];
+  brands.sort((a,b)=>a.localeCompare(b));
+  savedBrandSelect.replaceChildren(new Option('Select a saved brand',''),
+    ...brands.map(brand=>new Option(brand,brand)));
+  syncSavedBrandSelection();
+}
 async function loadBrands(){
   const btn=$('bRefresh');if(btn){btn.disabled=true;btn.textContent='REFRESHING…'}
   status('bStatus','Refreshing all website brands…');
   try{
     const d=await brandApi('get'),items=Array.isArray(d.items)?d.items:[];
     window.BRAND_RAIL_ITEMS=items.sort((a,b)=>(a.label||a.brand).localeCompare(b.label||b.brand));
+    renderSavedBrands(items);
     renderBrands();
     const integrity=d.integrity;
     if(integrity&&!integrity.ok)throw Error('Customer directory mismatch: '+integrity.missingBrands.concat(integrity.missingAssociations.map(x=>x.brand+' / '+x.category)).join(', '));
