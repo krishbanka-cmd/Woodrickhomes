@@ -22,7 +22,7 @@ async function listAll(env,prefix=''){
 }
 
 function recoverItem(o){
-  const m={...(o.customMetadata||{})};const key=o.key||'';const parts=key.split('/');
+  const m={...(o.customMetadata||{})};const key=o.key||'';if(key.startsWith('private/recycle-bin/'))return null;const parts=key.split('/');
   if(key.startsWith('library/')){
     const brand=m.brand||parts[1]||'Unknown Brand',category=m.category||parts[2]||'Other',catalogue=m.catalogue||parts[3]||m.title||'Catalogue';
     let type=m.type||'';if(!type&&parts[4]==='original')type='original-pdf';if(!type&&parts[4]==='jpg')type='jpg-page';
@@ -86,7 +86,7 @@ async function productUpload(request,env,form){
   if(!await authorized(request,env))return json({error:'Admin login required'},401);
   const file=form.get('file'),category=String(form.get('category')||'').trim(),type=String(form.get('type')||'').trim(),title=String(form.get('title')||'').trim(),overwrite=String(form.get('overwrite')||'')==='1',brand=String(form.get('brand')||'').trim(),catalogue=String(form.get('catalogue')||title).trim();
   if(!file||typeof file.arrayBuffer!=='function')return json({error:'Please select a file'},400);if(!category||!title)return json({error:'Category and title are required'},400);if(!allowedTypes.has(file.type))return json({error:'Unsupported file type'},415);if(file.size>maxBytes)return json({error:'File is too large. Maximum size is 100 MB.'},413);
-  const objects=await listAll(env,'');const dup=objects.filter(o=>{const m=o.customMetadata||{};if(m.library==='1'||isLibraryType(m.type)||o.key.startsWith('library/'))return false;const existingBrand=String(m.brand||String(m.catalogue||m.title||'').split(/\s+/)[0]||'').trim();if(norm(existingBrand)!==norm(brand))return false;const sameIdentity=norm(m.category)===norm(category)&&norm(m.type)===norm(type)&&norm(m.title)===norm(title);const sameFile=norm(m.category)===norm(category)&&norm(m.type)===norm(type)&&norm(m.originalName)===norm(file.name);return sameIdentity||sameFile});
+  const objects=await listAll(env,'');const dup=objects.filter(o=>{const m=o.customMetadata||{};if(m.library==='1'||isLibraryType(m.type)||o.key.startsWith('library/')||o.key.startsWith('private/recycle-bin/'))return false;const existingBrand=String(m.brand||String(m.catalogue||m.title||'').split(/\s+/)[0]||'').trim();if(norm(existingBrand)!==norm(brand))return false;const sameIdentity=norm(m.category)===norm(category)&&norm(m.type)===norm(type)&&norm(m.title)===norm(title);const sameFile=norm(m.category)===norm(category)&&norm(m.type)===norm(type)&&norm(m.originalName)===norm(file.name);return sameIdentity||sameFile});
   if(dup.length&&!overwrite)return json({duplicate:true,error:'Already uploaded',message:`${title} is already uploaded in ${category}.\n\nOK = REPLACE EXISTING\nCancel = KEEP / ESCAPE`,existingCount:dup.length},409);
   
   const ext=(file.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'');const key=`${slug(category)}/${slug(brand||'Other')}/${slug(catalogue)}/${slug(type||'file')}/${slug(title)}.${ext}`;const meta={category,title,type,brand,catalogue,originalName:file.name,uploadedAt:new Date().toISOString()};

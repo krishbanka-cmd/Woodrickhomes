@@ -46,7 +46,7 @@ function typeOf(o){const m=o.customMetadata||{},name=String(m.originalName||o.ke
 function catalogueOf(o){const m=o.customMetadata||{};return String(m.catalogue||m.title||m.originalName||'Catalogue').replace(/\.(?:pdf|jpe?g|png|webp|mp4|webm)$/i,'').replace(/\s+page\s*\d+\s*$/i,'').trim()||'Catalogue'}
 function brandOf(o){const m=o.customMetadata||{};if(String(m.brand||'').trim())return String(m.brand).trim();const c=catalogueOf(o),first=(c.match(/^[A-Za-z0-9&+-]+/)||[])[0];return first||'Other'}
 function identity(o){const m=o.customMetadata||{};return [norm(m.vendorId||''),norm(brandOf(o)),norm(canonicalCategory(m.category||'')),typeOf(o),norm(catalogueOf(o))].join('|')}
-function syncKeyFor(o){const known=canonicalCatalogueKey(o.key);if(known!==o.key)return known;const m=o.customMetadata||{},brand=brandOf(o),category=canonicalCategory(m.category||'Other'),catalogue=catalogueOf(o);return `product-sync/${slug(category)}/${slug(brand)}/${slug(catalogue)}.pdf`}
+export function syncKeyFor(o){const known=canonicalCatalogueKey(o.key);if(known!==o.key)return known;const m=o.customMetadata||{},brand=brandOf(o),category=canonicalCategory(m.category||'Other'),catalogue=catalogueOf(o);return `product-sync/${slug(category)}/${slug(brand)}/${slug(catalogue)}.pdf`}
 
 async function listAll(env,prefix=''){
   const out=[];let cursor;const seen=new Set();

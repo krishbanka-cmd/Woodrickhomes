@@ -13,9 +13,19 @@
 <header class="top"><div class="wrap"><div class="brand"><b>WOODRICK</b> HOMES</div><div><a href="/admin-products/enquiries/">WEBSITE ENQUIRIES</a><a href="/admin-products/list-quotes/">LIST REQUESTS</a><a href="/admin-products/vendors/">VENDOR APPLICATIONS</a><a href="/products/">BACK TO PRODUCTS</a><a href="/admin-logout">LOG OUT</a></div></div></header>
 <section class="hero"><div class="wrap"><h1>Woodrick Homes Admin</h1><p>Clear catalogue management: one PDF catalogue = one row. Catalogue pages are never shown as separate products.</p></div></section>
 <main class="wrap"><p><a class="btn" href="/admin-products/projects/">MANAGE COMPLETED PROJECTS →</a></p>
-<div class="tabs"><button class="tab active" data-view="products">PRODUCTS & MEDIA</button><button class="tab" data-view="library">WOODRICK HOME LIBRARY</button><button class="tab" data-view="brands">BRAND MANAGEMENT</button></div>
+<div class="tabs"><button class="tab active" data-view="products">PRODUCTS & MEDIA</button><button class="tab" data-view="library">WOODRICK HOME LIBRARY</button><button class="tab" data-view="brands">BRAND MANAGEMENT</button><button class="tab" data-view="trash">RECYCLE BIN</button></div>
 <section id="products" class="view active"><div class="panel"><h2>Product Media Upload</h2><p class="sub">Category → Brand → Product / Catalogue. Upload a PDF catalogue, product photo or product video; it will appear automatically on that brand page.</p><div class="grid"><div class="field"><label>ADMIN UPLOAD CODE</label><input id="pToken" type="password" placeholder="Required for upload/delete"></div><div class="field"><label>CATEGORY</label><select id="pCategory"></select></div><div class="field"><label for="pSavedBrand">SAVED BRAND</label><select id="pSavedBrand"><option value="">Select a saved brand</option></select><label for="pBrand" style="margin-top:8px">BRAND NAME</label><input id="pBrand" type="text" autocomplete="off" placeholder="Type here to add a new brand"></div><div class="field"><label>PRODUCT / CATALOGUE NAME</label><input id="pCatalogue" type="text" placeholder="Example: Senator Wellness Collection"></div><div class="field"><label>MEDIA TYPE</label><select id="pType"><option value="pdf">PDF CATALOGUE</option><option value="image">PHOTO</option><option value="video">VIDEO</option></select></div><div class="field"><label>SELECT FILE</label><input id="pFile" type="file" accept="application/pdf"></div></div><div class="actions"><button id="pSaveBrand" class="btn" type="button">SAVE BRAND & CATEGORY</button><button id="pUpload" class="btn primary" type="button">UPLOAD MEDIA</button><button id="pRefresh" class="btn secondary" type="button">REFRESH PRODUCT LIST</button></div><div id="pStatus" class="status">Loading product media…</div><div class="field" style="margin-top:16px"><label for="pSearch">SEARCH CATEGORY, BRAND OR CATALOGUE</label><input id="pSearch" type="search" placeholder="Example: Ristal, Laminates"></div><div id="pList" class="list"></div></div></section>
-<section id="library" class="view"><div class="panel"><h2>Woodrick Home Library</h2><p class="sub">Original PDF + converted JPG pages remain grouped as one catalogue row.</p><div class="grid"><div class="field"><label>LIBRARY UPLOAD CODE</label><input id="lToken" type="password" placeholder="Required for upload/delete"></div><div class="field"><label>CATEGORY</label><select id="lCategory"></select></div><div class="field"><label>BRAND</label><input id="lBrand" type="text" placeholder="Example: Ristal"></div><div class="field"><label>CATALOGUE NAME</label><input id="lCatalogue" type="text" placeholder="Example: Ristal .82mm"></div><div class="field full"><label>SELECT PDF</label><input id="lFile" type="file" accept="application/pdf"></div></div><div class="actions"><button id="lUpload" class="btn primary" type="button">UPLOAD PDF & CONVERT TO JPG</button><button id="lRefresh" class="btn secondary" type="button">REFRESH LIBRARY</button></div><div id="lStatus" class="status">Ready for PDF upload.</div><div id="lList" class="list"></div></div></section>
+<section id="library" class="view"><div class="panel"><h2>Woodrick Home Library</h2><button id="openTrash" class="btn secondary" type="button">OPEN RECYCLE BIN</button><p class="sub">Original PDF + converted JPG pages remain grouped as one catalogue row.</p><div class="grid"><div class="field"><label>LIBRARY UPLOAD CODE</label><input id="lToken" type="password" placeholder="Required for upload/delete"></div><div class="field"><label>CATEGORY</label><select id="lCategory"></select></div><div class="field"><label>BRAND</label><input id="lBrand" type="text" placeholder="Example: Ristal"></div><div class="field"><label>CATALOGUE NAME</label><input id="lCatalogue" type="text" placeholder="Example: Ristal .82mm"></div><div class="field full"><label>SELECT PDF</label><input id="lFile" type="file" accept="application/pdf"></div></div><div class="actions"><button id="lUpload" class="btn primary" type="button">UPLOAD PDF & CONVERT TO JPG</button><button id="lRefresh" class="btn secondary" type="button">REFRESH LIBRARY</button></div><div id="lStatus" class="status">Ready for PDF upload.</div><div id="lList" class="list"></div></div></section>
+
+<section id="trash" class="view">
+  <div class="panel">
+    <h2>Recycle Bin</h2>
+    <p class="sub">Review and restore deleted categories, brands and media within 30 days. Expired items are removed automatically.</p>
+    <button id="trashRefresh" class="btn secondary" type="button">REFRESH RECYCLE BIN</button>
+    <div id="trashStatus" class="status" role="status"></div>
+    <div id="trashList" class="list"></div>
+  </div>
+</section>
 
 <section id="brands" class="view">
   <div class="panel">
@@ -69,7 +79,7 @@ $('pSaveBrand').onclick=async()=>{
 function renderBrands(){
   const query=$('bSearch').value.trim().toLowerCase();
   const items=(window.BRAND_RAIL_ITEMS||[]).filter(x=>(x.brand+' '+(x.label||'')).toLowerCase().includes(query));
-  $('bList').innerHTML=items.length?items.map(x=>`<div class="item"><div class="brandmeta">${x.src?`<img class="brandthumb" src="${esc(x.src)}" alt="">`:`<div class="brandtextlogo">${esc(x.label||x.brand)}</div>`}<div class="meta"><b>${esc(x.label||x.brand)}</b><br><span>${esc(x.brand)}</span><br><span>${esc((x.categories||[]).join(' · ')||'No category assigned')}<br>${Number(x.mediaCount)||0} catalogue/photo/video items${x.source==='published-media'?' · From published media':''} · ${x.railEnabled===false?'Hidden from hero rail':'Visible on hero rail'}</span></div></div><div class="item-actions"><button class="rowbtn bedit" data-brand="${esc(x.brand)}">EDIT</button><button class="rowbtn ${x.railEnabled===false?'':'danger'} brail" data-brand="${esc(x.brand)}" data-enabled="${x.railEnabled===false?'true':'false'}">${x.railEnabled===false?'SHOW ON HERO RAIL':'HIDE FROM HERO RAIL'}</button></div></div>`).join(''):'<div class="item">'+(query?'No brands match your search.':'No brands available.')+'</div>';
+  $('bList').innerHTML=items.length?items.map(x=>`<div class="item"><div class="brandmeta">${x.src?`<img class="brandthumb" src="${esc(x.src)}" alt="">`:`<div class="brandtextlogo">${esc(x.label||x.brand)}</div>`}<div class="meta"><b>${esc(x.label||x.brand)}</b><br><span>${esc(x.brand)}</span><br><span>${esc((x.categories||[]).join(' · ')||'No category assigned')}<br>${Number(x.mediaCount)||0} catalogue/photo/video items${x.source==='published-media'?' · From published media':''} · ${x.railEnabled===false?'Hidden from hero rail':'Visible on hero rail'}</span></div></div><div class="item-actions"><button class="rowbtn bedit" data-brand="${esc(x.brand)}">EDIT</button><button class="rowbtn danger bdelete" data-brand="${esc(x.brand)}">MOVE TO RECYCLE BIN</button><button class="rowbtn ${x.railEnabled===false?'':'danger'} brail" data-brand="${esc(x.brand)}" data-enabled="${x.railEnabled===false?'true':'false'}">${x.railEnabled===false?'SHOW ON HERO RAIL':'HIDE FROM HERO RAIL'}</button></div></div>`).join(''):'<div class="item">'+(query?'No brands match your search.':'No brands available.')+'</div>';
 }
 const savedBrandSelect=$('pSavedBrand');
 const productBrandInput=$('pBrand');
@@ -105,7 +115,7 @@ $('bSearch').oninput=renderBrands;
 
 function fill(){const o=CATS.map(x=>`<option>${esc(x)}</option>`).join('');$('pCategory').innerHTML=o;$('lCategory').innerHTML=o}function status(id,msg,err=false){$(id).textContent=msg;$(id).className='status'+(err?' error':'')}function openPdf(title,url){$('mTitle').textContent=title;$('mFrame').src=url;$('modal').classList.add('show')}
 $('mClose').onclick=()=>{$('modal').classList.remove('show');$('mFrame').src='about:blank'};
-document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));b.classList.add('active');$(b.dataset.view).classList.add('active');history.replaceState(null,'','#'+b.dataset.view)});if(['#library','#brands'].includes(location.hash))document.querySelector('[data-view="'+location.hash.slice(1)+'"]').click();
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));b.classList.add('active');$(b.dataset.view).classList.add('active');history.replaceState(null,'','#'+b.dataset.view);if(b.dataset.view==='trash')loadTrash()});if(['#library','#brands','#trash'].includes(location.hash))document.querySelector('[data-view="'+location.hash.slice(1)+'"]').click();
 function savedToken(id,key){const v=$(id).value.trim();if(v)sessionStorage.setItem(key,v);return v||sessionStorage.getItem(key)||''}$('pToken').value=sessionStorage.getItem('woodrick_product_token')||'';$('lToken').value=sessionStorage.getItem('woodrick_library_token')||'';
 async function apiUpload(token,fields,file){const fd=new FormData();fd.append('file',file);Object.entries(fields).forEach(([k,v])=>fd.append(k,v));const r=await fetch('/api/upload',{method:'POST',headers:{authorization:'Bearer '+token},body:fd,cache:'no-store'});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||'Upload failed');return d}
 async function apiDelete(token,action,keys){const r=await fetch('/api/upload',{method:'POST',headers:{authorization:'Bearer '+token,'content-type':'application/json'},body:JSON.stringify({action,keys}),cache:'no-store'});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||'Delete failed');return d}
@@ -113,16 +123,17 @@ function adminBrandName(v){const n=String(v||'').trim();return ({ristal1mm:'Rist
 const norm=v=>String(v||'').trim().toLowerCase().replace(/\s+/g,' ');function productMediaType(x){const name=String(x.originalName||x.key||'').toLowerCase();if(name.endsWith('.pdf')||x.type==='pdf')return 'pdf';if(/\.(mp4|webm)$/.test(name)||x.type==='video')return 'video';return 'image'}
 function productGroupKey(x){return [productMediaType(x),norm(x.category||'Other'),norm(x.brand||'Woodrick'),norm(x.catalogue||x.title||'Catalogue')].join('||')}
 let productRefreshSeq=0;
-async function loadProducts(){const seq=++productRefreshSeq;const btn=$('pRefresh');btn.disabled=true;btn.textContent='REFRESHING…';status('pStatus','Refreshing product media…');$('pList').innerHTML='<div class="item">Loading latest photos, PDFs and videos…</div>';try{const r=await fetch('/api/media?scope=products&_='+Date.now(),{cache:'no-store',headers:{'cache-control':'no-cache','pragma':'no-cache'}});if(!r.ok)throw Error('Could not refresh product list ('+r.status+')');const d=await r.json();if(seq!==productRefreshSeq)return;const raw=(d.items||[]).filter(x=>x.library!=='1'&&['pdf','video','image'].includes(productMediaType(x)));const groups=new Map();raw.forEach(x=>{const k=productGroupKey(x);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(x)});const a=[...groups.values()].map(items=>{items.sort((x,y)=>String(y.uploadedAt||'').localeCompare(String(x.uploadedAt||''))||String(y.key||'').localeCompare(String(x.key||'')));return {...items[0],duplicateCount:Math.max(0,items.length-1),groupKeys:items.map(v=>v.key)}}).sort((a,b)=>(a.category||'').localeCompare(b.category||'')||(a.brand||'').localeCompare(b.brand||'')||(a.catalogue||a.title||'').localeCompare(b.catalogue||b.title||''));const hidden=raw.length-a.length;$('pList').innerHTML=a.length?a.map(x=>`<div class="item" data-category="${esc(x.category||'Other')}" data-brand="${esc(x.brand||'Woodrick')}" data-catalogue="${esc(x.catalogue||x.title||'Catalogue')}"><div class="meta"><small>${esc(x.category||'Other')} → ${esc(adminBrandName(x.brand))}</small><b>${esc(x.catalogue||x.title||'Catalogue')}</b><span class="badge">${productMediaType(x).toUpperCase()}</span>${x.duplicateCount?`<span class="badge duplicate">${x.duplicateCount} DUPLICATE ${x.duplicateCount===1?'COPY':'COPIES'} GROUPED</span>`:''}</div><div class="item-actions"><button class="rowbtn show pshow" data-key="${esc(x.key)}" data-type="${productMediaType(x)}" data-title="${esc(x.catalogue||x.title||'Catalogue')}">${productMediaType(x)==='pdf'?'SHOW CATALOGUE':productMediaType(x)==='video'?'PLAY VIDEO':'SHOW PHOTO'}</button><a class="rowbtn" href="/api/media?key=${encodeURIComponent(x.key)}&download=1">DOWNLOAD ${productMediaType(x).toUpperCase()}</a>${x.source==='website-asset'?'<span class="badge">WEBSITE VIDEO</span>':`<button class="rowbtn danger pdelete" data-key="${esc(x.key)}" data-title="${esc(x.catalogue||x.title||'Catalogue')}">DELETE CATALOGUE</button>`}</div></div>`).join(''):'<div class="item">No product media uploaded yet.</div>';filterProducts();status('pStatus',`Product list refreshed. ${a.length} media item${a.length===1?'':'s'} shown${hidden?`; ${hidden} duplicate ${hidden===1?'copy':'copies'} grouped safely.`:'.'}`)}catch(e){$('pList').innerHTML='<div class="item">Unable to load latest product list.</div>';status('pStatus','Refresh error: '+e.message,true)}finally{if(seq===productRefreshSeq){btn.disabled=false;btn.textContent='REFRESH PRODUCT LIST'}}}
+async function loadProducts(){const seq=++productRefreshSeq;const btn=$('pRefresh');btn.disabled=true;btn.textContent='REFRESHING…';status('pStatus','Refreshing product media…');$('pList').innerHTML='<div class="item">Loading latest photos, PDFs and videos…</div>';try{const r=await fetch('/api/media?scope=products&_='+Date.now(),{cache:'no-store',headers:{'cache-control':'no-cache','pragma':'no-cache'}});if(!r.ok)throw Error('Could not refresh product list ('+r.status+')');const d=await r.json();if(seq!==productRefreshSeq)return;const raw=(d.items||[]).filter(x=>x.library!=='1'&&['pdf','video','image'].includes(productMediaType(x)));const groups=new Map();raw.forEach(x=>{const k=productGroupKey(x);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(x)});const a=[...groups.values()].map(items=>{items.sort((x,y)=>String(y.uploadedAt||'').localeCompare(String(x.uploadedAt||''))||String(y.key||'').localeCompare(String(x.key||'')));return {...items[0],duplicateCount:Math.max(0,items.length-1),groupKeys:items.map(v=>v.key)}}).sort((a,b)=>(a.category||'').localeCompare(b.category||'')||(a.brand||'').localeCompare(b.brand||'')||(a.catalogue||a.title||'').localeCompare(b.catalogue||b.title||''));window.productGroups=new Map(a.map(item=>[item.key,item.groupKeys]));const hidden=raw.length-a.length;$('pList').innerHTML=a.length?a.map(x=>`<div class="item" data-category="${esc(x.category||'Other')}" data-brand="${esc(x.brand||'Woodrick')}" data-catalogue="${esc(x.catalogue||x.title||'Catalogue')}"><div class="meta"><small>${esc(x.category||'Other')} → ${esc(adminBrandName(x.brand))}</small><b>${esc(x.catalogue||x.title||'Catalogue')}</b><span class="badge">${productMediaType(x).toUpperCase()}</span>${x.duplicateCount?`<span class="badge duplicate">${x.duplicateCount} DUPLICATE ${x.duplicateCount===1?'COPY':'COPIES'} GROUPED</span>`:''}</div><div class="item-actions"><button class="rowbtn show pshow" data-key="${esc(x.key)}" data-type="${productMediaType(x)}" data-title="${esc(x.catalogue||x.title||'Catalogue')}">${productMediaType(x)==='pdf'?'SHOW CATALOGUE':productMediaType(x)==='video'?'PLAY VIDEO':'SHOW PHOTO'}</button><a class="rowbtn" href="/api/media?key=${encodeURIComponent(x.key)}&download=1">DOWNLOAD ${productMediaType(x).toUpperCase()}</a>${x.source==='website-asset'?'<span class="badge">WEBSITE VIDEO</span>':`<button class="rowbtn danger pdelete" data-key="${esc(x.key)}" data-title="${esc(x.catalogue||x.title||'Catalogue')}">DELETE CATALOGUE</button>`}</div></div>`).join(''):'<div class="item">No product media uploaded yet.</div>';filterProducts();status('pStatus',`Product list refreshed. ${a.length} media item${a.length===1?'':'s'} shown${hidden?`; ${hidden} duplicate ${hidden===1?'copy':'copies'} grouped safely.`:'.'}`)}catch(e){$('pList').innerHTML='<div class="item">Unable to load latest product list.</div>';status('pStatus','Refresh error: '+e.message,true)}finally{if(seq===productRefreshSeq){btn.disabled=false;btn.textContent='REFRESH PRODUCT LIST'}}}
 function filterProducts(){const q=$('pSearch').value.trim().toLowerCase();document.querySelectorAll('#pList .item').forEach(row=>row.hidden=!!q&&!row.textContent.toLowerCase().includes(q))}
 $('pSearch').oninput=filterProducts;
 $('pRefresh').addEventListener('click',e=>{e.preventDefault();loadProducts()});
 $('pType').onchange=()=>{const t=$('pType').value;$('pFile').accept=t==='pdf'?'application/pdf':t==='video'?'video/mp4,video/webm,video/quicktime':'image/jpeg,image/png,image/webp';};
 $('pUpload').onclick=async()=>{const f=$('pFile').files[0],brand=$('pBrand').value.trim(),cat=$('pCategory').value,catalogue=$('pCatalogue').value.trim(),type=$('pType').value,t=savedToken('pToken','woodrick_product_token');if(!t||!f||!brand||!catalogue)return status('pStatus','Upload code, category, brand, product/catalogue name and file are required.',true);const valid=type==='pdf'?f.type==='application/pdf':type==='video'?f.type.startsWith('video/'):f.type.startsWith('image/');if(!valid)return status('pStatus','Please select a file matching the chosen media type.',true);try{status('pStatus','Uploading '+type+'…');await apiUpload(t,{category:cat,brand,catalogue,title:catalogue,type},f);await registerBrandName(brand,cat,t);$('pFile').value='';$('pCatalogue').value='';await loadProducts()}catch(e){status('pStatus',e.message,true)}};
-$('pList').onclick=async e=>{const s=e.target.closest('.pshow'),d=e.target.closest('.pdelete');if(s){const url='/api/media?key='+encodeURIComponent(s.dataset.key);if(s.dataset.type==='pdf')openPdf(s.dataset.title,url);else window.open(url,'_blank','noopener');return}if(!d)return;const pass=prompt(`Enter admin upload code to delete ${d.dataset.title}:`);if(!pass)return;if(!confirm(`Permanently delete ${d.dataset.title}?`))return;try{d.disabled=true;d.textContent='DELETING…';await apiDelete(pass,'delete-media',[d.dataset.key]);await loadProducts()}catch(err){status('pStatus','Delete error: '+err.message,true);d.disabled=false;d.textContent='DELETE CATALOGUE'}};
+$('pList').onclick=async e=>{const s=e.target.closest('.pshow'),d=e.target.closest('.pdelete');if(s){const url='/api/media?key='+encodeURIComponent(s.dataset.key);if(s.dataset.type==='pdf')openPdf(s.dataset.title,url);else window.open(url,'_blank','noopener');return}if(!d)return;const pass=prompt(`Enter admin upload code to delete ${d.dataset.title}:`);if(!pass)return;if(!confirm(`Move ${d.dataset.title} to the Recycle Bin for 30 days?`))return;try{d.disabled=true;d.textContent='DELETING…';const keys=window.productGroups?.get(d.dataset.key)||[d.dataset.key];
+await apiDelete(pass,'delete-media',keys);await loadProducts()}catch(err){status('pStatus','Delete error: '+err.message,true);d.disabled=false;d.textContent='DELETE CATALOGUE'}};
 async function loadLibrary(){const btn=$('lRefresh');btn.disabled=true;btn.textContent='REFRESHING…';status('lStatus','Refreshing library…');try{const r=await fetch('/api/media?prefix=library/&_='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('Could not refresh library ('+r.status+')');const d=await r.json(),g={};(d.items||[]).forEach(x=>{const k=[x.brand||'Unknown Brand',x.category||'Other',x.catalogue||'Catalogue'].join('||');g[k]??={brand:x.brand||'Unknown Brand',category:x.category||'Other',catalogue:x.catalogue||'Catalogue',pdf:null,jpg:[],keys:[]};g[k].keys.push(x.key);if(x.type==='original-pdf')g[k].pdf=x;else if(x.type==='jpg-page')g[k].jpg.push(x)});window.LIB=g;const a=Object.values(g).sort((x,y)=>x.brand.localeCompare(y.brand)||x.category.localeCompare(y.category)||x.catalogue.localeCompare(y.catalogue));$('lList').innerHTML=a.length?a.map(x=>{const k=esc([x.brand,x.category,x.catalogue].join('||'));return `<div class="item"><div class="meta"><b>${esc(x.brand)} → ${esc(x.category)} → ${esc(x.catalogue)}</b><br>${x.jpg.length} JPG pages</div><div class="item-actions">${x.pdf?`<button class="rowbtn show lshow" data-k="${k}">SHOW CATALOGUE</button><a class="rowbtn" href="${x.pdf.url}&download=1">DOWNLOAD PDF</a>`:''}<button class="rowbtn danger ldelete" data-k="${k}">DELETE CATALOGUE</button></div></div>`}).join(''):'<div class="item">No library catalogues uploaded yet.</div>';status('lStatus',`Library refreshed. ${a.length} catalogue${a.length===1?'':'s'} loaded.`)}catch(e){status('lStatus','Refresh error: '+e.message,true)}finally{btn.disabled=false;btn.textContent='REFRESH LIBRARY'}}
 $('lRefresh').onclick=loadLibrary;
-$('lList').onclick=async e=>{const s=e.target.closest('.lshow'),d=e.target.closest('.ldelete');if(s){const x=window.LIB?.[s.dataset.k];if(x?.pdf)openPdf(x.catalogue,x.pdf.url);return}if(!d)return;const x=window.LIB?.[d.dataset.k];if(!x)return;const pass=prompt(`Enter admin upload code to delete ${x.catalogue}:`);if(!pass)return;if(!confirm(`Delete ${x.brand} → ${x.category} → ${x.catalogue}?\n\nThis removes the original PDF and all ${x.jpg.length} JPG pages.`))return;try{d.disabled=true;d.textContent='DELETING…';await apiDelete(pass,'delete-library',x.keys);await loadLibrary();await loadProducts()}catch(err){status('lStatus','Delete error: '+err.message,true);d.disabled=false;d.textContent='DELETE CATALOGUE'}};
+$('lList').onclick=async e=>{const s=e.target.closest('.lshow'),d=e.target.closest('.ldelete');if(s){const x=window.LIB?.[s.dataset.k];if(x?.pdf)openPdf(x.catalogue,x.pdf.url);return}if(!d)return;const x=window.LIB?.[d.dataset.k];if(!x)return;const pass=prompt(`Enter admin upload code to delete ${x.catalogue}:`);if(!pass)return;if(!confirm(`Delete ${x.brand} → ${x.category} → ${x.catalogue}?\n\nThe original PDF and all ${x.jpg.length} JPG pages will move to the Recycle Bin for 30 days.`))return;try{d.disabled=true;d.textContent='DELETING…';await apiDelete(pass,'delete-library',x.keys);await loadLibrary();await loadProducts()}catch(err){status('lStatus','Delete error: '+err.message,true);d.disabled=false;d.textContent='DELETE CATALOGUE'}};
 
 $('bSave').onclick=async()=>{
   const brand=$('bBrand').value.trim(),label=$('bLabel').value.trim()||brand,src=$('bSrc').value.trim(),fallback=$('bFallback').value.trim();
@@ -138,6 +149,23 @@ $('bClear').onclick=clearBrandForm;
 $('bRefresh').onclick=loadBrands;
 $('bList').onclick=async e=>{
   const edit=e.target.closest('.bedit'),toggle=e.target.closest('.brail');
+  const remove=e.target.closest('.bdelete');
+  if(remove){
+    const brand=remove.dataset.brand;
+    if(!confirm(`Move ${brand} to the Recycle Bin for 30 days? Its uploaded catalogues will remain in the media library.`))return;
+    const token=prompt('Enter admin upload code:');
+    if(!token)return;
+    remove.disabled=true;
+    try{
+      await brandApi('post',{action:'delete',brand},token);
+      await loadBrands();
+      status('bStatus',brand+' moved to the Recycle Bin.');
+    }catch(error){
+      status('bStatus',error.message,true);
+      remove.disabled=false;
+    }
+    return;
+  }
   if(edit){
     const x=(window.BRAND_RAIL_ITEMS||[]).find(v=>v.brand===edit.dataset.brand);if(!x)return;
     renderBrandCategories(x.assignedCategories||x.categories||[]);$('bBrand').readOnly=true;$('bBrand').value=x.brand||'';$('bLabel').value=x.label||'';$('bSrc').value=x.src||'';$('bFallback').value=x.fallback||'';
@@ -152,6 +180,54 @@ $('bList').onclick=async e=>{
     status('bStatus',toggle.dataset.brand+(railEnabled?' is visible on the hero rail.':' is hidden from the hero rail. Its catalogues remain available.'));
   }catch(err){status('bStatus','Rail update error: '+err.message,true)}finally{toggle.disabled=false}
 
+};
+
+async function trashRequest(payload,token){
+  const response=await fetch('/api/recycle-bin',payload?{
+    method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+token},
+    body:JSON.stringify(payload),cache:'no-store'
+  }:{cache:'no-store'});
+  const data=await response.json();
+  if(!response.ok)throw Error(data.error||'Recycle Bin request failed');
+  return data;
+}
+function trashDate(value){
+  return new Date(value).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Kolkata'});
+}
+async function loadTrash(){
+  $('trashRefresh').disabled=true;
+  status('trashStatus','Loading deleted items…');
+  try{
+    const {items}=await trashRequest();
+    $('trashList').innerHTML=items.map(item=>{
+      const detail=[item.kind,item.brand,item.kind==='category'?null:item.category].filter(Boolean).map(esc).join(' · ');
+      const preview=item.fileCount?'<a class="rowbtn" target="_blank" rel="noopener" href="/api/recycle-bin?id='+encodeURIComponent(item.id)+'&file='+Math.max(0,item.preview)+'">REVIEW FILE</a>':'';
+      return `<div class="item"><div class="meta"><b>${esc(item.title)}</b><br>${detail}<br>Deleted ${trashDate(item.deletedAt)} · Restore until ${trashDate(item.expiresAt)}</div><div class="item-actions">${preview}<button class="rowbtn restore-trash" data-kind="${esc(item.kind)}" data-id="${esc(item.id)}">RESTORE</button></div></div>`;
+    }).join('');
+    status('trashStatus',items.length?items.length+' items available to restore.':'Recycle Bin is empty.');
+  }catch(error){
+    status('trashStatus',error.message,true);
+  }finally{
+    $('trashRefresh').disabled=false;
+  }
+}
+$('openTrash').onclick=()=>document.querySelector('[data-view="trash"]').click();
+$('trashRefresh').onclick=loadTrash;
+$('trashList').onclick=async event=>{
+  const button=event.target.closest('.restore-trash');
+  if(!button)return;
+  const token=prompt('Enter admin upload code to restore this item:');
+  if(!token)return;
+  button.disabled=true;
+  try{
+    await trashRequest({id:button.dataset.id},token);
+    if(button.dataset.kind==='category'){location.reload();return;}
+    await Promise.all([loadTrash(),loadProducts(),loadLibrary(),loadBrands()]);
+    status('trashStatus','Item restored successfully.');
+  }catch(error){
+    status('trashStatus',error.message,true);
+    button.disabled=false;
+  }
 };
 
 async function getPdfJs(){if(window.pdfjsLib)return window.pdfjsLib;await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';s.onload=resolve;s.onerror=()=>reject(Error('PDF converter could not load'));document.head.appendChild(s)});window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';return window.pdfjsLib}

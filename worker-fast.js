@@ -1,3 +1,5 @@
+import {restoreDeletedCategory} from './worker-category-ui-hardfix.js';
+import {expireTrash,listTrash,moveMediaToTrash,newTrashEntry,readTrash,removeTrash,restoreTrashMedia,saveTrash} from './worker-recycle-bin.js';
 import {handleProjects} from './worker-completed-projects.js';
 import {cataloguePages} from './worker-catalogue-pages.js';
 import {canonicalCatalogueKey,dedupeCatalogueItems} from './worker-catalogue-identity.js';
@@ -9,7 +11,7 @@ import {handleVendor} from './worker-vendors.js';
 import {handleEnquiries} from './worker-enquiries.js';
 import app from './worker-design-extraction.js';
 import {backfillDesignIndex} from './worker-design-picker-click-fix.js';
-import {PUBLIC_MEDIA_INDEX_KEY,refreshPublicMediaIndex,syncAndClean,STATIC_PUBLIC_MEDIA,publicMediaList} from './worker-product-media-sync.js';
+import {PUBLIC_MEDIA_INDEX_KEY,refreshPublicMediaIndex,syncAndClean,STATIC_PUBLIC_MEDIA,publicMediaList,syncKeyFor} from './worker-product-media-sync.js';
 
 const isHiddenMediaKey = key => /^(?:private|_system|_config)\//i.test(String(key||''));
 
@@ -53,7 +55,7 @@ function cleanBrandItem(input={},existing={}){
   const fallback=hostedBrandLogo(brand,String(input.fallback??existing.fallback??'').trim().slice(0,1200));
   const alt=String(input.alt??existing.alt??(`${label} logo`)).trim().slice(0,140);
   const categories=[...new Set((Array.isArray(input.categories)?input.categories:Array.isArray(existing.categories)?existing.categories:[]).map(v=>canonicalBrowseCategory(String(v).trim().slice(0,80))).filter(Boolean))].slice(0,40);
-  return {brand,label,alt,src,categories,railEnabled:input.railEnabled??existing.railEnabled??true,...(fallback?{fallback}:{})};
+  return {brand,label,alt,src,categories,...(input.trashId?{trashId:input.trashId}:{}),railEnabled:input.railEnabled??existing.railEnabled??true,...(fallback?{fallback}:{})};
 }
 async function loadBrandRail(env){
   if(!env.PRODUCT_MEDIA)return BRAND_RAIL_DEFAULTS.map(x=>({...x}));
@@ -78,12 +80,16 @@ async function loadCatalogMaster(request,env,ctx){
  // Share the already validated public catalogue index with Products and Brands.
  const mediaPromise=indexedMedia(env,ctx).then(r=>r?r.json():publicMediaList(env).then(v=>v.json()));
  const [media,managed,state]=await Promise.all([mediaPromise,loadBrandRail(env),app.fetch(new Request(new URL('/api/categories',url)),env,ctx).then(r=>r.json())]);
- return buildCatalogMaster(media.items,managed,state);
+ const retired = new Set(managed.filter(item => item.trashId).map(item => brandKey(item.brand)));
+ return buildCatalogMaster(
+   (media.items||[]).filter(item => !retired.has(brandKey(canonicalBrand(item.brand)))),
+   managed.filter(item => !item.trashId),state
+ );
 }
 async function handleBrandRail(request,env,ctx){
   if(request.method==='GET'){
     const managed=await loadBrandRail(env);
-    if(new URL(request.url).searchParams.get('scope')==='managed')return brandJson({items:managed});
+    if(new URL(request.url).searchParams.get('scope')==='managed')return brandJson({items:managed.filter(item => !item.trashId)});
     const master=await loadCatalogMaster(request,env,ctx);
     return brandJson({...master,items:new URL(request.url).searchParams.get('scope')==='all'?master.items:master.items.filter(x=>x.railEnabled!==false&&!PRODUCT_ONLY_RAIL_ENTRIES.has(brandKey(x.brand)))});
   }
@@ -92,10 +98,23 @@ async function handleBrandRail(request,env,ctx){
   let data;try{data=await request.json()}catch{return brandJson({error:'Invalid JSON'},400)}
   const action=String(data&&data.action||'upsert');
   let items=await loadBrandRail(env);
+  const targetBrand = data.brand || data.item?.brand;
+  if (action !== 'delete' && items.some(item => item.trashId && brandKey(item.brand) === brandKey(canonicalBrand(targetBrand)))) {
+    return brandJson({error:'This brand is in the Recycle Bin. Restore it first.'},409);
+  }
   if(action==='delete'){
     const brand=canonicalBrand(data.brand);
     if(!brand)return brandJson({error:'Brand is required'},400);
-    items=items.filter(x=>brandKey(canonicalBrand(x.brand))!==brandKey(brand));
+    if (!hasUploadCode(request,env)) return brandJson({error:'Correct admin upload code is required'},401);
+    const key = brandKey(brand);
+    const existing = items.find(item => brandKey(item.brand) === key);
+    if (existing?.trashId) return brandJson({error:'Brand is already deleted'},409);
+    const brandItem = existing || (await loadCatalogMaster(request,env,ctx)).items.find(item => brandKey(item.brand) === key);
+    if (!brandItem) return brandJson({error:'Brand not found'},404);
+    const entry = {...newTrashEntry('brand',brandItem.label || brand), brand, brandItem:existing || null};
+    await saveTrash(env.PRODUCT_MEDIA,entry);
+    items = items.filter(item => brandKey(item.brand) !== key);
+    items.push({brand,trashId:entry.id});
   }else if(action==='visibility'){
     const brand=canonicalBrand(data.brand);
     if(!brand||typeof data.railEnabled!=='boolean')return brandJson({error:'Brand and rail visibility are required'},400);
@@ -116,10 +135,100 @@ async function handleBrandRail(request,env,ctx){
     const item=cleanBrandItem({...input,brand},i>=0?items[i]:{});
     if(i>=0)items[i]=item;else items.push(item);
   }else if(action==='replace'&&Array.isArray(data.items)){
-    items=data.items.map(x=>cleanBrandItem(x)).filter(x=>x.brand);
+    items=[...items.filter(x=>x.trashId),...data.items.map(x=>cleanBrandItem(x)).filter(x=>x.brand&&!items.some(old=>old.trashId&&brandKey(old.brand)===brandKey(x.brand)))];
   }else return brandJson({error:'Unsupported action'},400);
   await saveBrandRail(env,items);
-  return brandJson({ok:true,items});
+  return brandJson({ok:true,items:items.filter(item => !item.trashId)});
+}
+
+function hasUploadCode(request,env) {
+  return Boolean(env.ADMIN_UPLOAD_TOKEN) &&
+    request.headers.get('authorization') === `Bearer ${env.ADMIN_UPLOAD_TOKEN}`;
+}
+
+async function refreshTrashMediaIndex(env) {
+  try {
+    await refreshPublicMediaIndex(env);
+  } catch {
+    await env.PRODUCT_MEDIA.delete(PUBLIC_MEDIA_INDEX_KEY);
+  }
+}
+
+async function recycleMedia(request,env,keys,library) {
+  if (!hasUploadCode(request,env)) return brandJson({error:'Correct admin upload code is required'},401);
+  const bucket = env.PRODUCT_MEDIA;
+  if (!Array.isArray(keys) || !keys.length || keys.some(key => typeof key !== 'string' ||
+    !key || isHiddenMediaKey(key) || key.startsWith('vendor-public/') || key.includes('..'))) {
+    return brandJson({error:'Select valid uploaded media'},400);
+  }
+  const selected = new Set(keys);
+  for (const key of keys) {
+    const object = await bucket.head(key);
+    if (!object) continue;
+    const meta = object.customMetadata || {};
+    const libraryFile = key.startsWith('library/') || meta.library === '1' ||
+      ['original-pdf','jpg-page'].includes(meta.type);
+    if (libraryFile !== library || (!library && (meta.sourceKey?.startsWith('library/') || key.startsWith('product-sync/')))) {
+      return brandJson({error:'Delete synced catalogues from the Woodrick Home Library tab.'},400);
+    }
+    if (library && (meta.type === 'original-pdf' || (key.startsWith('library/') && key.includes('/original/')))) {
+      const syncedKey = syncKeyFor(object);
+      const synced = await bucket.head(syncedKey);
+      if (synced?.customMetadata?.sourceKey === key) selected.add(syncedKey);
+    }
+  }
+  try {
+    const entry = await moveMediaToTrash(bucket,[...selected],library?'catalogue':'product');
+    if (!entry) return brandJson({error:'Media was not found'},404);
+    return brandJson({ok:true,id:entry.id,deleted:entry.files.length});
+  } finally {
+    await refreshTrashMediaIndex(env);
+  }
+}
+
+async function handleRecycleBin(request,env,url) {
+  if (!await brandAuthorized(request,env)) return brandJson({error:'Admin login required'},401);
+  const bucket = env.PRODUCT_MEDIA;
+  if (request.method === 'GET' && !url.searchParams.has('id')) {
+    const items = (await listTrash(bucket)).filter(entry => !entry.pending && Date.parse(entry.expiresAt) > Date.now())
+      .map(({id,kind,title,brand,category,deletedAt,expiresAt,files}) => ({
+        id,kind,title,brand,category,deletedAt,expiresAt,fileCount:files?.length || 0,
+        preview:files?.findIndex(file => file.key.includes('/original/')) ?? -1
+      }));
+    return brandJson({items:items.sort((a,b) => b.deletedAt.localeCompare(a.deletedAt))});
+  }
+  if (!['GET','POST'].includes(request.method)) return brandJson({error:'Method not allowed'},405);
+  const body = request.method === 'POST' ? await request.json().catch(() => ({})) : {};
+  const entry = await readTrash(bucket,body.id || url.searchParams.get('id'));
+  if (!entry || entry.pending || Date.parse(entry.expiresAt) <= Date.now()) return brandJson({error:'Recycle Bin item not found or expired'},404);
+  if (request.method === 'GET') {
+    const file = entry.files?.[Number(url.searchParams.get('file'))];
+    const object = file && await bucket.get(file.backup);
+    if (!object) return brandJson({error:'File not found'},404);
+    const type = file.httpMetadata?.contentType || '';
+    const inline = /^(?:application\/pdf|image\/(?:jpeg|png|webp|gif)|video\/(?:mp4|webm))$/.test(type);
+    return new Response(object.body,{headers:{'content-type':inline?type:'application/octet-stream',
+      'content-disposition':inline?'inline':'attachment','cache-control':'private, no-store',
+      'x-content-type-options':'nosniff'}});
+  }
+  if (!hasUploadCode(request,env)) return brandJson({error:'Correct admin upload code is required'},401);
+  try {
+    if (entry.kind === 'brand') {
+      const items = await loadBrandRail(env);
+      const current = items.find(item => brandKey(item.brand) === brandKey(entry.brand));
+      if (current?.trashId !== entry.id) return brandJson({error:'Brand record has changed'},409);
+      await saveBrandRail(env,[...items.filter(item => item.trashId !== entry.id),...(entry.brandItem?[entry.brandItem]:[])]);
+    } else if (entry.kind === 'category') {
+      await restoreDeletedCategory(bucket,entry);
+    } else {
+      await restoreTrashMedia(bucket,entry);
+      await refreshTrashMediaIndex(env);
+    }
+    await removeTrash(bucket,entry);
+    return brandJson({ok:true});
+  } catch (error) {
+    return brandJson({error:error.message || 'Restore failed'},409);
+  }
 }
 
 function isPublicMediaList(request,url){
@@ -286,6 +395,19 @@ const worker={
       const headers=new Headers(asset.headers);headers.set('cache-control','private, no-store');headers.set('x-robots-tag','noindex');
       return new Response(asset.body,{status:asset.status,headers});
     }
+    if (url.pathname === '/api/recycle-bin') return handleRecycleBin(request,env,url);
+    if (request.method === 'POST' && ['/api/upload','/api/delete','/api/admin-media-delete','/api/admin-media-delete-smart'].includes(url.pathname) &&
+      (url.pathname !== '/api/upload' || request.headers.get('content-type')?.includes('application/json'))) {
+      const body = await request.clone().json().catch(() => ({}));
+      const library = body.action === 'delete-library';
+      if (url.pathname !== '/api/upload' || library || body.action === 'delete-media') {
+        try {
+          return await recycleMedia(request,env,body.keys || [body.key],library);
+        } catch (error) {
+          return brandJson({error:error.message || 'Could not move media to Recycle Bin'},500);
+        }
+      }
+    }
     if(url.pathname==='/api/enquiries')return handleEnquiries(request,env);
     if(url.pathname==='/api/media'&&(isHiddenMediaKey(url.searchParams.get('key'))||isHiddenMediaKey(url.searchParams.get('prefix'))))return brandJson({error:'Not found'},404);
     // Previously rendered/bookmarked cards may refer to a retired sync copy.
@@ -378,6 +500,7 @@ const worker={
   async scheduled(controller,env,ctx){
     ctx.waitUntil(Promise.all([
       backfillDesignIndex(env,3),
+      expireTrash(env.PRODUCT_MEDIA),
       syncAndClean(env).then(()=>refreshPublicMediaIndex(env))
     ]));
   }
